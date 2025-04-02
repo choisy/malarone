@@ -1,0 +1,100 @@
+---
+title: "Some epidemiological effects of malarone"
+number-sections: true
+format: html
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+
+Below, we use the formalism of Smith & McKenzie (2004, *Malaria Journal*).
+
+## Individual vectorial capacity
+
+The **individual vectorial capacity** (i.e. the expected number of infectious bites
+from a single vector after feeding on an infectious host):
+
+$$
+C = c \cdot P_e \cdot S
+$$
+
+where $c$ is the **transmission efficiency from human to mosquito** (i.e. probability
+of becoming infected after feeding on an infectious human), $P_e$ is the
+**probability of becoming infectious for an infected mosquito**:
+
+$$
+P_e = e^{-gn}
+$$
+(with $g$ the **mosquito death rate** and $n$ the **EIP**), and $S$ is the
+**stability index**, i.e. the total number of bites per mosquito during its lifetime:
+
+$$
+S = \frac{a}{g}
+$$
+with $a$ the **mosquito biting rate**, i.e. number of bites per mosquito. Gathering
+everything gives:
+
+$$
+C = c \cdot e^{-gn}\frac{a}{g}
+$$
+
+## Basic reproduction ratio
+
+The **basic reproduction ratio** is the expected number of infected humans per infected
+human or, equivalently, the expected number of infected mosquitoes per infected
+mosquito:
+
+$$
+R_0 = C \cdot b \cdot  \frac{a}{r} \cdot m
+$$
+
+where $C$ is the above defined **individual vectorial capacity**, $b$ is the
+**transmission efficiency from mosquito to human**, $r$ is the **human recovery rate**,
+and $m$ is the **ratio of mosquitoes to humans**. Gathering everything gives:
+
+$$
+R_0 = \frac{ma^2 bc e^{-gn}}{rg}
+$$
+
+## Proportion of infected humans
+
+The proportion of infected humans at equilibrium can be expressed as a function of
+$R_0$:
+
+$$
+\bar{X} = \frac{R_0 - 1}{R_0 + c S}
+$$
+
+Gathering everything gives:
+
+$$
+\bar{X} = \frac{ma^2bce^{-gn} - rg}{ma^2bce^{-gn} + rac}
+$$
+
+## Adding the effects of malarone
+
+Effects of **transmission blocking activity** (TBA, **Figure 3**) and the extension of
+the **Extrinsic Incubation Period** (EIP, **Figure 5**) on the individual vectorial
+capacity:
+
+$$
+C = (\mbox{TBA}\cdot c) \cdot e^{-\left(\mbox{EIP}\cdot n\right)g}\frac{a}{g}
+$$
+Note that malarone has no effect on $a$ and $g$ (**Figure 7**). Effect of TBA, EIP and
+**transmission reducing activity** (TRA, **Figure 4**) on the basic reproduction ratio:
+
+$$
+R_0 = \frac{ma^2 (\mbox{TRA}\cdot b)(\mbox{TBA}\cdot c) e^{-\left(\mbox{EIP}\cdot n\right)g}}{rg}
+$$
+
+Note that here we don't consider the potential effects of malarone on the recovery rate
+$r$ in humans and that we assume that malarone has no effect on the density $m$ of
+mosquitoes.
+
+Effects of TBA, TRA and EIP on the proportion of infected humans:
+
+$$
+\bar{X} = \frac{ma^2(\mbox{TRA}\cdot b)(\mbox{TBA}\cdot c)e^{-\left(\mbox{EIP}\cdot n\right)g} - rg}{ma^2(\mbox{TRA}\cdot b)(\mbox{TBA}\cdot c)e^{-\left(\mbox{EIP}\cdot n\right)g} + ra(\mbox{TBA}\cdot c)}
+$$
+
+
