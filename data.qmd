@@ -1,0 +1,59 @@
+---
+title: "Data"
+format: html
+editor: visual
+---
+
+## Parameters
+
+```{r}
+path2data <- paste0(Sys.getenv("HOME"), "/Library/CloudStorage/",
+                    "OneDrive-OxfordUniversityClinicalResearchUnit/",
+                    "GitHub/choisy/malarone/")
+```
+
+
+## Packages
+
+```{r}
+required_packages <- c("readr", "readxl")
+```
+
+```{r}
+to_inst <- required_packages[! required_packages %in% installed.packages()[,"Package"]]
+if (length(to_inst)) install.packages(to_inst)
+```
+
+
+## Functions
+
+```{r}
+read_tsv2 <- function(file, ...) readr::read_tsv(paste0(path2data, file), ...)
+```
+
+
+## Data
+
+```{r}
+oocysts <- read_tsv2("ASAAP4b_oocyst2.txt")
+```
+
+```{r}
+sporozoits <- read_tsv2("ASAAP4b_sporozoite2.txt")
+```
+
+```{r}
+feed_rates <- read_tsv2("feedrate.txt")
+```
+
+```{r}
+oocyst_sizes <- read_tsv2("oocyst_size2.txt")
+```
+
+```{r}
+survival <- read_tsv2("survival_asaap.txt")
+```
+
+```{r}
+pharmaco <- readxl::read_xlsx(paste0(path2data, "pharmaco2.xlsx"))
+```
