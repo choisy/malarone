@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.5.57">
+<meta name="generator" content="quarto-1.6.42">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -20,6 +20,40 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -29,10 +63,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="malarone_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="malarone_files/libs/quarto-html/anchor.min.js"></script>
 <link href="malarone_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="malarone_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="malarone_files/libs/quarto-html/quarto-syntax-highlighting-2f5df379a58b258e96c21c0638c20c03.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="malarone_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="malarone_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="malarone_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<link href="malarone_files/libs/bootstrap/bootstrap-c0367b04c37547644fece4185067e4a7.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
@@ -91,26 +125,135 @@ window.Quarto = {
 </header>
 
 
-<p>Below, we use the formalism of Smith &amp; McKenzie (2004, <em>Malaria Journal</em>).</p>
-<section id="individual-vectorial-capacity" class="level2" data-number="1">
-<h2 data-number="1" class="anchored" data-anchor-id="individual-vectorial-capacity"><span class="header-section-number">1</span> Individual vectorial capacity</h2>
-<p>The <strong>individual vectorial capacity</strong> (i.e.&nbsp;the expected number of infectious bites from a single vector after feeding on an infectious host):</p>
+<p>Below, we use the formalism of <a href="https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13">Smith &amp; McKenzie (2004)</a>.</p>
+<section id="parameters" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="parameters"><span class="header-section-number">1</span> Parameters</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>path2data <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="fu">Sys.getenv</span>(<span class="st">"HOME"</span>), <span class="st">"/Library/CloudStorage/"</span>,</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"OneDrive-OxfordUniversityClinicalResearchUnit/"</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"GitHub/choisy/malarone/"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="packages" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="packages"><span class="header-section-number">2</span> Packages</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>required_packages <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"readr"</span>, <span class="st">"readxl"</span>, <span class="st">"dplyr"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>to_inst <span class="ot">&lt;-</span> required_packages[<span class="sc">!</span> required_packages <span class="sc">%in%</span> <span class="fu">installed.packages</span>()[,<span class="st">"Package"</span>]]</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">length</span>(to_inst)) <span class="fu">install.packages</span>(to_inst)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="functions" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="functions"><span class="header-section-number">3</span> Functions</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>read_tsv2 <span class="ot">&lt;-</span> <span class="cf">function</span>(file, ...) readr<span class="sc">::</span><span class="fu">read_tsv</span>(<span class="fu">paste0</span>(path2data, file), ...)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="individual-vectorial-capacity" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="individual-vectorial-capacity"><span class="header-section-number">4</span> Individual vectorial capacity</h2>
+<p>The <strong>individual vectorial capacity</strong> (<em>i.e.</em> the expected number of infectious bites from a single vector after feeding on an infectious host):</p>
 <p><span class="math display">\[
 C = c \cdot P_e \cdot S
 \]</span></p>
-<p>where <span class="math inline">\(c\)</span> is the <strong>transmission efficiency from human to mosquito</strong> (i.e.&nbsp;probability of becoming infected after feeding on an infectious human), <span class="math inline">\(P_e\)</span> is the <strong>probability of becoming infectious for an infected mosquito</strong>:</p>
+<p>where <span class="math inline">\(c\)</span> is the <strong>transmission efficiency from human to mosquito</strong> (<em>i.e.</em> probability of becoming infected after feeding on an infectious human), <span class="math inline">\(P_e\)</span> is the <strong>probability of becoming infectious for an infected mosquito</strong>:</p>
 <p><span class="math display">\[
 P_e = e^{-gn}
-\]</span> (with <span class="math inline">\(g\)</span> the <strong>mosquito death rate</strong> and <span class="math inline">\(n\)</span> the <strong>EIP</strong>), and <span class="math inline">\(S\)</span> is the <strong>stability index</strong>, i.e.&nbsp;the total number of bites per mosquito during its lifetime:</p>
+\]</span> (with <span class="math inline">\(g\)</span> the <strong>mosquito death rate</strong> and <span class="math inline">\(n\)</span> the <strong>EIP</strong>), and <span class="math inline">\(S\)</span> is the <strong>stability index</strong>, <em>i.e.</em> the total number of bites per mosquito during its lifetime:</p>
 <p><span class="math display">\[
 S = \frac{a}{g}
-\]</span> with <span class="math inline">\(a\)</span> the <strong>mosquito biting rate</strong>, i.e.&nbsp;number of bites per mosquito. Gathering everything gives:</p>
+\]</span> with <span class="math inline">\(a\)</span> the <strong>mosquito biting rate</strong>, <em>i.e.</em> the number of bites per mosquito. Gathering everything gives:</p>
 <p><span class="math display">\[
 C = c \cdot e^{-gn}\frac{a}{g}
 \]</span></p>
 </section>
-<section id="basic-reproduction-ratio" class="level2" data-number="2">
-<h2 data-number="2" class="anchored" data-anchor-id="basic-reproduction-ratio"><span class="header-section-number">2</span> Basic reproduction ratio</h2>
+<section id="effects-of-malarone" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="effects-of-malarone"><span class="header-section-number">5</span> Effects of malarone</h2>
+<p>The results of the experiments suggest that the mosquito death rate <span class="math inline">\(g\)</span> and biting rate <span class="math inline">\(a\)</span> are not affected by malarone (Figure 7). However, the results also show that malarone</p>
+<ul>
+<li>decreases by the multiplicative factor <span class="math inline">\(\alpha\)</span> (<span class="math inline">\(0 \leq \alpha \leq 1\)</span>) the number of mosquitoes with <em>Plasmodium</em> (Figure 3);</li>
+<li>decreases by the multiplicative factor <span class="math inline">\(\beta\)</span> (<span class="math inline">\(0 \leq \beta \leq 1\)</span>) the number of <em>Plasmodium</em> in mosquitoes still harboring <em>Plasmodium</em> (Figure 4);</li>
+<li>slows down the development of these <em>Plasmodium</em> (Figure 5).</li>
+</ul>
+<p>The effect on <span class="math inline">\(C\)</span> of the first phenomenon can simply be modelled as a multiplicative factor <span class="math inline">\(\alpha\)</span>: <span class="math display">\[
+C' = \alpha\cdot C
+\]</span></p>
+<p>In order to model the effect on <span class="math inline">\(C\)</span> of the second phenomenon we need a function <span class="math inline">\(f\)</span> that relates the <em>Plasmodium</em> load to mosquito-to-human infectiousness for example the “single-hit” model of <a href="https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1008181">Aleshnick <em>et al.</em> (2020)</a>:</p>
+<p><span class="math display">\[
+f(S) = 1 - e^{-\lambda S}
+\]</span> where <span class="math inline">\(S\)</span> is the <em>Plasmodium</em> load and <span class="math inline">\(\lambda\)</span> is some parameter (estimated to <span class="math inline">\(5.8\times 10^{-6}\)</span> in <a href="https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1008181">Aleshnick <em>et al.</em> (2020)</a>). From here, the effect on <span class="math inline">\(C\)</span>:</p>
+<p><span class="math display">\[
+C' = \frac{f(S)}{f(\beta S)}C
+\]</span> Which here gives:</p>
+<p><span class="math display">\[
+C' = \frac{1 - e^{-\lambda S}}{1 - e^{-\lambda\beta S}}C
+\]</span></p>
+<p>In order to model the effect on <span class="math inline">\(C\)</span> of the third phenomenon we need a function <span class="math inline">\(g\)</span> of the <em>Plasmodium</em> development in order to convert a reduction in prevalence, numbers and sizes into a reduction in EIP. Figure 5B from <a href="https://www.cell.com/cell/fulltext/S0092-8674(19)30219-3?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS0092867419302193%3Fshowall%3Dtrue">Werling <em>et al.</em> (2019)</a> suggests a linear relationship between the development time and oocysts size, which means that the effect on <span class="math inline">\(C\)</span> of the third phenomenon can simply be modelled as</p>
+<p><span class="math display">\[
+C' = C e^{(1 - 1/\gamma)gn}
+\]</span></p>
+<p>Gathering the 3 effects on C:</p>
+<p><span class="math display">\[
+C' = \alpha e^{(1 - 1/\gamma)gn}\frac{1 - e^{-\lambda S}}{1 - e^{-\lambda\beta S}} C
+\]</span> Let’s now call <span class="math inline">\(P\)</span> the prevalence of malaria in the human population and <span class="math inline">\(D\)</span> the duration of infection in the human host. This means that <span class="math inline">\(P\)</span> blood meals will be done on infected human.</p>
+<p><span class="math display">\[
+C' = \left(P\tau\int_0^D\alpha(t) e^{(1 - 1/\gamma(t))gn}\frac{1 - e^{-\lambda S}}{1 - e^{-\lambda\beta(t) S}}dt + 1 - P\tau\right) C
+\]</span></p>
+<p>The more generic formula:</p>
+<p><span class="math display">\[
+C' = \left(P\tau\int_0^D\alpha(t) e^{(1 - 1/\gamma(t))gn}\frac{f(S)}{f(\beta(t) S)}dt + 1 - P\tau\right) C
+\]</span></p>
+<p><span class="math display">\[
+y = C x^a e^{-b x}
+\]</span></p>
+<p><span class="math display">\[
+\log(y) = \log(C) + a\log(x) -bx
+\]</span></p>
+</section>
+<section id="numeric-analysis" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="numeric-analysis"><span class="header-section-number">6</span> Numeric analysis</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>hours <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">5</span>, <span class="dv">48</span>, <span class="dv">72</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>days <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">7</span>, <span class="dv">14</span>, <span class="dv">28</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>hash <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">setNames</span>(hours, <span class="fu">paste0</span>(<span class="st">"H"</span>, hours)), <span class="fu">setNames</span>(<span class="dv">24</span> <span class="sc">*</span> days, <span class="fu">paste0</span>(<span class="st">"D"</span>, days)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>fig3b <span class="ot">&lt;-</span> <span class="st">"ASAAP4b_sporozoite2.txt"</span> <span class="sc">|&gt;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv2</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(patient_id <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="dv">10</span><span class="sc">:</span><span class="dv">12</span>, <span class="dv">18</span>),</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>         time_points <span class="sc">!=</span> <span class="st">"Control"</span>, time_points <span class="sc">!=</span> <span class="st">"Unfed"</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>         <span class="sc">!</span><span class="fu">is.na</span>(cq_1), <span class="sc">!</span><span class="fu">is.na</span>(tm_1)) <span class="sc">|&gt;</span> </span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(patient_id, time_points, cq_1, tm_1) <span class="sc">|&gt;</span> </span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(patient_id, time_points) <span class="sc">|&gt;</span> </span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">prev =</span> <span class="fu">mean</span>(<span class="dv">75</span> <span class="sc">&lt;</span> tm_1 <span class="sc">&amp;</span> tm_1 <span class="sc">&lt;</span> <span class="dv">81</span> <span class="sc">&amp;</span> cq_1 <span class="sc">&lt;</span> <span class="dv">35</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">alpha =</span> <span class="dv">1</span> <span class="sc">-</span> prev <span class="sc">/</span> prev[time_points <span class="sc">==</span> <span class="st">"H0"</span>]) <span class="sc">|&gt;</span> </span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">time_hours =</span> hash[time_points])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>mean_alpha <span class="ot">&lt;-</span> fig3b <span class="sc">|&gt;</span> </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(time_hours) <span class="sc">|&gt;</span> </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">mean_alpha =</span> <span class="fu">mean</span>(alpha))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">with</span>(fig3b, <span class="fu">plot</span>(<span class="fu">jitter</span>(time_hours), alpha,</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                 <span class="at">col =</span> <span class="dv">4</span>, <span class="at">ylim =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>), <span class="at">xlab =</span> <span class="st">"time (hours)"</span>, <span class="at">cex =</span> <span class="dv">2</span>))</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">with</span>(mean_alpha, <span class="fu">lines</span>(time_hours, mean_alpha, <span class="at">col =</span> <span class="dv">2</span>, <span class="at">lwd =</span> <span class="dv">2</span>))</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="malarone_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="basic-reproduction-ratio" class="level2" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="basic-reproduction-ratio"><span class="header-section-number">7</span> Basic reproduction ratio</h2>
 <p>The <strong>basic reproduction ratio</strong> is the expected number of infected humans per infected human or, equivalently, the expected number of infected mosquitoes per infected mosquito:</p>
 <p><span class="math display">\[
 R_0 = C \cdot b \cdot  \frac{a}{r} \cdot m
@@ -120,8 +263,8 @@ R_0 = C \cdot b \cdot  \frac{a}{r} \cdot m
 R_0 = \frac{ma^2 bc e^{-gn}}{rg}
 \]</span></p>
 </section>
-<section id="proportion-of-infected-humans" class="level2" data-number="3">
-<h2 data-number="3" class="anchored" data-anchor-id="proportion-of-infected-humans"><span class="header-section-number">3</span> Proportion of infected humans</h2>
+<section id="proportion-of-infected-humans" class="level2" data-number="8">
+<h2 data-number="8" class="anchored" data-anchor-id="proportion-of-infected-humans"><span class="header-section-number">8</span> Proportion of infected humans</h2>
 <p>The proportion of infected humans at equilibrium can be expressed as a function of <span class="math inline">\(R_0\)</span>:</p>
 <p><span class="math display">\[
 \bar{X} = \frac{R_0 - 1}{R_0 + c S}
@@ -131,8 +274,8 @@ R_0 = \frac{ma^2 bc e^{-gn}}{rg}
 \bar{X} = \frac{ma^2bce^{-gn} - rg}{ma^2bce^{-gn} + rac}
 \]</span></p>
 </section>
-<section id="adding-the-effects-of-malarone" class="level2" data-number="4">
-<h2 data-number="4" class="anchored" data-anchor-id="adding-the-effects-of-malarone"><span class="header-section-number">4</span> Adding the effects of malarone</h2>
+<section id="adding-the-effects-of-malarone" class="level2" data-number="9">
+<h2 data-number="9" class="anchored" data-anchor-id="adding-the-effects-of-malarone"><span class="header-section-number">9</span> Adding the effects of malarone</h2>
 <p>Effects of <strong>transmission blocking activity</strong> (TBA, <strong>Figure 3</strong>) and the extension of the <strong>Extrinsic Incubation Period</strong> (EIP, <strong>Figure 5</strong>) on the individual vectorial capacity:</p>
 <p><span class="math display">\[
 C = (\mbox{TBA}\cdot c) \cdot e^{-\left(\mbox{EIP}\cdot n\right)g}\frac{a}{g}
@@ -231,8 +374,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   });
   clipboard.on('success', onCopySuccess);
   if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-    // For code content inside modals, clipBoardJS needs to be initialized with a container option
-    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
     const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
       text: getTextToCopy,
       container: window.document.getElementById('quarto-embedded-source-code-modal')
@@ -343,7 +484,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       if (window.Quarto?.typesetMath) {
         window.Quarto.typesetMath(note);
       }
-      // TODO in 1.5, we should make sure this works without a callout special case
       if (note.classList.contains("callout")) {
         return note.outerHTML;
       } else {

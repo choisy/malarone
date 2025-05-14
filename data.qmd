@@ -57,3 +57,62 @@ survival <- read_tsv2("survival_asaap.txt")
 ```{r}
 pharmaco <- readxl::read_xlsx(paste0(path2data, "pharmaco2.xlsx"))
 ```
+
+
+## Figure 3
+
+```{r}
+library(dplyr)
+```
+
+```{r}
+hours <- c(0, 5, 48, 72)
+days <- c(5, 7, 14, 28)
+hash <- c(setNames(hours, paste0("H", hours)), setNames(24 * days, paste0("D", days)))
+```
+
+```{r}
+fig3a <- oocysts |> 
+  filter(! is.na(total_oocysts),
+         day_of_dissection == "7dpi",
+         time_points != "Control", time_points != "Unfed") |> 
+  select(patient_id, time_points, total_oocysts) |> 
+  group_by(patient_id, time_points) |> 
+  summarise(prev = mean(total_oocysts > 0)) |> 
+  mutate(alpha = 1 - prev / prev[time_points == "H0"]) |> 
+  ungroup() |> 
+  mutate(time_points2 = hash[time_points])
+```
+
+```{r}
+params <- fig3a |> 
+  mutate(alpha2 = ifelse(alpha > 0, alpha, 1e-6),
+         time_points3 = ifelse(time_points2 > 0, time_points2, 1e-6)) |> 
+  with(lm(log(alpha2) ~ time_points3 + log(time_points3))) |> 
+  coef()
+```
+
+```{r}
+f <- function(x, C, a, b) purrr::map_dbl(x, ~ C * .x^a * exp(-b * .x))
+```
+
+```{r}
+xs <- seq(1e-6, 24*28, le = 512)
+plot(xs, f(xs, 5e-8, 5, .07), type = "l"); abline(v = c(72, 150))
+```
+
+```{r}
+with(fig3a, plot(time_points2, alpha))
+fig3a_smoothed <- fig3a |> 
+  group_by(time_points2) |> 
+  summarise(m = mean(alpha))
+with(fig3a_smoothed, lines(time_points2, m))
+mean_guess <- with(fig3a_smoothed, mean(time_points2 * m))
+abline(v = mean_guess)
+
+xs <- seq(1e-6, 24*28, le = 512)
+lines(xs, map_dbl(xs, f, exp(params[1]), - params[3], params[2]))
+```
+
+
+
