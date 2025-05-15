@@ -125,9 +125,10 @@ window.Quarto = {
 </header>
 
 
-<p>Below, we use the formalism of <a href="https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13">Smith &amp; McKenzie (2004)</a>.</p>
+<p>In this analysis we use the formalism of <a href="https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13">Smith &amp; McKenzie (2004)</a>.</p>
 <section id="parameters" class="level2" data-number="1">
 <h2 data-number="1" class="anchored" data-anchor-id="parameters"><span class="header-section-number">1</span> Parameters</h2>
+<p>The path to the data:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>path2data <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="fu">Sys.getenv</span>(<span class="st">"HOME"</span>), <span class="st">"/Library/CloudStorage/"</span>,</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"OneDrive-OxfordUniversityClinicalResearchUnit/"</span>,</span>
@@ -137,7 +138,7 @@ window.Quarto = {
 <section id="packages" class="level2" data-number="2">
 <h2 data-number="2" class="anchored" data-anchor-id="packages"><span class="header-section-number">2</span> Packages</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>required_packages <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"readr"</span>, <span class="st">"readxl"</span>, <span class="st">"dplyr"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>required_packages <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"readr"</span>, <span class="st">"readxl"</span>, <span class="st">"dplyr"</span>, <span class="st">"purrr"</span>, <span class="st">"stringr"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>to_inst <span class="ot">&lt;-</span> required_packages[<span class="sc">!</span> required_packages <span class="sc">%in%</span> <span class="fu">installed.packages</span>()[,<span class="st">"Package"</span>]]</span>
@@ -150,12 +151,24 @@ window.Quarto = {
 <section id="functions" class="level2" data-number="3">
 <h2 data-number="3" class="anchored" data-anchor-id="functions"><span class="header-section-number">3</span> Functions</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>read_tsv2 <span class="ot">&lt;-</span> <span class="cf">function</span>(file, ...) readr<span class="sc">::</span><span class="fu">read_tsv</span>(<span class="fu">paste0</span>(path2data, file), ...)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>readRDS2 <span class="ot">&lt;-</span> <span class="cf">function</span>(f, ...) tibble<span class="sc">::</span><span class="fu">as_tibble</span>(<span class="fu">readRDS</span>(<span class="fu">paste0</span>(path2data, f), ...))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>plot2 <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">plot</span>(..., <span class="at">col =</span> <span class="dv">4</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">pch =</span> <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>lines2 <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">lines</span>(..., <span class="at">col =</span> <span class="dv">2</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>seq2 <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">seq</span>(..., <span class="at">le =</span> <span class="dv">512</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>plotl <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">plot</span>(..., <span class="at">type =</span> <span class="st">"l"</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">col =</span> <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="individual-vectorial-capacity" class="level2" data-number="4">
 <h2 data-number="4" class="anchored" data-anchor-id="individual-vectorial-capacity"><span class="header-section-number">4</span> Individual vectorial capacity</h2>
-<p>The <strong>individual vectorial capacity</strong> (<em>i.e.</em> the expected number of infectious bites from a single vector after feeding on an infectious host):</p>
+<p>From <a href="https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13">Smith &amp; McKenzie (2004)</a>, the <strong>individual vectorial capacity</strong> (<em>i.e.</em> the expected number of infectious bites from a single vector after feeding on an infectious host):</p>
 <p><span class="math display">\[
 C = c \cdot P_e \cdot S
 \]</span></p>
@@ -166,91 +179,210 @@ P_e = e^{-gn}
 <p><span class="math display">\[
 S = \frac{a}{g}
 \]</span> with <span class="math inline">\(a\)</span> the <strong>mosquito biting rate</strong>, <em>i.e.</em> the number of bites per mosquito. Gathering everything gives:</p>
-<p><span class="math display">\[
+<p><span id="eq-ind_vec_cap"><span class="math display">\[
 C = c \cdot e^{-gn}\frac{a}{g}
-\]</span></p>
+\tag{1}\]</span></span></p>
 </section>
-<section id="effects-of-malarone" class="level2" data-number="5">
-<h2 data-number="5" class="anchored" data-anchor-id="effects-of-malarone"><span class="header-section-number">5</span> Effects of malarone</h2>
-<p>The results of the experiments suggest that the mosquito death rate <span class="math inline">\(g\)</span> and biting rate <span class="math inline">\(a\)</span> are not affected by malarone (Figure 7). However, the results also show that malarone</p>
-<ul>
-<li>decreases by the multiplicative factor <span class="math inline">\(\alpha\)</span> (<span class="math inline">\(0 \leq \alpha \leq 1\)</span>) the number of mosquitoes with <em>Plasmodium</em> (Figure 3);</li>
+<section id="experimental-results-on-the-effects-of-malarone" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="experimental-results-on-the-effects-of-malarone"><span class="header-section-number">5</span> Experimental results on the effects of malarone</h2>
+<p>The experimental results suggest that malarone</p>
+<ol type="1">
+<li>decreases by a multiplicative factor <span class="math inline">\((1 - \alpha)\)</span> (<span class="math inline">\(0 \leq \alpha \leq 1\)</span>) the number of mosquitoes with <em>Plasmodium</em> (Figure 3);</li>
 <li>decreases by the multiplicative factor <span class="math inline">\(\beta\)</span> (<span class="math inline">\(0 \leq \beta \leq 1\)</span>) the number of <em>Plasmodium</em> in mosquitoes still harboring <em>Plasmodium</em> (Figure 4);</li>
-<li>slows down the development of these <em>Plasmodium</em> (Figure 5).</li>
-</ul>
-<p>The effect on <span class="math inline">\(C\)</span> of the first phenomenon can simply be modelled as a multiplicative factor <span class="math inline">\(\alpha\)</span>: <span class="math display">\[
-C' = \alpha\cdot C
-\]</span></p>
-<p>In order to model the effect on <span class="math inline">\(C\)</span> of the second phenomenon we need a function <span class="math inline">\(f\)</span> that relates the <em>Plasmodium</em> load to mosquito-to-human infectiousness for example the “single-hit” model of <a href="https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1008181">Aleshnick <em>et al.</em> (2020)</a>:</p>
-<p><span class="math display">\[
-f(S) = 1 - e^{-\lambda S}
-\]</span> where <span class="math inline">\(S\)</span> is the <em>Plasmodium</em> load and <span class="math inline">\(\lambda\)</span> is some parameter (estimated to <span class="math inline">\(5.8\times 10^{-6}\)</span> in <a href="https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1008181">Aleshnick <em>et al.</em> (2020)</a>). From here, the effect on <span class="math inline">\(C\)</span>:</p>
-<p><span class="math display">\[
-C' = \frac{f(S)}{f(\beta S)}C
-\]</span> Which here gives:</p>
-<p><span class="math display">\[
-C' = \frac{1 - e^{-\lambda S}}{1 - e^{-\lambda\beta S}}C
-\]</span></p>
-<p>In order to model the effect on <span class="math inline">\(C\)</span> of the third phenomenon we need a function <span class="math inline">\(g\)</span> of the <em>Plasmodium</em> development in order to convert a reduction in prevalence, numbers and sizes into a reduction in EIP. Figure 5B from <a href="https://www.cell.com/cell/fulltext/S0092-8674(19)30219-3?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS0092867419302193%3Fshowall%3Dtrue">Werling <em>et al.</em> (2019)</a> suggests a linear relationship between the development time and oocysts size, which means that the effect on <span class="math inline">\(C\)</span> of the third phenomenon can simply be modelled as</p>
-<p><span class="math display">\[
-C' = C e^{(1 - 1/\gamma)gn}
-\]</span></p>
-<p>Gathering the 3 effects on C:</p>
-<p><span class="math display">\[
-C' = \alpha e^{(1 - 1/\gamma)gn}\frac{1 - e^{-\lambda S}}{1 - e^{-\lambda\beta S}} C
-\]</span> Let’s now call <span class="math inline">\(P\)</span> the prevalence of malaria in the human population and <span class="math inline">\(D\)</span> the duration of infection in the human host. This means that <span class="math inline">\(P\)</span> blood meals will be done on infected human.</p>
-<p><span class="math display">\[
-C' = \left(P\tau\int_0^D\alpha(t) e^{(1 - 1/\gamma(t))gn}\frac{1 - e^{-\lambda S}}{1 - e^{-\lambda\beta(t) S}}dt + 1 - P\tau\right) C
-\]</span></p>
-<p>The more generic formula:</p>
-<p><span class="math display">\[
-C' = \left(P\tau\int_0^D\alpha(t) e^{(1 - 1/\gamma(t))gn}\frac{f(S)}{f(\beta(t) S)}dt + 1 - P\tau\right) C
-\]</span></p>
-<p><span class="math display">\[
-y = C x^a e^{-b x}
-\]</span></p>
-<p><span class="math display">\[
-\log(y) = \log(C) + a\log(x) -bx
-\]</span></p>
-</section>
-<section id="numeric-analysis" class="level2" data-number="6">
-<h2 data-number="6" class="anchored" data-anchor-id="numeric-analysis"><span class="header-section-number">6</span> Numeric analysis</h2>
+<li>increases the EIP <span class="math inline">\(n\)</span> by a factor <span class="math inline">\(\gamma\)</span> (Figure 5);</li>
+<li>has no effect on the mosquito biting rate <span class="math inline">\(a\)</span> (Figure 7);</li>
+<li>has no effect on the mosquito death rate <span class="math inline">\(g\)</span> (Figure 7).</li>
+</ol>
+<p>Let’s see how we can integrate effects 1-3 into <a href="#eq-ind_vec_cap" class="quarto-xref">Equation&nbsp;1</a>.</p>
+<section id="transmission-blocking-activity-on-sporozoites" class="level3" data-number="5.1">
+<h3 data-number="5.1" class="anchored" data-anchor-id="transmission-blocking-activity-on-sporozoites"><span class="header-section-number">5.1</span> Transmission-blocking activity on sporozoites</h3>
+<p>A function that reads the sporozoites data for the treatment group:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>hours <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">5</span>, <span class="dv">48</span>, <span class="dv">72</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>days <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">7</span>, <span class="dv">14</span>, <span class="dv">28</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>hash <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">setNames</span>(hours, <span class="fu">paste0</span>(<span class="st">"H"</span>, hours)), <span class="fu">setNames</span>(<span class="dv">24</span> <span class="sc">*</span> days, <span class="fu">paste0</span>(<span class="st">"D"</span>, days)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>make_reading_exp_data <span class="ot">&lt;-</span> <span class="cf">function</span>() {</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  hours <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">5</span>, <span class="dv">48</span>, <span class="dv">72</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  days <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">7</span>, <span class="dv">14</span>, <span class="dv">28</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  hash <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">setNames</span>(hours, <span class="fu">paste0</span>(<span class="st">"H"</span>, hours)),</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>            <span class="fu">setNames</span>(<span class="dv">24</span> <span class="sc">*</span> days, <span class="fu">paste0</span>(<span class="st">"D"</span>, days)))</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">function</span>(file) {</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    file <span class="sc">|&gt;</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">readRDS2</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(treatment <span class="sc">==</span> <span class="st">"AL+AP"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mutate</span>(<span class="at">time_hours =</span> hash[stringr<span class="sc">::</span><span class="fu">str_remove</span>(time_points, <span class="st">"0"</span>)],</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>             <span class="fu">across</span>(Inhibition, <span class="sc">~</span> .x <span class="sc">/</span> <span class="dv">100</span>))</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>reading_exp_data <span class="ot">&lt;-</span> <span class="fu">make_reading_exp_data</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>Let’s pull out the data from Figure 3B:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>fig3b <span class="ot">&lt;-</span> <span class="st">"ASAAP4b_sporozoite2.txt"</span> <span class="sc">|&gt;</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_tsv2</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(patient_id <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="dv">10</span><span class="sc">:</span><span class="dv">12</span>, <span class="dv">18</span>),</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>         time_points <span class="sc">!=</span> <span class="st">"Control"</span>, time_points <span class="sc">!=</span> <span class="st">"Unfed"</span>,</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>         <span class="sc">!</span><span class="fu">is.na</span>(cq_1), <span class="sc">!</span><span class="fu">is.na</span>(tm_1)) <span class="sc">|&gt;</span> </span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(patient_id, time_points, cq_1, tm_1) <span class="sc">|&gt;</span> </span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(patient_id, time_points) <span class="sc">|&gt;</span> </span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">prev =</span> <span class="fu">mean</span>(<span class="dv">75</span> <span class="sc">&lt;</span> tm_1 <span class="sc">&amp;</span> tm_1 <span class="sc">&lt;</span> <span class="dv">81</span> <span class="sc">&amp;</span> cq_1 <span class="sc">&lt;</span> <span class="dv">35</span>)) <span class="sc">|&gt;</span> </span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">alpha =</span> <span class="dv">1</span> <span class="sc">-</span> prev <span class="sc">/</span> prev[time_points <span class="sc">==</span> <span class="st">"H0"</span>]) <span class="sc">|&gt;</span> </span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">time_hours =</span> hash[time_points])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>sporozoitsTBA <span class="ot">&lt;-</span> <span class="fu">reading_exp_data</span>(<span class="st">"percentage_inhibition9.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>A function that converts a data frame on the effet of malarone on sporozoites into a function:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>mean_alpha <span class="ot">&lt;-</span> fig3b <span class="sc">|&gt;</span> </span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(time_hours) <span class="sc">|&gt;</span> </span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">mean_alpha =</span> <span class="fu">mean</span>(alpha))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>data2function <span class="ot">&lt;-</span> <span class="cf">function</span>(data) {</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  data <span class="sc">|&gt;</span> </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(time_hours) <span class="sc">|&gt;</span> </span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">median_val =</span> <span class="fu">max</span>(<span class="dv">0</span>, <span class="fu">median</span>(Inhibition))) <span class="sc">|&gt;</span> </span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_rows</span>(<span class="fu">tibble</span>(<span class="at">time_hours =</span> <span class="dv">0</span>, <span class="at">median_val =</span> <span class="dv">0</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(time_hours) <span class="sc">|&gt;</span> </span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">with</span>(<span class="cf">function</span>(x, ...) <span class="fu">approx</span>(time_hours, median_val, x, ...)<span class="sc">$</span>y)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>Let’s now create a function <code>alpha()</code> on percentage <span class="math inline">\(\alpha(t)\)</span> inhibition on sporozoite infection rate as a function of time <span class="math inline">\(t\)</span> post drug administration:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">with</span>(fig3b, <span class="fu">plot</span>(<span class="fu">jitter</span>(time_hours), alpha,</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                 <span class="at">col =</span> <span class="dv">4</span>, <span class="at">ylim =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>), <span class="at">xlab =</span> <span class="st">"time (hours)"</span>, <span class="at">cex =</span> <span class="dv">2</span>))</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">with</span>(mean_alpha, <span class="fu">lines</span>(time_hours, mean_alpha, <span class="at">col =</span> <span class="dv">2</span>, <span class="at">lwd =</span> <span class="dv">2</span>))</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>alpha <span class="ot">&lt;-</span> <span class="fu">data2function</span>(sporozoitsTBA)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>A function that plots the experimental data on the effect of malarone on sporozoites:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>plot_effect_sporozoites <span class="ot">&lt;-</span> <span class="cf">function</span>(data, ...) {</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">with</span>(data, <span class="fu">plot2</span>(<span class="fu">jitter</span>(time_hours), Inhibition,</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">xlab =</span> <span class="st">"time post drug administration (hours)"</span>, ...))</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline</span>(<span class="at">h =</span> <span class="dv">0</span>)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This is what this function looks like:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_effect_sporozoites</span>(sporozoitsTBA, <span class="at">ylim =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>),</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">ylab =</span> <span class="fu">expression</span>(<span class="fu">paste</span>(<span class="st">"sporozoite TBA "</span>, alpha)))</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>xs <span class="ot">&lt;-</span> <span class="fu">seq2</span>(<span class="dv">0</span>, <span class="dv">700</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="fu">lines2</span>(xs, <span class="fu">alpha</span>(xs))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="malarone_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="malarone_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
+<p>The effect on <span class="math inline">\(C\)</span> of the first phenomenon can simply be modelled as a multiplicative factor <span class="math inline">\(\alpha\)</span>: <span class="math display">\[
+C' = (1 - \alpha) C
+\]</span></p>
+</section>
+<section id="transmission-reducing-activity-on-sporozoites" class="level3" data-number="5.2">
+<h3 data-number="5.2" class="anchored" data-anchor-id="transmission-reducing-activity-on-sporozoites"><span class="header-section-number">5.2</span> Transmission-reducing activity on sporozoites</h3>
+<p>Let’s pull out the data from Figure 4B:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>sporozoitsTRA <span class="ot">&lt;-</span> <span class="fu">reading_exp_data</span>(<span class="st">"percentage_inhibition13.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Let’s now create a function <code>beta()</code> on percentage <span class="math inline">\(\beta(t)\)</span> inhibition on sporozoite intensity as a function of time <span class="math inline">\(t\)</span> post drug administration:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>beta <span class="ot">&lt;-</span> <span class="fu">data2function</span>(sporozoitsTRA)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This is what this function looks like:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_effect_sporozoites</span>(sporozoitsTRA, <span class="at">ylim =</span> <span class="fu">c</span>(<span class="sc">-</span>.<span class="dv">15</span>, .<span class="dv">15</span>),</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">ylab =</span> <span class="fu">expression</span>(<span class="fu">paste</span>(<span class="st">"sporozoite TRA "</span>, beta)))</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">lines2</span>(xs, <span class="fu">beta</span>(xs))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="malarone_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>In order to convert this sporozoite TRA into a vectorial capacity reduction, we need a function <span class="math inline">\(f\)</span> that converts a sporozoite load into an infection probability. Figure 2B from <a href="https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1008181">Aleshnick <em>et al.</em> (2020)</a> provides such a function that we transpose in the <code>f()</code> function below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>make_f <span class="ot">&lt;-</span> <span class="cf">function</span>(x1, x2, y1, y2) {</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">function</span>(x) {</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    purrr<span class="sc">::</span><span class="fu">map_dbl</span>(x, <span class="cf">function</span>(x) {</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                        <span class="cf">if</span> (x <span class="sc">&lt;</span> x1) <span class="fu">return</span>(x <span class="sc">*</span> y1 <span class="sc">/</span> x1)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>                        y1 <span class="sc">+</span> (x <span class="sc">-</span> x1) <span class="sc">*</span> (y2 <span class="sc">-</span> y1) <span class="sc">/</span> (x2 <span class="sc">-</span> x1)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>                      })</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>f <span class="ot">&lt;-</span> <span class="fu">make_f</span>(<span class="at">x1 =</span> <span class="dv">21111</span>, <span class="at">x2 =</span> <span class="fl">1e5</span>, <span class="at">y1 =</span> .<span class="dv">285</span>, <span class="at">y2 =</span> .<span class="dv">344</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>And this is what it looks like:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>xs2 <span class="ot">&lt;-</span> <span class="fu">seq2</span>(<span class="dv">0</span>, <span class="fl">1e5</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotl</span>(xs2, <span class="fu">f</span>(xs2),</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>      <span class="at">xlab =</span> <span class="st">"salivary gland sporozoite load"</span>, <span class="at">ylab =</span> <span class="st">"infection probability"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="malarone_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>In order to model the effect on <span class="math inline">\(C\)</span> of the second phenomenon we need a function <span class="math inline">\(f\)</span> that relates the <em>Plasmodium</em> load to mosquito-to-human infectiousness:</p>
+<p><span class="math display">\[
+C' = \frac{f((1 - \beta) S)}{f(S)}C
+\]</span></p>
+</section>
+<section id="increase-of-the-eip" class="level3" data-number="5.3">
+<h3 data-number="5.3" class="anchored" data-anchor-id="increase-of-the-eip"><span class="header-section-number">5.3</span> Increase of the EIP</h3>
+<p>Let’s pull out the data from Figure 5A:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>oocysts_size <span class="ot">&lt;-</span> <span class="fu">reading_exp_data</span>(<span class="st">"percentage_inhibition_size2.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Let’s now create a function <code>gamma()</code> on percentage <span class="math inline">\(\gamma(t)\)</span> decrease sporozoite intensity as a function of time <span class="math inline">\(t\)</span> post drug administration:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>gamma <span class="ot">&lt;-</span> <span class="fu">data2function</span>(oocysts_size)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This is what this function looks like:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_effect_sporozoites</span>(oocysts_size, <span class="at">ylim =</span> <span class="fu">c</span>(<span class="sc">-</span>.<span class="dv">65</span>, .<span class="dv">65</span>),</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">ylab =</span> <span class="fu">expression</span>(</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                          <span class="fu">paste</span>(<span class="st">"sporozoite size reduction factor "</span>, gamma)))</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="fu">lines2</span>(xs, <span class="fu">gamma</span>(xs))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="malarone_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Next, we need to convert a reduction in oocysts size at 7 dpi into an extension of the EIP. Figure 5B from <a href="https://www.cell.com/cell/fulltext/S0092-8674(19)30219-3?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS0092867419302193%3Fshowall%3Dtrue">Werling <em>et al.</em> (2019)</a> suggests a linear relationship between the development time and oocysts size, which means that the effect on <span class="math inline">\(C\)</span> of the third phenomenon can simply be modelled as</p>
+<p><span class="math display">\[
+C' = e^{(1 - 1/\gamma)gn} C
+\]</span></p>
+</section>
+<section id="combining-the-3-effects" class="level3" data-number="5.4">
+<h3 data-number="5.4" class="anchored" data-anchor-id="combining-the-3-effects"><span class="header-section-number">5.4</span> Combining the 3 effects</h3>
+<p>Combining the 3 above effects for a mosquito that feeds on a human host that started malarone <span class="math inline">\(t\)</span> units earlier, we have:</p>
+<p><span class="math display">\[
+C' = (1 - \alpha(t)) \frac{f((1 - \beta(t)) S)}{f(S)} e^{(1 - 1/\gamma(t))gn} C
+\]</span></p>
+<p>The corresponding R code is:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>C_effect_at_t <span class="ot">&lt;-</span> <span class="cf">function</span>(t, S, g, n) {</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">alpha</span>(t)) <span class="sc">*</span> <span class="fu">f</span>((<span class="dv">1</span> <span class="sc">-</span> <span class="fu">beta</span>(t)) <span class="sc">*</span> S) <span class="sc">*</span> <span class="fu">exp</span>((<span class="dv">1</span> <span class="sc">-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="fu">gamma</span>(t)) <span class="sc">*</span> g <span class="sc">*</span> n) <span class="sc">/</span> <span class="fu">f</span>(S)</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The expected effect of malarone on a mosquito that feeds on a human who is infected and has taken a treatment, not knowing when, would read:</p>
+<p><span class="math display">\[
+C' = \frac{C}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) S)}{f(S)} e^{(1 - 1/\gamma(t))gn}dt
+\]</span></p>
+<p>where <span class="math inline">\(D\)</span> if the duration of infection in the human host. The corresponding R code is:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>C_effect_on_treated <span class="ot">&lt;-</span> <span class="cf">function</span>(D, S, g, n) {</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">integrate</span>(C_effect_at_t, <span class="dv">0</span>, D, S, g, n) <span class="sc">/</span> D</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Finally, if <span class="math inline">\(P\)</span> is the prevalence in the human population and <span class="math inline">\(\tau\)</span> is the proportion of infected people that are treated, the mean effect of malarone on the individual vectorial capacity is:</p>
+<p><span class="math display">\[
+C' = \left(\frac{\tau P}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) S)}{f(S)} e^{(1 - 1/\gamma(t))gn}dt + 1 - \tau P\right)C
+\]</span></p>
+<p>and the corresponding R code is:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>mean_C_effect <span class="ot">&lt;-</span> <span class="cf">function</span>(D, S, g, n, P, tau) {</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1</span> <span class="sc">+</span> tau <span class="sc">*</span> P <span class="sc">*</span> (<span class="fu">C_effect_on_treated</span>(D, S, g, n) <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>mean_C_effect <span class="ot">&lt;-</span> <span class="cf">function</span>(D, S, g, n, P, tau) {</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1</span> <span class="sc">-</span> tau <span class="sc">*</span> P <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">C_effect_on_treated</span>(D, S, g, n))</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="numerical-analysis" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="numerical-analysis"><span class="header-section-number">6</span> Numerical analysis</h2>
 </section>
 <section id="basic-reproduction-ratio" class="level2" data-number="7">
 <h2 data-number="7" class="anchored" data-anchor-id="basic-reproduction-ratio"><span class="header-section-number">7</span> Basic reproduction ratio</h2>
