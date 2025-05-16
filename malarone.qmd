@@ -19,46 +19,66 @@ path2data <- paste0(Sys.getenv("HOME"), "/Library/CloudStorage/",
                     "GitHub/choisy/malarone/")
 ```
 
+```{r include = FALSE}
+file_exists <- function(x) file.exists(paste0(path2data, "cache/", x))
+readRDScache <- function(x) readRDS(paste0(path2data, "cache/", x))
+saveRDScache <- function(obj, file) saveRDS(obj, paste0(path2data, "cache/", file))
+```
 
+Whether or not to force the effects to be equal to 0 at $t = 28$ days (in practice it
+does not change things much anyway):
 
-
+```{r}
+t28_0 <- TRUE
+```
 
 ## Packages
+
+Required packages:
 
 ```{r}
 required_packages <- c("readr", "readxl", "dplyr", "purrr", "stringr")
 ```
+
+Installing those that are not installed yet:
 
 ```{r}
 to_inst <- required_packages[! required_packages %in% installed.packages()[,"Package"]]
 if (length(to_inst)) install.packages(to_inst)
 ```
 
+Loading some packages for interactive use:
+
 ```{r message = FALSE}
 library(dplyr)
+library(purrr)
 ```
 
 
 ## Functions
 
+Tuning some base functions:
+
 ```{r}
+lwd_val <- 2
+seq2 <- function(...) seq(..., le = 512)
+abline2 <- function(...) abline(..., col = "grey")
+lines2 <- function(...) lines(..., col = 2, lwd = lwd_val)
+segments2 <- function(...) segments(..., col = 4, lwd = lwd_val)
+plot2 <- function(...) plot(..., col = 4, pch = 3, lwd = lwd_val)
+plotl <- function(...) plot(..., type = "l", col = 2, lwd = lwd_val)
+arrows2 <- function(...) arrows(..., col = 3, length = .15, lwd = lwd_val)
 readRDS2 <- function(f, ...) tibble::as_tibble(readRDS(paste0(path2data, f), ...))
 ```
 
-```{r}
-plot2 <- function(...) plot(..., col = 4, lwd = 2, pch = 3)
-```
+A function that performs numerical integration using the trapezoid method:
 
 ```{r}
-lines2 <- function(...) lines(..., col = 2, lwd = 2)
-```
-
-```{r}
-seq2 <- function(...) seq(..., le = 512)
-```
-
-```{r}
-plotl <- function(...) plot(..., type = "l", lwd = 2, col = 2)
+trapezoid <- function(f, lower, upper, nb = 1e4) {
+  step <- (upper - lower) / nb
+  y <- f(seq(lower, upper, le = nb + 1))
+  step * (y[1] + 2 * sum(y[-1])) / 2
+}
 ```
 
 
@@ -138,18 +158,25 @@ A function that converts a data frame on the effet of malarone on sporozoites in
 function:
 
 ```{r}
-data2function <- function(data) {
+data2function <- function(data, correction = t28_0) {
+  apply_correction <- function(x) {
+    if (correction) return(mutate(x, median_val = c(head(median_val, -1), 0)))
+    x
+  }
+  
   data |> 
     group_by(time_hours) |> 
     summarise(median_val = max(0, median(Inhibition))) |> 
     bind_rows(tibble(time_hours = 0, median_val = 0)) |> 
     arrange(time_hours) |> 
+    apply_correction() |> 
     with(function(x, ...) approx(time_hours, median_val, x, ...)$y)
 }
 ```
 
-Let's now create a function `alpha()` on percentage $\alpha(t)$ inhibition on
-sporozoite infection rate as a function of time $t$ post drug administration:
+When `correction = TRUE` the value at $t = 28$ days is forced to be equal to 0. Let's
+now create a function `alpha()` on percentage $\alpha(t)$ inhibition on sporozoite
+infection rate as a function of time $t$ post drug administration:
 
 ```{r}
 alpha <- data2function(sporozoitsTBA)
@@ -234,8 +261,10 @@ In order to model the effect on $C$ of the second phenomenon we need a function 
 that relates the *Plasmodium* load to mosquito-to-human infectiousness:
 
 $$
-C' = \frac{f((1 - \beta) S)}{f(S)}C
+C' = \frac{f((1 - \beta) L)}{f(L)}C
 $$
+
+where $L$ is the sporozoite load in mosquitoes feeding on untreated people.
 
 ### Increase of the EIP
 
@@ -276,14 +305,14 @@ Combining the 3 above effects for a mosquito that feeds on a human host that sta
 malarone $t$ units earlier, we have:
 
 $$
-C' = (1 - \alpha(t)) \frac{f((1 - \beta(t)) S)}{f(S)} e^{(1 - 1/\gamma(t))gn} C
+C' = (1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn} C
 $$
 
 The corresponding R code is:
 
 ```{r}
-C_effect_at_t <- function(t, S, g, n) {
-  (1 - alpha(t)) * f((1 - beta(t)) * S) * exp((1 - 1 / gamma(t)) * g * n) / f(S)
+C_effect_at_t <- function(t, L, g, n) {
+  (1 - alpha(t)) * f((1 - beta(t)) * L) * exp((1 - 1 / gamma(t)) * g * n) / f(L)
 }
 ```
 
@@ -291,14 +320,16 @@ The expected effect of malarone on a mosquito that feeds on a human who is infec
 has taken a treatment, not knowing when, would read:
 
 $$
-C' = \frac{C}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) S)}{f(S)} e^{(1 - 1/\gamma(t))gn}dt
+C' = \frac{C}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn}dt
 $$
 
-where $D$ if the duration of infection in the human host. The corresponding R code is:
+where $D = 1/r$ if the mean duration of infection in the human host (where $r$ is the
+**human recovery rate** in
+[Smith & McKenzie (2004)](https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13)). The corresponding R code is:
 
 ```{r}
-C_effect_on_treated <- function(D, S, g, n) {
-  integrate(C_effect_at_t, 0, D, S, g, n) / D
+C_effect_on_treated <- function(D, L, g, n, nb = 1e6) {
+  trapezoid(function(x) C_effect_at_t(x, L, g, n), 0, D, nb) / D
 }
 ```
 
@@ -307,102 +338,216 @@ of infected people that are treated, the mean effect of malarone on the individu
 vectorial capacity is:
 
 $$
-C' = \left(\frac{\tau P}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) S)}{f(S)} e^{(1 - 1/\gamma(t))gn}dt + 1 - \tau P\right)C
+C' = \left(\frac{\tau P}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn}dt + 1 - \tau P\right)C
 $$
+or, equivalently:
+
+$$
+C' = \left(1 - \tau P\cdot\left(1 - \frac{1}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn}dt\right)\right)C
+$$
+
 
 and the corresponding R code is:
 
 ```{r}
-mean_C_effect <- function(D, S, g, n, P, tau) {
-  1 + tau * P * (C_effect_on_treated(D, S, g, n) - 1)
-}
-```
-
-```{r}
-mean_C_effect <- function(D, S, g, n, P, tau) {
-  1 - tau * P * (1 - C_effect_on_treated(D, S, g, n))
+mean_C_effect <- function(D, L, g, n, P, tau) {
+  1 - tau * P * (1 - C_effect_on_treated(D, L, g, n))
 }
 ```
 
 
 ## Numerical analysis
 
+In the numerical exploration below we assume a mosquito life expectancy $1/g$ of 14
+days and an EIP $n$ of 7 days. The malarone reducing effect on the individual vectorial
+capacity of a mosquito feeding on a person 100 hours after drug administration:
+
 ```{r}
-C_effect_at_t(t = 100, S = 6e4, g = 1 / (14 * 24), n = 7 * 24)
+(C_effect_at_t100 <- C_effect_at_t(t = 100, L = 6e4, g = 1 / (14 * 24), n = 7 * 24))
 ```
+
+The malarone reducing effect on the individual vectorial capacity of a mosquito as a
+function of the time post drug administration:
 
 ```{r}
 xs3 <- seq(0, 24 * 28, le = 2^10)
-plotl(xs3, C_effect_at_t(t = xs3, S = 6e4, g = 1 / (14 * 24), n = 7 * 24))
+plotl(xs3, C_effect_at_t(t = xs3, L = 6e4, g = 1 / (14 * 24), n = 7 * 24),
+      xlab = "time post drug administration (hours)",
+      ylab = "individual vectorial capacity reduction effect")
+abline(v = 100, col = 4)
+abline(h = C_effect_at_t100, col = 4)
 ```
+
+The expected malarone reducing effect on the individual vectorial capacity of a
+mosquito feeding on a person who took drug:
 
 ```{r}
-C_effect_on_treated(D = 14 * 24, S = 6e4, g = 1 / (14 * 24), n = 7 * 24)
+C_effect_on_treated(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)
+```
+
+The expected malarone reducing effect on the individual vectorial capacity of a
+mosquito feeding in a population with malaria prevalence of 10%, 90% of which are
+taking drug:
+
+```{r}
+mean_C_effect(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, P = .1, tau = .9)
+```
+
+Takes about 30":
+
+```{r eval = FALSE}
+tauP <- seq2(0, 1)
+mCeff <- map_dbl(tauP, mean_C_effect,
+                 D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, tau = 1)
+```
+
+```{r include = FALSE}
+tauP <- seq2(0, 1)
+if (file_exists("mCeff.rds")) {
+  mCeff <- readRDScache("mCeff.rds")
+} else {
+  mCeff <- map_dbl(tauP, mean_C_effect,
+                   D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, tau = 1)
+  saveRDScache(mCeff, "mCeff.rds")
+}
+```
+
+Which gives:
+
+```{r}
+plotl(tauP, mCeff, ylim = 0:1,
+      xlab = "prevalence of people who took the drug in the past 14 days",
+      ylab = "expected vectorial capacity reducing effect")
 ```
 
 
+## Epidemiological consequences
 
-
-
-
-
-## Basic reproduction ratio
-
-The **basic reproduction ratio** is the expected number of infected humans per infected
+Now that we have characterized the effect of malarone on the vectorial capacity in a
+context of a given malaria prevalence in the human population, let's derive the
+epidemiological consequences. In order to better characterize the epidemiological
+consequences of the effect of malarone in mosquitoes, we will here neglect the effect
+of malarone in humans (*i.e.* malarone is not affecting the human recovery rate
+$r = 1/D$). Following the formalism of
+[Smith & McKenzie (2004)](https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13),
+the **basic reproduction ratio** is the expected number of infected humans per infected
 human or, equivalently, the expected number of infected mosquitoes per infected
-mosquito:
+mosquito and can be expressed as:
 
 $$
-R_0 = C \cdot b \cdot  \frac{a}{r} \cdot m
+R_0 = C \cdot b \cdot D \cdot a \cdot m
 $$
 
-where $C$ is the above defined **individual vectorial capacity**, $b$ is the
-**transmission efficiency from mosquito to human**, $r$ is the **human recovery rate**,
-and $m$ is the **ratio of mosquitoes to humans**. Gathering everything gives:
+where $C$ is the **individual vectorial capacity** we have been considering so far, $b$
+is the **transmission efficiency from mosquito to human**, $D = 1 / r$ is the above
+mentioned **mean duration of human infection**, and $m$ is the
+**ratio of mosquitoes to humans**. This means that the reducing effect on the vectorial
+capacity $C$ that we characterized above can be transposed to a reducing effect on the
+basic reproduction ratio $R_0$:
 
 $$
-R_0 = \frac{ma^2 bc e^{-gn}}{rg}
-$$
+R_0'(P) = \rho(P) R_0
+$${#eq-R0}
 
-## Proportion of infected humans
-
-The proportion of infected humans at equilibrium can be expressed as a function of
-$R_0$:
+with
 
 $$
-\bar{X} = \frac{R_0 - 1}{R_0 + c S}
+\rho(P) = 1 - \tau P\cdot\left(1 - \frac{1}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn}dt\right)
 $$
-
-Gathering everything gives:
-
-$$
-\bar{X} = \frac{ma^2bce^{-gn} - rg}{ma^2bce^{-gn} + rac}
-$$
-
-## Adding the effects of malarone
-
-Effects of **transmission blocking activity** (TBA, **Figure 3**) and the extension of
-the **Extrinsic Incubation Period** (EIP, **Figure 5**) on the individual vectorial
-capacity:
+being the reduction factor on vectorial capacity derived above. In return, the
+proportion $P$ ($\bar{X}$ in
+[Smith & McKenzie (2004)](https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13))
+of infected humans at equilibrium can be expressed as a function of $R_0$:
 
 $$
-C = (\mbox{TBA}\cdot c) \cdot e^{-\left(\mbox{EIP}\cdot n\right)g}\frac{a}{g}
-$$
-Note that malarone has no effect on $a$ and $g$ (**Figure 7**). Effect of TBA, EIP and
-**transmission reducing activity** (TRA, **Figure 4**) on the basic reproduction ratio:
+P(R_0') = \frac{R_0' - 1}{R_0' + c S}
+$${#eq-prevalence}
 
-$$
-R_0 = \frac{ma^2 (\mbox{TRA}\cdot b)(\mbox{TBA}\cdot c) e^{-\left(\mbox{EIP}\cdot n\right)g}}{rg}
-$$
+Let's now look at the epidemiological equilibrium from @eq-R0 and @eq-prevalence. Here
+is a function that creates the $\rho(P)$ function for given values of the parameters
+$D = 1/r$, $L$, $g$, $n$ and $\tau$:
 
-Note that here we don't consider the potential effects of malarone on the recovery rate
-$r$ in humans and that we assume that malarone has no effect on the density $m$ of
-mosquitoes.
+```{r}
+make_rho <- function(D, L, g, n, tau) {
+  P <- seq2(0, 1)
+  mCeff <- map_dbl(P, mean_C_effect, D = D, L = L, g = g, n = n, tau = tau)
+  function(x, ...) approx(P, mCeff, x, ...)$y
+}
+```
 
-Effects of TBA, TRA and EIP on the proportion of infected humans:
+Let's make one example (takes about 30"):
 
-$$
-\bar{X} = \frac{ma^2(\mbox{TRA}\cdot b)(\mbox{TBA}\cdot c)e^{-\left(\mbox{EIP}\cdot n\right)g} - rg}{ma^2(\mbox{TRA}\cdot b)(\mbox{TBA}\cdot c)e^{-\left(\mbox{EIP}\cdot n\right)g} + ra(\mbox{TBA}\cdot c)}
-$$
+```{r eval = FALSE}
+rho1 <- make_rho(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, tau = .9)
+```
+
+```{r include = FALSE}
+if (file_exists("rho1.rds")) {
+  rho1 <- readRDScache("rho1.rds")
+} else {
+  rho1 <- make_rho(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, tau = .9)
+  saveRDScache(rho1, "rho1.rds")
+}
+```
+
+Once we have this `rho1()` function, we can use it in a recursion loop together with
+the inverse of @eq-prevalence:
+
+```{r}
+recursion <- function(R0o, cS, n, rho) {
+  R0 <- P <- numeric(n)
+  R0[1] <- R0o
+  for (i in 1:(n - 1)) {
+    P[i] <- (R0[i] - 1) / (R0[i] + cS)
+    R0[i + 1] <- R0o * rho(P[i])
+  }
+  P[n] <- (R0[n] - 1) / (R0[n] + cS)
+  output <- data.frame(R0 = R0, P = P)
+  attr(output, "parms") <- list(R0o = R0o, cS = cS, n = n, rho = rho)
+  output
+}
+```
+
+where `R0o` is the value of $R_0$ in absence of treatment in the population and `n` is
+the number of iterations of the recursion loop.
+
+```{r}
+dynamics1 <- recursion(R0o = 15, cS = 40, n = 1e3, rho = rho1)
+```
+
+The following function plots the recursion loop:
+
+```{r}
+plot_recursion <- function(x, max_prev = 1) {
+  prev_val <- seq2(0, max_prev)
+  parms <- attr(x, "parms")
+  with(parms, {
+    plotl(prev_val, rho(prev_val) * R0o, ylim = c(0, R0o),
+          xlab = "prevalence", ylab = "basic reproduction ratio R0")
+    lines2(prev_val, (1 + cS * prev_val) / (1 - prev_val))
+  })
+  nbrows <- nrow(x)
+  abline2(v = x$P[1])
+  abline2(v = x$P[nbrows])
+  abline2(h = x$R0[nbrows])
+  with(x, {
+    segments2(-1, R0[1], P[1], R0[1])
+    for (i in 1:(nbrows - 1)) {
+      segments2(P[i], R0[i], P[i], R0[i + 1])
+      segments2(P[i], R0[i + 1], P[i + 1], R0[i + 1])
+    }
+  })
+  with(parms, {
+    arrows2(0, R0o, 0, x$R0[nbrows])
+    arrows2(x$P[1], 0, x$P[nbrows], 0)
+  })
+}
+```
+
+Which gives:
+
+```{r}
+plot_recursion(dynamics1)
+```
 
 
