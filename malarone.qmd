@@ -86,10 +86,12 @@ trapezoid <- function(f, lower, upper, nb = 1e4) {
 ```
 
 
-## Vectorial capacity
+## Theoretical results
 
-From @smith_statics_2004, the **individual vectorial capacity** (*i.e.* the expected
-number of infectious bites from a single vector after feeding on an infectious host):
+Here we pull out the most relevant theoretical results from @smith_statics_2004. The
+**individual vectorial capacity** (noted $IC$ in @smith_statics_2004 but noted $C$
+here) is defined by @saul_cyclical_1990 as the expected number of infectious bites from
+a single vector after feeding on an infectious host and reads:
 
 $$
 C = c \cdot P_e \cdot S
@@ -115,6 +117,25 @@ $$
 C = c \cdot e^{-gn}\frac{a}{g}
 $$ {#eq-ind_vec_cap}
 
+The **basic reproduction ratio** is the expected number of infected humans per infected
+human or, equivalently, the expected number of infected mosquitoes per infected 
+mosquito and can be expressed as:
+
+$$
+R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
+$$
+
+where $C$ is the above-defined individual vectorial capacity, $b$ is the
+**transmission efficiency from mosquito to human**, $r$ is the
+**recovery rate of humans**, and $m$ is the **ratio of mosquitoes to humans**.
+
+Finally, the proportion $\bar{X}$ of infected humans at equilibrium can be expressed as
+a function of $R_0$:
+
+$$
+\bar{X} = \frac{R_0 - 1}{R_0 + c S}
+$${#eq-prevalence1}
+
 ## Experimental results
 
 The experimental results suggest that malarone
@@ -123,20 +144,31 @@ The experimental results suggest that malarone
 number of mosquitoes with sporozoites (with $\alpha$ shown on the $y$ axis of
 Figure 3B);
 2. decreases by the multiplicative factor $1 - \beta$ ($0 \leq \beta \leq 1$) the
-number of sporozoites in mosquitoes still harboring sporozoites (with $\beta$ shown on
+sporozoites load in mosquitoes still harboring sporozoites (with $\beta$ shown on
 the $y$ axis of Figure 4B);
 3. decreases by the multiplicative factor $1 - \gamma$ ($0 \leq \gamma \leq 1$) the
-size of oocysts (with $\gamma$ shown on the $y$ axis of Figure 5A), which can be
-translated into an increase of the EIP $n$ (see for example Figure 5B from
-@werling_steroid_2019;
+size of oocysts at 7 days post infection (with $\gamma$ shown on the $y$ axis of Figure
+5A);
 4. has no effect on the mosquito biting rate $a$ (Figure 7A);
 5. has no effect on the mosquito death rate $g$ (Figure 7B).
 
-Let's see below how we can integrate the first 3 effects into @eq-ind_vec_cap.
+Let's see below how we can integrate these 3 effects $\alpha$, $\beta$ and $\gamma$
+into the theoretical equations of the previous section.
 
-### Transmission-blocking activity on sporozoites
 
-A function that reads the sporozoites data for the treatment group:
+### TBA on sporozoites
+
+The transmission-blocking activity on sporozoites converts directly into a similar
+reduction of the mean vectorial capacity:
+
+$$
+(1 - \alpha(t))\cdot C
+$$
+
+where $C$ is the vectorial capacity in absence of malarone and $t$ is the time post
+drug administration. Below we generate the function $\alpha(t)$ from the experimental
+data of Figure 3B. First we need a function that reads experimental data for the
+treatment group:
 
 ```{r}
 make_reading_exp_data <- function() {
@@ -156,14 +188,7 @@ make_reading_exp_data <- function() {
 reading_exp_data <- make_reading_exp_data()
 ```
 
-Let's pull out the data from Figure 3B:
-
-```{r}
-sporozoitsTBA <- reading_exp_data("percentage_inhibition9.rds")
-```
-
-A function that converts a data frame on the effet of malarone on sporozoites into a
-function:
+We also need a function that converts such experimental data into a function:
 
 ```{r}
 data2function <- function(data, correction = t28_0) {
@@ -182,67 +207,63 @@ data2function <- function(data, correction = t28_0) {
 }
 ```
 
-When `correction = TRUE` the value at $t = 28$ days is forced to be equal to 0. Let's
-now create a function `alpha()` on percentage $\alpha(t)$ inhibition on sporozoite
+where `correction = TRUE` means that the value at $t = 28$ days is forced to be equal
+to $0$. Let's now pull out the data from Figure 3B:
+
+```{r}
+sporozoitsTBA <- reading_exp_data("percentage_inhibition9.rds")
+```
+
+and create a function `alpha()` of the percentage $\alpha(t)$ inhibition on sporozoite
 infection rate as a function of time $t$ post drug administration:
 
 ```{r}
 alpha <- data2function(sporozoitsTBA)
 ```
 
-A function that plots the experimental data on the effect of malarone on sporozoites:
+Let's now visualize this function. For that we first need a function that plots
+experimental data:
 
 ```{r}
-plot_effect_sporozoites <- function(data, ...) {
+plot_experimental_data <- function(data, ...) {
   with(data, plot2(jitter(time_hours), Inhibition,
                    xlab = "time post drug administration (hours)", ...))
   abline(h = 0)
 }
 ```
 
-This is what this function looks like:
+With this function `plot_experimental_data()` defined, this is what the $\alpha(t)$
+function coded in `alpha()` looks like together with the experimental data:
 
 ```{r}
-plot_effect_sporozoites(sporozoitsTBA, ylim = c(-1, 1),
-                        ylab = expression(paste("sporozoite TBA ", alpha)))
+plot_experimental_data(sporozoitsTBA, ylim = c(-1, 1),
+                       ylab = expression(paste("sporozoite TBA ", alpha)))
 xs <- seq2(0, 700)
 lines2(xs, alpha(xs))
 ```
 
 
-The effect on $C$ of the first phenomenon can simply be modelled as a multiplicative
-factor $\alpha$:
+### TRA on sporozoites
+
+The transmission-reducing activity on sporozoites reads
+
 $$
-C' = (1 - \alpha) C
+(1 - \beta(t))\cdot L
 $$
 
-### Transmission-reducing activity on sporozoites
+where $L$ is the sporozoite load in absence of malarone. Figure 2B from
+@aleshnick_experimental_2020 suggests a non-linear relationship between the sporozoite
+load and the transmission efficiency from mosquito to human. The effect of $\beta$ on
+$b$ is thus modelled as so:
 
-Let’s pull out the data from Figure 4B:
+$$
+\frac{f((1 - \beta(t))L)}{f(L)}b
+$$
 
-```{r}
-sporozoitsTRA <- reading_exp_data("percentage_inhibition13.rds")
-```
-
-Let's now create a function `beta()` on percentage $\beta(t)$ inhibition on
-sporozoite intensity as a function of time $t$ post drug administration:
-
-```{r}
-beta <- data2function(sporozoitsTRA)
-```
-
-This is what this function looks like:
-
-```{r}
-plot_effect_sporozoites(sporozoitsTRA, ylim = c(-.15, .15),
-                        ylab = expression(paste("sporozoite TRA ", beta)))
-lines2(xs, beta(xs))
-```
-
-In order to convert this sporozoite TRA into a vectorial capacity reduction, we need a
-function $f$ that converts a sporozoite load into an infection probability. Figure 2B
-from @aleshnick_experimental_2020 provides such a function that we transpose in the
-`f()` function below:
+where $b$ is the mosquito-to-human transmission efficiency in absence of malarone and 
+$f$ is the functional relationship between the sporozoite load and the
+mosquito-to-human transmission efficiency documented on Figure 2B of
+@aleshnick_experimental_2020 and that we reproduce here:
 
 ```{r}
 make_f <- function(x1, x2, y1, y2) {
@@ -257,7 +278,7 @@ make_f <- function(x1, x2, y1, y2) {
 f <- make_f(x1 = 21111, x2 = 1e5, y1 = .285, y2 = .344)
 ```
 
-And this is what it looks like:
+And this is what this function $f$ coded in `f()` looks like:
 
 ```{r}
 xs2 <- seq2(0, 1e5)
@@ -265,62 +286,86 @@ plotl(xs2, f(xs2),
       xlab = "salivary gland sporozoite load", ylab = "infection probability")
 ```
 
-In order to model the effect on $C$ of the second phenomenon we need a function $f$
-that relates the *Plasmodium* load to mosquito-to-human infectiousness:
+With this defined, let's now pull out the data from Figure 4B:
 
-$$
-C' = \frac{f((1 - \beta) L)}{f(L)}C
-$$
+```{r}
+sporozoitsTRA <- reading_exp_data("percentage_inhibition13.rds")
+```
 
-where $L$ is the sporozoite load in mosquitoes feeding on untreated people.
+and create a function `beta(t)` on the percentage  $\beta(t)$ inhibition on sporozoite
+intensity as a function of time $t$ post drug administration:
+
+```{r}
+beta <- data2function(sporozoitsTRA)
+```
+
+And let's visualize this function $\beta(t)$ together with the experimental data:
+
+```{r}
+plot_experimental_data(sporozoitsTRA, ylim = c(-.15, .15),
+                       ylab = expression(paste("sporozoite TRA ", beta)))
+lines2(xs, beta(xs))
+```
+
 
 ### Increase of the EIP
 
-Let’s pull out the data from Figure 5A:
+Malarone decreases by the multiplicative factor $1 - \gamma$ ($0 \leq \gamma \leq 1$)
+the size of oocysts at 7 dpi. Furthermore, figure 5B from @werling_steroid_2019
+suggests a linear relationship between the development time and the oocyst size, which
+means that the effect of $\gamma$ on $n$ can be modelled as so:
+
+$$
+\frac{1}{1 - \gamma(t)}n
+$$
+
+With this established, let's now pull out the data from Figure 5A:
 
 ```{r}
 oocysts_size <- reading_exp_data("percentage_inhibition_size2.rds")
 ```
 
-Let's now create a function `gamma()` on percentage $\gamma(t)$ decrease
-sporozoite intensity as a function of time $t$ post drug administration:
+and create a function `gamma()` on the percentage $\gamma(t)$ decrease in oocysts
+size as a function of time $t$ post drug administration:
 
 ```{r}
 gamma <- data2function(oocysts_size)
 ```
 
-This is what this function looks like:
+And let's visualize this function $\gamma(t)$ together with the experimental data:
 
 ```{r}
-plot_effect_sporozoites(oocysts_size, ylim = c(-.65, .65),
-                        ylab = expression(
-                          paste("sporozoite size reduction factor ", gamma)))
+plot_experimental_data(oocysts_size, ylim = c(-.65, .65),
+                       ylab = expression(paste(
+                         "sporozoite size reduction factor ", gamma)))
 lines2(xs, gamma(xs))
 ```
 
-Next, we need to convert a reduction in oocysts size at 7 dpi into an extension of the
-EIP. Figure 5B from @werling_steroid_2019 suggests a linear relationship between the
-development time and oocysts size, which means that the effect on $C$ of the third
-phenomenon can simply be modelled as
-
-$$
-C' = e^{(1 - 1/\gamma)gn} C
-$$
-
 ### Combining the 3 effects
 
-Combining the 3 above effects for a mosquito that feeds on a human host that started
-malarone $t$ units earlier, we have:
+The effects $\alpha(t)$ and $\gamma(t)$ modify the individual vectorial capacity $C$ as
+so:
 
 $$
-C' = (1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn} C
+(1 - \alpha(t))e^{-gn\gamma(t)/(1-\gamma(t))}C
 $$
 
-The corresponding R code is:
+where $C$ is the individual vectorial capacity in absence of malarone. The three
+effects $\alpha(t)$, $\beta(t)$ and $\gamma(t)$ modify the basic reproduction ratio
+$R_0$ as so:
+
+$$
+(1 - \alpha(t))e^{-gn\gamma(t)/(1-\gamma(t))}\frac{f((1 - \beta(t))L)}{f(L)}R_0
+$$
+where $L$ and $R_0$ are the mean sporozoite load and the basic reproduction ratio in
+absence of malarone. From here we will focus on the effect on $R_0$ and the effect at
+time $t$ post drug administration is coded by the following function:
 
 ```{r}
-C_effect_at_t <- function(t, L, g, n) {
-  (1 - alpha(t)) * f((1 - beta(t)) * L) * exp((1 - 1 / gamma(t)) * g * n) / f(L)
+effect_at_t <- function(t, L, g, n) {
+  (1 - alpha(t)) *
+    exp(- g * n * gamma(t) / (1 - gamma(t))) *
+    f((1 - beta(t)) * L) / f(L)
 }
 ```
 
@@ -328,101 +373,74 @@ The expected effect of malarone on a mosquito that feeds on a human who is infec
 has taken a treatment, not knowing when, would read:
 
 $$
-C' = \frac{C}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn}dt
+\frac{1}{D}\int_0^D(1 - \alpha(t))e^{-gn\gamma(t)/(1-\gamma(t))}\frac{f((1 - \beta(t))L)}{f(L)}dt\cdot R_0
 $$
 
-where $D = 1/r$ if the mean duration of infection in the human host (where $r$ is the
-**human recovery rate** in @smith_statics_2004. The corresponding R code is:
+where $D = 1/R$ is the mean duration of infection in the human host. The corresponding
+R code is:
 
 ```{r}
-C_effect_on_treated <- function(D, L, g, n, nb = 1e6) {
-  trapezoid(function(x) C_effect_at_t(x, L, g, n), 0, D, nb) / D
+effect_on_treated <- function(D, L, g, n, nb = 1e6) {
+  trapezoid(function(x) effect_at_t(x, L, g, n), 0, D, nb) / D
 }
 ```
 
 Finally, if $P$ is the prevalence in the human population and $\tau$ is the proportion
-of infected people that are treated, the mean effect of malarone on the individual
-vectorial capacity is:
+of infected people that are treated, the mean effect of malarone on the basic
+reproduction ratio then read:
 
 $$
-C' = \left(\frac{\tau P}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn}dt + 1 - \tau P\right)C
-$$
-or, equivalently:
+\left(1 - \tau \bar{X}\cdot\left(1 - \frac{1}{D}\int_0^D(1 - \alpha(t))e^{-gn\gamma(t)/(1-\gamma(t))}\frac{f((1 - \beta(t))L)}{f(L)}dt\right)\right)R_0
+$$ {#eq-ind_vec_cap}
 
-$$
-C' = \left(1 - \tau P\cdot\left(1 - \frac{1}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn}dt\right)\right)C
-$$
-
-
-and the corresponding R code is:
+with the corresponding R code:
 
 ```{r}
-mean_C_effect <- function(D, L, g, n, P, tau) {
-  1 - tau * P * (1 - C_effect_on_treated(D, L, g, n))
+mean_effect <- function(D, L, g, n, X, tau) {
+  1 - tau * X * (1 - effect_on_treated(D, L, g, n))
 }
 ```
-
 
 ## Numerical analysis
 
 In the numerical exploration below we assume a mosquito life expectancy $1/g$ of 14
-days and an EIP $n$ of 7 days. The malarone reducing effect on the individual vectorial
-capacity of a mosquito feeding on a person 100 hours after drug administration:
+days and an EIP $n$ of 7 days. The malarone reducing effect on $R_0$, and considering
+only mosquito feeding on people 100 hours after drug administration is:
 
 ```{r}
-(C_effect_at_t100 <- C_effect_at_t(t = 100, L = 6e4, g = 1 / (14 * 24), n = 7 * 24))
+(effect_at_t100 <- effect_at_t(t = 100, L = 6e4, g = 1 / (14 * 24), n = 7 * 24))
 ```
 
-The malarone reducing effect on the individual vectorial capacity of a mosquito as a
-function of the time post drug administration:
+The malarone reducing effect on $R_0$ considering mosquitoes feeding on people $t$
+hours after drug administration looks like:
 
 ```{r}
 xs3 <- seq(0, 24 * 28, le = 2^10)
-plotl(xs3, C_effect_at_t(t = xs3, L = 6e4, g = 1 / (14 * 24), n = 7 * 24),
+plotl(xs3, effect_at_t(t = xs3, L = 6e4, g = 1 / (14 * 24), n = 7 * 24),
       xlab = "time post drug administration (hours)",
       ylab = "individual vectorial capacity reduction effect")
 abline(v = 100, col = 4)
-abline(h = C_effect_at_t100, col = 4)
+abline(h = effect_at_t100, col = 4)
 ```
 
-The expected malarone reducing effect on the individual vectorial capacity of a
-mosquito feeding on a person who took drug:
+The expected malarone reducing effect on $R_0$ considering mosquitoes feeding on people
+treated by malarone (but not knowing when) is (takes 1.5"):
 
 ```{r}
-C_effect_on_treated(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)
+effect_on_treated(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)
 ```
 
-The expected malarone reducing effect on the individual vectorial capacity of a
-mosquito feeding in a population with malaria prevalence of 10%, 90% of which are
-taking drug:
+The expected malarone reducing effect on $R_0$ considering mosquitoes feeding in a
+population with malaria prevalence of 10%, 90% of which are taking drug is:
 
 ```{r}
-mean_C_effect(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, P = .1, tau = .9)
+mean_effect(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, X = .1, tau = .9)
 ```
 
-Takes about 30":
-
-```{r eval = FALSE}
+```{r}
 tauP <- seq2(0, 1)
-mCeff <- map_dbl(tauP, mean_C_effect,
-                 D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, tau = 1)
-```
-
-```{r include = FALSE}
-tauP <- seq2(0, 1)
-if (file_exists("mCeff.rds")) {
-  mCeff <- readRDScache("mCeff.rds")
-} else {
-  mCeff <- map_dbl(tauP, mean_C_effect,
-                   D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, tau = 1)
-  saveRDScache(mCeff, "mCeff.rds")
-}
-```
-
-Which gives:
-
-```{r}
-plotl(tauP, mCeff, ylim = 0:1,
+ef <- 1 - tauP * effect_on_treated(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)
+plotl(tauP, ef, ylim = 0:1,
       xlab = "prevalence of people who took the drug in the past 14 days",
       ylab = "expected vectorial capacity reducing effect")
 ```
@@ -432,67 +450,49 @@ plotl(tauP, mCeff, ylim = 0:1,
 
 Now that we have characterized the effect of malarone on the vectorial capacity in a
 context of a given malaria prevalence in the human population, let's derive the
-epidemiological consequences. In order to better characterize the epidemiological
-consequences of the effect of malarone in mosquitoes, we will here neglect the effect
-of malarone in humans (*i.e.* malarone is not affecting the human recovery rate
-$r = 1/D$). Following the formalism of @smith_statics_2004, the
-**basic reproduction ratio** is the expected number of infected humans per infected
-human or, equivalently, the expected number of infected mosquitoes per infected
-mosquito and can be expressed as:
+consequences at the epidemiological equilibrium. In order to better characterize the
+epidemiological consequences of the effect of malarone in mosquitoes, we will here
+neglect the effect of malarone in humans (*i.e.* malarone is not affecting the human
+recovery rate $r = 1/D$).
+
+Let's call $\rho$ the reduction of $R_0$. From @eq-ind_vec_cap we can see that this
+reduction naturally depends on the prevalence $\bar{X}$ in the human population:
 
 $$
-R_0 = C \cdot b \cdot D \cdot a \cdot m
+\rho(\bar{X}) = \left(1 - \tau \bar{X}\cdot\left(1 - \frac{1}{D}\int_0^D(1 - \alpha(t))e^{-gn\gamma(t)/(1-\gamma(t))}\frac{f((1 - \beta(t))L)}{f(L)}dt\right)\right)R_0
 $$
 
-where $C$ is the **individual vectorial capacity** we have been considering so far, $b$
-is the **transmission efficiency from mosquito to human**, $D = 1 / r$ is the above
-mentioned **mean duration of human infection**, and $m$ is the
-**ratio of mosquitoes to humans**. This means that the reducing effect on the vectorial
-capacity $C$ that we characterized above can be transposed to a reducing effect on the
-basic reproduction ratio $R_0$:
+The modified value of $R_0'$ of $R_0$ thus also depends on the prevalence $\bar{X}$ in
+the human population:
 
 $$
-R_0'(P) = \rho(P) R_0
+R_0'(\bar{X}) = \rho(\bar{X}) R_0
 $${#eq-R0}
 
-with
-
-$$
-\rho(P) = 1 - \tau P\cdot\left(1 - \frac{1}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn}dt\right)
-$$
-being the reduction factor on vectorial capacity derived above. In return, the
-proportion $P$ ($\bar{X}$ in @smith_statics_2004 of infected humans at equilibrium can
-be expressed as a function of $R_0$:
+Furthermore, according to @eq-prevalence1, a change in $R_0$ will in turn induce a
+modification of the prevalence $\bar{X}$ in the human population:
 
 $$
 P(R_0') = \frac{R_0' - 1}{R_0' + c S}
 $${#eq-prevalence}
 
-Let's now look at the epidemiological equilibrium from @eq-R0 and @eq-prevalence. Here
-is a function that creates the $\rho(P)$ function for given values of the parameters
-$D = 1/r$, $L$, $g$, $n$ and $\tau$:
+The equilibrium of @eq-R0 and @eq-prevalence can be found by reiterating this process
+a large number of times. Here is a function that creates the $\rho(P)$ function for
+given values of the parameters $D = 1/r$, $L$, $g$, $n$ and $\tau$:
 
 ```{r}
 make_rho <- function(D, L, g, n, tau) {
-  P <- seq2(0, 1)
-  mCeff <- map_dbl(P, mean_C_effect, D = D, L = L, g = g, n = n, tau = tau)
-  function(x, ...) approx(P, mCeff, x, ...)$y
+  X <- seq2(0, 1)
+  tauX <- tau * X
+  ef <- 1 - tauX * effect_on_treated(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)
+  function(x, ...) approx(X, ef, x, ...)$y
 }
 ```
 
-Let's make one example (takes about 30"):
+Let's make one example:
 
-```{r eval = FALSE}
+```{r}
 rho1 <- make_rho(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, tau = .9)
-```
-
-```{r include = FALSE}
-if (file_exists("rho1.rds")) {
-  rho1 <- readRDScache("rho1.rds")
-} else {
-  rho1 <- make_rho(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, tau = .9)
-  saveRDScache(rho1, "rho1.rds")
-}
 ```
 
 Once we have this `rho1()` function, we can use it in a recursion loop together with
