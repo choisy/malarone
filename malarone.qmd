@@ -1,13 +1,17 @@
 ---
 title: "Some epidemiological effects of malarone"
 number-sections: true
-format: html
+format:
+  html:
+    toc: true
 editor: source
 editor_options: 
   chunk_output_type: console
+bibliography: references.bib
+csl: the-american-naturalist.csl
 ---
 
-In this analysis we use the formalism of [Smith & McKenzie (2004)](https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13).
+In this analysis we use the formalism of @smith_statics_2004.
 
 ## Parameters
 
@@ -47,7 +51,7 @@ to_inst <- required_packages[! required_packages %in% installed.packages()[,"Pac
 if (length(to_inst)) install.packages(to_inst)
 ```
 
-Loading some packages for interactive use:
+Loading some for interactive use:
 
 ```{r message = FALSE}
 library(dplyr)
@@ -82,11 +86,10 @@ trapezoid <- function(f, lower, upper, nb = 1e4) {
 ```
 
 
-## Individual vectorial capacity
+## Vectorial capacity
 
-From [Smith & McKenzie (2004)](https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13),
-the **individual vectorial capacity** (*i.e.* the expected number of infectious bites
-from a single vector after feeding on an infectious host):
+From @smith_statics_2004, the **individual vectorial capacity** (*i.e.* the expected
+number of infectious bites from a single vector after feeding on an infectious host):
 
 $$
 C = c \cdot P_e \cdot S
@@ -112,19 +115,24 @@ $$
 C = c \cdot e^{-gn}\frac{a}{g}
 $$ {#eq-ind_vec_cap}
 
-## Experimental results on the effects of malarone
+## Experimental results
 
 The experimental results suggest that malarone
 
-1. decreases by a multiplicative factor $(1 - \alpha)$ ($0 \leq \alpha \leq 1$) the
-number of mosquitoes with *Plasmodium* (Figure 3);
-2. decreases by the multiplicative factor $\beta$ ($0 \leq \beta \leq 1$) the number of
-*Plasmodium* in mosquitoes still harboring *Plasmodium* (Figure 4);
-3. increases the EIP $n$ by a factor $\gamma$ (Figure 5);
-4. has no effect on the mosquito biting rate $a$ (Figure 7);
-5. has no effect on the mosquito death rate $g$ (Figure 7).
+1. decreases by the multiplicative factor $1 - \alpha$ ($0 \leq \alpha \leq 1$) the
+number of mosquitoes with sporozoites (with $\alpha$ shown on the $y$ axis of
+Figure 3B);
+2. decreases by the multiplicative factor $1 - \beta$ ($0 \leq \beta \leq 1$) the
+number of sporozoites in mosquitoes still harboring sporozoites (with $\beta$ shown on
+the $y$ axis of Figure 4B);
+3. decreases by the multiplicative factor $1 - \gamma$ ($0 \leq \gamma \leq 1$) the
+size of oocysts (with $\gamma$ shown on the $y$ axis of Figure 5A), which can be
+translated into an increase of the EIP $n$ (see for example Figure 5B from
+@werling_steroid_2019;
+4. has no effect on the mosquito biting rate $a$ (Figure 7A);
+5. has no effect on the mosquito death rate $g$ (Figure 7B).
 
-Let's see how we can integrate effects 1-3 into @eq-ind_vec_cap.
+Let's see below how we can integrate the first 3 effects into @eq-ind_vec_cap.
 
 ### Transmission-blocking activity on sporozoites
 
@@ -233,8 +241,8 @@ lines2(xs, beta(xs))
 
 In order to convert this sporozoite TRA into a vectorial capacity reduction, we need a
 function $f$ that converts a sporozoite load into an infection probability. Figure 2B
-from [Aleshnick *et al.* (2020)](https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1008181)
-provides such a function that we transpose in the `f()` function below:
+from @aleshnick_experimental_2020 provides such a function that we transpose in the
+`f()` function below:
 
 ```{r}
 make_f <- function(x1, x2, y1, y2) {
@@ -291,9 +299,9 @@ lines2(xs, gamma(xs))
 ```
 
 Next, we need to convert a reduction in oocysts size at 7 dpi into an extension of the
-EIP. Figure 5B from [Werling *et al.* (2019)](https://www.cell.com/cell/fulltext/S0092-8674(19)30219-3?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS0092867419302193%3Fshowall%3Dtrue)
-suggests a linear relationship between the development time and oocysts size, which
-means that the effect on $C$ of the third phenomenon can simply be modelled as
+EIP. Figure 5B from @werling_steroid_2019 suggests a linear relationship between the
+development time and oocysts size, which means that the effect on $C$ of the third
+phenomenon can simply be modelled as
 
 $$
 C' = e^{(1 - 1/\gamma)gn} C
@@ -324,8 +332,7 @@ C' = \frac{C}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 -
 $$
 
 where $D = 1/r$ if the mean duration of infection in the human host (where $r$ is the
-**human recovery rate** in
-[Smith & McKenzie (2004)](https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13)). The corresponding R code is:
+**human recovery rate** in @smith_statics_2004. The corresponding R code is:
 
 ```{r}
 C_effect_on_treated <- function(D, L, g, n, nb = 1e6) {
@@ -421,16 +428,15 @@ plotl(tauP, mCeff, ylim = 0:1,
 ```
 
 
-## Epidemiological consequences
+## Epidemiology
 
 Now that we have characterized the effect of malarone on the vectorial capacity in a
 context of a given malaria prevalence in the human population, let's derive the
 epidemiological consequences. In order to better characterize the epidemiological
 consequences of the effect of malarone in mosquitoes, we will here neglect the effect
 of malarone in humans (*i.e.* malarone is not affecting the human recovery rate
-$r = 1/D$). Following the formalism of
-[Smith & McKenzie (2004)](https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13),
-the **basic reproduction ratio** is the expected number of infected humans per infected
+$r = 1/D$). Following the formalism of @smith_statics_2004, the
+**basic reproduction ratio** is the expected number of infected humans per infected
 human or, equivalently, the expected number of infected mosquitoes per infected
 mosquito and can be expressed as:
 
@@ -455,9 +461,8 @@ $$
 \rho(P) = 1 - \tau P\cdot\left(1 - \frac{1}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn}dt\right)
 $$
 being the reduction factor on vectorial capacity derived above. In return, the
-proportion $P$ ($\bar{X}$ in
-[Smith & McKenzie (2004)](https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13))
-of infected humans at equilibrium can be expressed as a function of $R_0$:
+proportion $P$ ($\bar{X}$ in @smith_statics_2004 of infected humans at equilibrium can
+be expressed as a function of $R_0$:
 
 $$
 P(R_0') = \frac{R_0' - 1}{R_0' + c S}

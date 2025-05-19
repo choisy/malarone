@@ -54,7 +54,27 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="malarone_files/libs/clipboard/clipboard.min.js"></script>
@@ -100,10 +120,30 @@ window.Quarto = {
 
 </head>
 
-<body class="fullcontent">
+<body>
 
 <div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#parameters" id="toc-parameters" class="nav-link active" data-scroll-target="#parameters"><span class="header-section-number">1</span> Parameters</a></li>
+  <li><a href="#packages" id="toc-packages" class="nav-link" data-scroll-target="#packages"><span class="header-section-number">2</span> Packages</a></li>
+  <li><a href="#functions" id="toc-functions" class="nav-link" data-scroll-target="#functions"><span class="header-section-number">3</span> Functions</a></li>
+  <li><a href="#vectorial-capacity" id="toc-vectorial-capacity" class="nav-link" data-scroll-target="#vectorial-capacity"><span class="header-section-number">4</span> Vectorial capacity</a></li>
+  <li><a href="#experimental-results" id="toc-experimental-results" class="nav-link" data-scroll-target="#experimental-results"><span class="header-section-number">5</span> Experimental results</a>
+  <ul class="collapse">
+  <li><a href="#transmission-blocking-activity-on-sporozoites" id="toc-transmission-blocking-activity-on-sporozoites" class="nav-link" data-scroll-target="#transmission-blocking-activity-on-sporozoites"><span class="header-section-number">5.1</span> Transmission-blocking activity on sporozoites</a></li>
+  <li><a href="#transmission-reducing-activity-on-sporozoites" id="toc-transmission-reducing-activity-on-sporozoites" class="nav-link" data-scroll-target="#transmission-reducing-activity-on-sporozoites"><span class="header-section-number">5.2</span> Transmission-reducing activity on sporozoites</a></li>
+  <li><a href="#increase-of-the-eip" id="toc-increase-of-the-eip" class="nav-link" data-scroll-target="#increase-of-the-eip"><span class="header-section-number">5.3</span> Increase of the EIP</a></li>
+  <li><a href="#combining-the-3-effects" id="toc-combining-the-3-effects" class="nav-link" data-scroll-target="#combining-the-3-effects"><span class="header-section-number">5.4</span> Combining the 3 effects</a></li>
+  </ul></li>
+  <li><a href="#numerical-analysis" id="toc-numerical-analysis" class="nav-link" data-scroll-target="#numerical-analysis"><span class="header-section-number">6</span> Numerical analysis</a></li>
+  <li><a href="#epidemiology" id="toc-epidemiology" class="nav-link" data-scroll-target="#epidemiology"><span class="header-section-number">7</span> Epidemiology</a></li>
+  </ul>
+</nav>
+</div>
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -125,7 +165,7 @@ window.Quarto = {
 </header>
 
 
-<p>In this analysis we use the formalism of <a href="https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13">Smith &amp; McKenzie (2004)</a>.</p>
+<p>In this analysis we use the formalism of <span class="citation" data-cites="smith_statics_2004">Smith and McKenzie (<a href="#ref-smith_statics_2004" role="doc-biblioref">2004</a>)</span>.</p>
 <section id="parameters" class="level2" data-number="1">
 <h2 data-number="1" class="anchored" data-anchor-id="parameters"><span class="header-section-number">1</span> Parameters</h2>
 <p>The path to the data:</p>
@@ -150,7 +190,7 @@ window.Quarto = {
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>to_inst <span class="ot">&lt;-</span> required_packages[<span class="sc">!</span> required_packages <span class="sc">%in%</span> <span class="fu">installed.packages</span>()[,<span class="st">"Package"</span>]]</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">length</span>(to_inst)) <span class="fu">install.packages</span>(to_inst)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Loading some packages for interactive use:</p>
+<p>Loading some for interactive use:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(purrr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -179,9 +219,9 @@ window.Quarto = {
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="individual-vectorial-capacity" class="level2" data-number="4">
-<h2 data-number="4" class="anchored" data-anchor-id="individual-vectorial-capacity"><span class="header-section-number">4</span> Individual vectorial capacity</h2>
-<p>From <a href="https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13">Smith &amp; McKenzie (2004)</a>, the <strong>individual vectorial capacity</strong> (<em>i.e.</em> the expected number of infectious bites from a single vector after feeding on an infectious host):</p>
+<section id="vectorial-capacity" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="vectorial-capacity"><span class="header-section-number">4</span> Vectorial capacity</h2>
+<p>From <span class="citation" data-cites="smith_statics_2004">Smith and McKenzie (<a href="#ref-smith_statics_2004" role="doc-biblioref">2004</a>)</span>, the <strong>individual vectorial capacity</strong> (<em>i.e.</em> the expected number of infectious bites from a single vector after feeding on an infectious host):</p>
 <p><span class="math display">\[
 C = c \cdot P_e \cdot S
 \]</span></p>
@@ -196,17 +236,17 @@ S = \frac{a}{g}
 C = c \cdot e^{-gn}\frac{a}{g}
 \tag{1}\]</span></span></p>
 </section>
-<section id="experimental-results-on-the-effects-of-malarone" class="level2" data-number="5">
-<h2 data-number="5" class="anchored" data-anchor-id="experimental-results-on-the-effects-of-malarone"><span class="header-section-number">5</span> Experimental results on the effects of malarone</h2>
+<section id="experimental-results" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="experimental-results"><span class="header-section-number">5</span> Experimental results</h2>
 <p>The experimental results suggest that malarone</p>
 <ol type="1">
-<li>decreases by a multiplicative factor <span class="math inline">\((1 - \alpha)\)</span> (<span class="math inline">\(0 \leq \alpha \leq 1\)</span>) the number of mosquitoes with <em>Plasmodium</em> (Figure 3);</li>
-<li>decreases by the multiplicative factor <span class="math inline">\(\beta\)</span> (<span class="math inline">\(0 \leq \beta \leq 1\)</span>) the number of <em>Plasmodium</em> in mosquitoes still harboring <em>Plasmodium</em> (Figure 4);</li>
-<li>increases the EIP <span class="math inline">\(n\)</span> by a factor <span class="math inline">\(\gamma\)</span> (Figure 5);</li>
-<li>has no effect on the mosquito biting rate <span class="math inline">\(a\)</span> (Figure 7);</li>
-<li>has no effect on the mosquito death rate <span class="math inline">\(g\)</span> (Figure 7).</li>
+<li>decreases by the multiplicative factor <span class="math inline">\(1 - \alpha\)</span> (<span class="math inline">\(0 \leq \alpha \leq 1\)</span>) the number of mosquitoes with sporozoites (with <span class="math inline">\(\alpha\)</span> shown on the <span class="math inline">\(y\)</span> axis of Figure 3B);</li>
+<li>decreases by the multiplicative factor <span class="math inline">\(1 - \beta\)</span> (<span class="math inline">\(0 \leq \beta \leq 1\)</span>) the number of sporozoites in mosquitoes still harboring sporozoites (with <span class="math inline">\(\beta\)</span> shown on the <span class="math inline">\(y\)</span> axis of Figure 4B);</li>
+<li>decreases by the multiplicative factor <span class="math inline">\(1 - \gamma\)</span> (<span class="math inline">\(0 \leq \gamma \leq 1\)</span>) the size of oocysts (with <span class="math inline">\(\gamma\)</span> shown on the <span class="math inline">\(y\)</span> axis of Figure 5A), which can be translated into an increase of the EIP <span class="math inline">\(n\)</span> (see for example Figure 5B from <span class="citation" data-cites="werling_steroid_2019">Werling et al. (<a href="#ref-werling_steroid_2019" role="doc-biblioref">2019</a>)</span>;</li>
+<li>has no effect on the mosquito biting rate <span class="math inline">\(a\)</span> (Figure 7A);</li>
+<li>has no effect on the mosquito death rate <span class="math inline">\(g\)</span> (Figure 7B).</li>
 </ol>
-<p>Let’s see how we can integrate effects 1-3 into <a href="#eq-ind_vec_cap" class="quarto-xref">Equation&nbsp;1</a>.</p>
+<p>Let’s see below how we can integrate the first 3 effects into <a href="#eq-ind_vec_cap" class="quarto-xref">Equation&nbsp;1</a>.</p>
 <section id="transmission-blocking-activity-on-sporozoites" class="level3" data-number="5.1">
 <h3 data-number="5.1" class="anchored" data-anchor-id="transmission-blocking-activity-on-sporozoites"><span class="header-section-number">5.1</span> Transmission-blocking activity on sporozoites</h3>
 <p>A function that reads the sporozoites data for the treatment group:</p>
@@ -301,7 +341,7 @@ C' = (1 - \alpha) C
 </div>
 </div>
 </div>
-<p>In order to convert this sporozoite TRA into a vectorial capacity reduction, we need a function <span class="math inline">\(f\)</span> that converts a sporozoite load into an infection probability. Figure 2B from <a href="https://journals.plos.org/plospathogens/article?id=10.1371/journal.ppat.1008181">Aleshnick <em>et al.</em> (2020)</a> provides such a function that we transpose in the <code>f()</code> function below:</p>
+<p>In order to convert this sporozoite TRA into a vectorial capacity reduction, we need a function <span class="math inline">\(f\)</span> that converts a sporozoite load into an infection probability. Figure 2B from <span class="citation" data-cites="aleshnick_experimental_2020">Aleshnick et al. (<a href="#ref-aleshnick_experimental_2020" role="doc-biblioref">2020</a>)</span> provides such a function that we transpose in the <code>f()</code> function below:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>make_f <span class="ot">&lt;-</span> <span class="cf">function</span>(x1, x2, y1, y2) {</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">function</span>(x) {</span>
@@ -357,7 +397,7 @@ C' = \frac{f((1 - \beta) L)}{f(L)}C
 </div>
 </div>
 </div>
-<p>Next, we need to convert a reduction in oocysts size at 7 dpi into an extension of the EIP. Figure 5B from <a href="https://www.cell.com/cell/fulltext/S0092-8674(19)30219-3?_returnURL=https%3A%2F%2Flinkinghub.elsevier.com%2Fretrieve%2Fpii%2FS0092867419302193%3Fshowall%3Dtrue">Werling <em>et al.</em> (2019)</a> suggests a linear relationship between the development time and oocysts size, which means that the effect on <span class="math inline">\(C\)</span> of the third phenomenon can simply be modelled as</p>
+<p>Next, we need to convert a reduction in oocysts size at 7 dpi into an extension of the EIP. Figure 5B from <span class="citation" data-cites="werling_steroid_2019">Werling et al. (<a href="#ref-werling_steroid_2019" role="doc-biblioref">2019</a>)</span> suggests a linear relationship between the development time and oocysts size, which means that the effect on <span class="math inline">\(C\)</span> of the third phenomenon can simply be modelled as</p>
 <p><span class="math display">\[
 C' = e^{(1 - 1/\gamma)gn} C
 \]</span></p>
@@ -378,7 +418,7 @@ C' = (1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn} C
 <p><span class="math display">\[
 C' = \frac{C}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn}dt
 \]</span></p>
-<p>where <span class="math inline">\(D = 1/r\)</span> if the mean duration of infection in the human host (where <span class="math inline">\(r\)</span> is the <strong>human recovery rate</strong> in <a href="https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13">Smith &amp; McKenzie (2004)</a>). The corresponding R code is:</p>
+<p>where <span class="math inline">\(D = 1/r\)</span> if the mean duration of infection in the human host (where <span class="math inline">\(r\)</span> is the <strong>human recovery rate</strong> in <span class="citation" data-cites="smith_statics_2004">Smith and McKenzie (<a href="#ref-smith_statics_2004" role="doc-biblioref">2004</a>)</span>. The corresponding R code is:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>C_effect_on_treated <span class="ot">&lt;-</span> <span class="cf">function</span>(D, L, g, n, <span class="at">nb =</span> <span class="fl">1e6</span>) {</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">trapezoid</span>(<span class="cf">function</span>(x) <span class="fu">C_effect_at_t</span>(x, L, g, n), <span class="dv">0</span>, D, nb) <span class="sc">/</span> D</span>
@@ -458,9 +498,9 @@ C' = \left(1 - \tau P\cdot\left(1 - \frac{1}{D}\int_0^D(1 - \alpha(t)) \frac{f((
 </div>
 </div>
 </section>
-<section id="epidemiological-consequences" class="level2" data-number="7">
-<h2 data-number="7" class="anchored" data-anchor-id="epidemiological-consequences"><span class="header-section-number">7</span> Epidemiological consequences</h2>
-<p>Now that we have characterized the effect of malarone on the vectorial capacity in a context of a given malaria prevalence in the human population, let’s derive the epidemiological consequences. In order to better characterize the epidemiological consequences of the effect of malarone in mosquitoes, we will here neglect the effect of malarone in humans (<em>i.e.</em> malarone is not affecting the human recovery rate <span class="math inline">\(r = 1/D\)</span>). Following the formalism of <a href="https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13">Smith &amp; McKenzie (2004)</a>, the <strong>basic reproduction ratio</strong> is the expected number of infected humans per infected human or, equivalently, the expected number of infected mosquitoes per infected mosquito and can be expressed as:</p>
+<section id="epidemiology" class="level2" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="epidemiology"><span class="header-section-number">7</span> Epidemiology</h2>
+<p>Now that we have characterized the effect of malarone on the vectorial capacity in a context of a given malaria prevalence in the human population, let’s derive the epidemiological consequences. In order to better characterize the epidemiological consequences of the effect of malarone in mosquitoes, we will here neglect the effect of malarone in humans (<em>i.e.</em> malarone is not affecting the human recovery rate <span class="math inline">\(r = 1/D\)</span>). Following the formalism of <span class="citation" data-cites="smith_statics_2004">Smith and McKenzie (<a href="#ref-smith_statics_2004" role="doc-biblioref">2004</a>)</span>, the <strong>basic reproduction ratio</strong> is the expected number of infected humans per infected human or, equivalently, the expected number of infected mosquitoes per infected mosquito and can be expressed as:</p>
 <p><span class="math display">\[
 R_0 = C \cdot b \cdot D \cdot a \cdot m
 \]</span></p>
@@ -471,7 +511,7 @@ R_0'(P) = \rho(P) R_0
 <p>with</p>
 <p><span class="math display">\[
 \rho(P) = 1 - \tau P\cdot\left(1 - \frac{1}{D}\int_0^D(1 - \alpha(t)) \frac{f((1 - \beta(t)) L)}{f(L)} e^{(1 - 1/\gamma(t))gn}dt\right)
-\]</span> being the reduction factor on vectorial capacity derived above. In return, the proportion <span class="math inline">\(P\)</span> (<span class="math inline">\(\bar{X}\)</span> in <a href="https://malariajournal.biomedcentral.com/articles/10.1186/1475-2875-3-13">Smith &amp; McKenzie (2004)</a>) of infected humans at equilibrium can be expressed as a function of <span class="math inline">\(R_0\)</span>:</p>
+\]</span> being the reduction factor on vectorial capacity derived above. In return, the proportion <span class="math inline">\(P\)</span> (<span class="math inline">\(\bar{X}\)</span> in <span class="citation" data-cites="smith_statics_2004">Smith and McKenzie (<a href="#ref-smith_statics_2004" role="doc-biblioref">2004</a>)</span> of infected humans at equilibrium can be expressed as a function of <span class="math inline">\(R_0\)</span>:</p>
 <p><span id="eq-prevalence"><span class="math display">\[
 P(R_0') = \frac{R_0' - 1}{R_0' + c S}
 \tag{3}\]</span></span></p>
@@ -544,9 +584,20 @@ P(R_0') = \frac{R_0' - 1}{R_0' + c S}
 </div>
 </div>
 </div>
+
 </section>
 
-</main>
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body" data-entry-spacing="0" role="list">
+<div id="ref-aleshnick_experimental_2020" class="csl-entry" role="listitem">
+Aleshnick, M., V. V. Ganusov, G. Nasir, G. Yenokyan, and P. Sinnis. 2020. <a href="https://doi.org/10.1371/journal.ppat.1008181">Experimental determination of the force of malaria infection reveals a non-linear relationship to mosquito sporozoite loads</a>. PLoS Pathog 16:e1008181.
+</div>
+<div id="ref-smith_statics_2004" class="csl-entry" role="listitem">
+Smith, D. L., and E. F. McKenzie. 2004. <a href="https://doi.org/10.1186/1475-2875-3-13">Statics and dynamics of malaria infection in <em><span>A</span>nopheles</em> mosquitoes</a>. Malar J 3:13.
+</div>
+<div id="ref-werling_steroid_2019" class="csl-entry" role="listitem">
+Werling, K., W. R. Shaw, M. A. Itoe, K. A. Westervelt, P. Marcenac, D. G. Paton, D. Peng, et al. 2019. <a href="https://doi.org/10.1016/j.cell.2019.02.036">Steroid hormone function controls non-competitive <em><span>P</span>lasmodium</em> development in <em><span>A</span>nopheles</em></a>. Cell 177:315–325.e14.
+</div>
+</div></section></div></main>
 <!-- /main column -->
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
