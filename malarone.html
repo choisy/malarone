@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Some epidemiological effects of malarone</title>
+<title>Mosquito-mediated epidemiological effects of malarone</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -148,7 +148,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Some epidemiological effects of malarone</h1>
+<h1 class="title">Mosquito-mediated epidemiological effects of malarone</h1>
 </div>
 
 
@@ -174,7 +174,7 @@ window.Quarto = {
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"OneDrive-OxfordUniversityClinicalResearchUnit/"</span>,</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"GitHub/choisy/malarone/"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Whether or not to force the effects to be equal to 0 at <span class="math inline">\(t = 28\)</span> days (in practice it does not change things much anyway):</p>
+<p>Whether or not to force the effects to be equal to <span class="math inline">\(0\)</span> at <span class="math inline">\(t = 28\)</span> days (in practice it does not change things much anyway):</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>t28_0 <span class="ot">&lt;-</span> <span class="cn">TRUE</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
@@ -185,7 +185,7 @@ window.Quarto = {
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>required_packages <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"readr"</span>, <span class="st">"readxl"</span>, <span class="st">"dplyr"</span>, <span class="st">"purrr"</span>, <span class="st">"stringr"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Installing those that are not installed yet:</p>
+<p>Installing those that are not installed:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>to_inst <span class="ot">&lt;-</span> required_packages[<span class="sc">!</span> required_packages <span class="sc">%in%</span> <span class="fu">installed.packages</span>()[,<span class="st">"Package"</span>]]</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">length</span>(to_inst)) <span class="fu">install.packages</span>(to_inst)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -221,7 +221,8 @@ window.Quarto = {
 </section>
 <section id="theoretical-results" class="level2" data-number="4">
 <h2 data-number="4" class="anchored" data-anchor-id="theoretical-results"><span class="header-section-number">4</span> Theoretical results</h2>
-<p>Here we pull out the most relevant theoretical results from <span class="citation" data-cites="smith_statics_2004">Smith and McKenzie (<a href="#ref-smith_statics_2004" role="doc-biblioref">2004</a>)</span>. The <strong>individual vectorial capacity</strong> (noted <span class="math inline">\(IC\)</span> in <span class="citation" data-cites="smith_statics_2004">Smith and McKenzie (<a href="#ref-smith_statics_2004" role="doc-biblioref">2004</a>)</span> but noted <span class="math inline">\(C\)</span> here) is defined by <span class="citation" data-cites="saul_cyclical_1990">Saul et al. (<a href="#ref-saul_cyclical_1990" role="doc-biblioref">1990</a>)</span> as the expected number of infectious bites from a single vector after feeding on an infectious host and reads:</p>
+<p>In this section we pull out the most relevant theoretical results from <span class="citation" data-cites="smith_statics_2004">Smith and McKenzie (<a href="#ref-smith_statics_2004" role="doc-biblioref">2004</a>)</span>.</p>
+<p>The <strong>individual vectorial capacity</strong> (noted <span class="math inline">\(IC\)</span> in <span class="citation" data-cites="smith_statics_2004">Smith and McKenzie (<a href="#ref-smith_statics_2004" role="doc-biblioref">2004</a>)</span> but noted <span class="math inline">\(C\)</span> here) is defined by <span class="citation" data-cites="saul_cyclical_1990">Saul et al. (<a href="#ref-saul_cyclical_1990" role="doc-biblioref">1990</a>)</span> as the expected number of infectious bites from a single vector after feeding on an infectious host and reads:</p>
 <p><span class="math display">\[
 C = c \cdot P_e \cdot S
 \]</span></p>
@@ -231,10 +232,11 @@ P_e = e^{-gn}
 \]</span> (with <span class="math inline">\(g\)</span> the <strong>mosquito death rate</strong> and <span class="math inline">\(n\)</span> the <strong>EIP</strong>), and <span class="math inline">\(S\)</span> is the <strong>stability index</strong>, <em>i.e.</em> the total number of bites per mosquito during its lifetime:</p>
 <p><span class="math display">\[
 S = \frac{a}{g}
-\]</span> with <span class="math inline">\(a\)</span> the <strong>mosquito biting rate</strong>, <em>i.e.</em> the number of bites per mosquito. Gathering everything gives:</p>
-<p><span id="eq-ind_vec_cap"><span class="math display">\[
+\]</span></p>
+<p>with <span class="math inline">\(a\)</span> the <strong>mosquito biting rate</strong>, <em>i.e.</em> the number of bites per mosquito. Gathering everything gives:</p>
+<p><span class="math display">\[
 C = c \cdot e^{-gn}\frac{a}{g}
-\tag{1}\]</span></span></p>
+\]</span></p>
 <p>The <strong>basic reproduction ratio</strong> is the expected number of infected humans per infected human or, equivalently, the expected number of infected mosquitoes per infected mosquito and can be expressed as:</p>
 <p><span class="math display">\[
 R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
@@ -243,7 +245,7 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <p>Finally, the proportion <span class="math inline">\(\bar{X}\)</span> of infected humans at equilibrium can be expressed as a function of <span class="math inline">\(R_0\)</span>:</p>
 <p><span id="eq-prevalence1"><span class="math display">\[
 \bar{X} = \frac{R_0 - 1}{R_0 + c S}
-\tag{2}\]</span></span></p>
+\tag{1}\]</span></span></p>
 </section>
 <section id="experimental-results" class="level2" data-number="5">
 <h2 data-number="5" class="anchored" data-anchor-id="experimental-results"><span class="header-section-number">5</span> Experimental results</h2>
@@ -258,7 +260,7 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <p>Let’s see below how we can integrate these 3 effects <span class="math inline">\(\alpha\)</span>, <span class="math inline">\(\beta\)</span> and <span class="math inline">\(\gamma\)</span> into the theoretical equations of the previous section.</p>
 <section id="tba-on-sporozoites" class="level3" data-number="5.1">
 <h3 data-number="5.1" class="anchored" data-anchor-id="tba-on-sporozoites"><span class="header-section-number">5.1</span> TBA on sporozoites</h3>
-<p>The transmission-blocking activity on sporozoites converts directly into a similar reduction of the mean vectorial capacity:</p>
+<p>The transmission-blocking activity on sporozoites converts directly into a similar reduction of the mean individual vectorial capacity:</p>
 <p><span class="math display">\[
 (1 - \alpha(t))\cdot C
 \]</span></p>
@@ -322,7 +324,7 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="malarone_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="malarone_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -359,7 +361,7 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="malarone_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="malarone_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -380,7 +382,7 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="malarone_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="malarone_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -388,7 +390,7 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 </section>
 <section id="increase-of-the-eip" class="level3" data-number="5.3">
 <h3 data-number="5.3" class="anchored" data-anchor-id="increase-of-the-eip"><span class="header-section-number">5.3</span> Increase of the EIP</h3>
-<p>Malarone decreases by the multiplicative factor <span class="math inline">\(1 - \gamma\)</span> (<span class="math inline">\(0 \leq \gamma \leq 1\)</span>) the size of oocysts at 7 dpi. Furthermore, figure 5B from <span class="citation" data-cites="werling_steroid_2019">Werling et al. (<a href="#ref-werling_steroid_2019" role="doc-biblioref">2019</a>)</span> suggests a linear relationship between the development time and the oocyst size, which means that the effect of <span class="math inline">\(\gamma\)</span> on <span class="math inline">\(n\)</span> can be modelled as so:</p>
+<p>Malarone decreases by the multiplicative factor <span class="math inline">\(1 - \gamma\)</span> (<span class="math inline">\(0 \leq \gamma \leq 1\)</span>) the size of oocysts at 7 dpi. Furthermore, figure 5B from <span class="citation" data-cites="werling_steroid_2019">Werling et al. (<a href="#ref-werling_steroid_2019" role="doc-biblioref">2019</a>)</span> suggests a linear relationship between the development time and the oocyst size. By assuming that the EIP corresponds to a given size of the oocysts, we can model the effect of <span class="math inline">\(\gamma\)</span> on <span class="math inline">\(n\)</span> as so:</p>
 <p><span class="math display">\[
 \frac{1}{1 - \gamma(t)}n
 \]</span></p>
@@ -409,7 +411,7 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="malarone_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="malarone_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -417,48 +419,58 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 </section>
 <section id="combining-the-3-effects" class="level3" data-number="5.4">
 <h3 data-number="5.4" class="anchored" data-anchor-id="combining-the-3-effects"><span class="header-section-number">5.4</span> Combining the 3 effects</h3>
-<p>The effects <span class="math inline">\(\alpha(t)\)</span> and <span class="math inline">\(\gamma(t)\)</span> modify the individual vectorial capacity <span class="math inline">\(C\)</span> as so:</p>
+<p>In this section we combine the 3 effects reviewed above into a reduction effect of the basic reproduction ratio <span class="math inline">\(R_0\)</span>. If we assume that all the mosquitoes feed on people who received malarone <span class="math inline">\(t\)</span> time units ago, the reduction factor <span class="math inline">\(\delta(t)\)</span> of <span class="math inline">\(R_0\)</span> reads:</p>
 <p><span class="math display">\[
-(1 - \alpha(t))e^{-gn\gamma(t)/(1-\gamma(t))}C
+\delta(t, g, n, L) = (1 - \alpha(t))\frac{f((1 - \beta(t))L)}{f(L)}e^{-gn\gamma(t)/(1-\gamma(t))}
+\]</span> where <span class="math inline">\(L\)</span> is the mean sporozoite load in absence of malarone. The corresponding R code:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>delta <span class="ot">&lt;-</span> <span class="cf">function</span>(t, L, g, n) {</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="co">#effect_at_t &lt;- function(t, L, g, n) {</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">alpha</span>(t)) <span class="sc">*</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">exp</span>(<span class="sc">-</span> g <span class="sc">*</span> n <span class="sc">*</span> <span class="fu">gamma</span>(t) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">gamma</span>(t))) <span class="sc">*</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">f</span>((<span class="dv">1</span> <span class="sc">-</span> <span class="fu">beta</span>(t)) <span class="sc">*</span> L) <span class="sc">/</span> <span class="fu">f</span>(L)</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>Note 1:</strong> <span class="math inline">\(g\)</span> and <span class="math inline">\(n\)</span> should be expressed in the same time units.<br>
+<strong>Note 2:</strong> <span class="math inline">\(t\)</span> should be expressed in hours.</p>
+<p>If we now assume that all the mosquitoes feed on people who were treated sometimes during the past <span class="math inline">\(D\)</span> time units, then the mean reduction factor of <span class="math inline">\(R_0\)</span> reads:</p>
+<p><span class="math display">\[
+\lambda(g, n, L, D) = \frac{1}{D}\int_0^D\delta(t, g, n, L)dt
+\]</span> Ideally, we’d like <span class="math inline">\(D\)</span> to be large enough so that <span class="math inline">\(\delta(t = D, g, n, L)\simeq 0\)</span>. The corresponding R code is:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>lambda <span class="ot">&lt;-</span> <span class="cf">function</span>(D, L, g, n, <span class="at">nb =</span> <span class="fl">1e6</span>) {</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="co">#effect_on_treated &lt;- function(D, L, g, n, nb = 1e6) {</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co">#  trapezoid(function(x) effect_at_t(x, L, g, n), 0, D, nb) / D</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">trapezoid</span>(<span class="cf">function</span>(x) <span class="fu">delta</span>(x, L, g, n), <span class="dv">0</span>, D, nb) <span class="sc">/</span> D</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p><strong>Note 1:</strong> <span class="math inline">\(g\)</span> and <span class="math inline">\(n\)</span> should be expressed in the same time units.<br>
+<strong>Note 2:</strong> <span class="math inline">\(D\)</span> should be expressed in hours.</p>
+<p>Finally, assuming that mosquitoes feed on treated individuals with a probability equal to the proportion <span class="math inline">\(\tau\bar{X}rD\)</span> of individuals who were treated sometimes during the past <span class="math inline">\(D\)</span> time units, then the mean reduction factor of <span class="math inline">\(R_0\)</span> reads:</p>
+<p><span class="math display">\[
+\rho(g, n, L, \tau, \bar{X}, r, D) = 1 - (1 - \lambda(g, n, L, D))\tau\bar{X}rD
 \]</span></p>
-<p>where <span class="math inline">\(C\)</span> is the individual vectorial capacity in absence of malarone. The three effects <span class="math inline">\(\alpha(t)\)</span>, <span class="math inline">\(\beta(t)\)</span> and <span class="math inline">\(\gamma(t)\)</span> modify the basic reproduction ratio <span class="math inline">\(R_0\)</span> as so:</p>
-<p><span class="math display">\[
-(1 - \alpha(t))e^{-gn\gamma(t)/(1-\gamma(t))}\frac{f((1 - \beta(t))L)}{f(L)}R_0
-\]</span> where <span class="math inline">\(L\)</span> and <span class="math inline">\(R_0\)</span> are the mean sporozoite load and the basic reproduction ratio in absence of malarone. From here we will focus on the effect on <span class="math inline">\(R_0\)</span> and the effect at time <span class="math inline">\(t\)</span> post drug administration is coded by the following function:</p>
+<p>where <span class="math inline">\(\bar{X}\)</span> is the disease prevalence in the human population, <span class="math inline">\(r\)</span> is the human recovery rate and <span class="math inline">\(\tau\)</span> is the proportion of infected that are treated with malarone. The corresponding R code is:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>effect_at_t <span class="ot">&lt;-</span> <span class="cf">function</span>(t, L, g, n) {</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">alpha</span>(t)) <span class="sc">*</span></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">exp</span>(<span class="sc">-</span> g <span class="sc">*</span> n <span class="sc">*</span> <span class="fu">gamma</span>(t) <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">gamma</span>(t))) <span class="sc">*</span></span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">f</span>((<span class="dv">1</span> <span class="sc">-</span> <span class="fu">beta</span>(t)) <span class="sc">*</span> L) <span class="sc">/</span> <span class="fu">f</span>(L)</span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co">#mean_effect &lt;- function(D, L, g, n, X, tau) {</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="co">#  1 - tau * X * (1 - effect_on_treated(D, L, g, n))</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co">#}</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>rho <span class="ot">&lt;-</span> <span class="cf">function</span>(D, L, g, n, X, tau, r) {</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1</span> <span class="sc">-</span> tau <span class="sc">*</span> X <span class="sc">*</span> r <span class="sc">*</span> D <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">lambda</span>(D, L, g, n))</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>The expected effect of malarone on a mosquito that feeds on a human who is infected and has taken a treatment, not knowing when, would read:</p>
-<p><span class="math display">\[
-\frac{1}{D}\int_0^D(1 - \alpha(t))e^{-gn\gamma(t)/(1-\gamma(t))}\frac{f((1 - \beta(t))L)}{f(L)}dt\cdot R_0
-\]</span></p>
-<p>where <span class="math inline">\(D = 1/R\)</span> is the mean duration of infection in the human host. The corresponding R code is:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>effect_on_treated <span class="ot">&lt;-</span> <span class="cf">function</span>(D, L, g, n, <span class="at">nb =</span> <span class="fl">1e6</span>) {</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">trapezoid</span>(<span class="cf">function</span>(x) <span class="fu">effect_at_t</span>(x, L, g, n), <span class="dv">0</span>, D, nb) <span class="sc">/</span> D</span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>Finally, if <span class="math inline">\(P\)</span> is the prevalence in the human population and <span class="math inline">\(\tau\)</span> is the proportion of infected people that are treated, the mean effect of malarone on the basic reproduction ratio then read:</p>
-<p><span id="eq-ind_vec_cap"><span class="math display">\[
-\left(1 - \tau \bar{X}\cdot\left(1 - \frac{1}{D}\int_0^D(1 - \alpha(t))e^{-gn\gamma(t)/(1-\gamma(t))}\frac{f((1 - \beta(t))L)}{f(L)}dt\right)\right)R_0
-\tag{3}\]</span></span></p>
-<p>with the corresponding R code:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>mean_effect <span class="ot">&lt;-</span> <span class="cf">function</span>(D, L, g, n, X, tau) {</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1</span> <span class="sc">-</span> tau <span class="sc">*</span> X <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">effect_on_treated</span>(D, L, g, n))</span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
+<p><strong>Note 1:</strong> <span class="math inline">\(g\)</span> and <span class="math inline">\(n\)</span> should be expressed in the same time units.<br>
+<strong>Note 2:</strong> <span class="math inline">\(r\)</span> and <span class="math inline">\(D\)</span> should be both expressed in hours.</p>
 </section>
 </section>
 <section id="numerical-analysis" class="level2" data-number="6">
 <h2 data-number="6" class="anchored" data-anchor-id="numerical-analysis"><span class="header-section-number">6</span> Numerical analysis</h2>
+<p>Table of parameters here.</p>
 <p>In the numerical exploration below we assume a mosquito life expectancy <span class="math inline">\(1/g\)</span> of 14 days and an EIP <span class="math inline">\(n\)</span> of 7 days. The malarone reducing effect on <span class="math inline">\(R_0\)</span>, and considering only mosquito feeding on people 100 hours after drug administration is:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>(effect_at_t100 <span class="ot">&lt;-</span> <span class="fu">effect_at_t</span>(<span class="at">t =</span> <span class="dv">100</span>, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">n =</span> <span class="dv">7</span> <span class="sc">*</span> <span class="dv">24</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co">#(effect_at_t100 &lt;- effect_at_t(t = 100, L = 6e4, g = 1 / (14 * 24), n = 7 * 24))</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>(effect_at_t100 <span class="ot">&lt;-</span> <span class="fu">delta</span>(<span class="at">t =</span> <span class="dv">100</span>, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> <span class="dv">14</span>, <span class="at">n =</span> <span class="dv">7</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 0.2802043</code></pre>
 </div>
@@ -466,43 +478,53 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <p>The malarone reducing effect on <span class="math inline">\(R_0\)</span> considering mosquitoes feeding on people <span class="math inline">\(t\)</span> hours after drug administration looks like:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>xs3 <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">24</span> <span class="sc">*</span> <span class="dv">28</span>, <span class="at">le =</span> <span class="dv">2</span><span class="sc">^</span><span class="dv">10</span>)</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plotl</span>(xs3, <span class="fu">effect_at_t</span>(<span class="at">t =</span> xs3, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">n =</span> <span class="dv">7</span> <span class="sc">*</span> <span class="dv">24</span>),</span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>      <span class="at">xlab =</span> <span class="st">"time post drug administration (hours)"</span>,</span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>      <span class="at">ylab =</span> <span class="st">"individual vectorial capacity reduction effect"</span>)</span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> <span class="dv">100</span>, <span class="at">col =</span> <span class="dv">4</span>)</span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> effect_at_t100, <span class="at">col =</span> <span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="co">#plotl(xs3, effect_at_t(t = xs3, L = 6e4, g = 1 / (14 * 24), n = 7 * 24),</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plotl</span>(xs3, <span class="fu">delta</span>(<span class="at">t =</span> xs3, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">n =</span> <span class="dv">7</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">ylim =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">1</span>,  </span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>      <span class="at">xlab =</span> <span class="st">"time post drug administration (hours)"</span>,</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">ylab =</span> <span class="st">"R0 reduction factor delta"</span>)</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> <span class="dv">100</span>, <span class="at">col =</span> <span class="dv">4</span>)</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> effect_at_t100, <span class="at">col =</span> <span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="malarone_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="malarone_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
-<p>The expected malarone reducing effect on <span class="math inline">\(R_0\)</span> considering mosquitoes feeding on people treated by malarone (but not knowing when) is (takes 1.5”):</p>
+<p>The expected malarone reducing effect on <span class="math inline">\(R_0\)</span> considering mosquitoes feeding only on people treated by malarone sometimes in the past 28 days is:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">effect_on_treated</span>(<span class="at">D =</span> <span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">n =</span> <span class="dv">7</span> <span class="sc">*</span> <span class="dv">24</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co">#effect_on_treated(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="co">#lambda(D = 14 * 24, L = 6e4, g = 1 / 14, n = 7)</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="fu">lambda</span>(<span class="at">D =</span> <span class="dv">28</span> <span class="sc">*</span> <span class="dv">24</span>, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> <span class="dv">14</span>, <span class="at">n =</span> <span class="dv">7</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.6213566</code></pre>
+<pre><code>[1] 0.8024406</code></pre>
 </div>
 </div>
 <p>The expected malarone reducing effect on <span class="math inline">\(R_0\)</span> considering mosquitoes feeding in a population with malaria prevalence of 10%, 90% of which are taking drug is:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean_effect</span>(<span class="at">D =</span> <span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">n =</span> <span class="dv">7</span> <span class="sc">*</span> <span class="dv">24</span>, <span class="at">X =</span> .<span class="dv">1</span>, <span class="at">tau =</span> .<span class="dv">9</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co">#mean_effect(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, X = .1, tau = .9)</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rho</span>(<span class="at">D =</span> <span class="dv">28</span> <span class="sc">*</span> <span class="dv">24</span>, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> <span class="dv">14</span>, <span class="at">n =</span> <span class="dv">7</span>, <span class="at">X =</span> .<span class="dv">1</span>, <span class="at">tau =</span> .<span class="dv">9</span>, <span class="at">r =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.9659221</code></pre>
+<pre><code>[1] 0.9644393</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>tauP <span class="ot">&lt;-</span> <span class="fu">seq2</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>ef <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> tauP <span class="sc">*</span> <span class="fu">effect_on_treated</span>(<span class="at">D =</span> <span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">n =</span> <span class="dv">7</span> <span class="sc">*</span> <span class="dv">24</span>)</span>
-<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plotl</span>(tauP, ef, <span class="at">ylim =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">1</span>,</span>
-<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>      <span class="at">xlab =</span> <span class="st">"prevalence of people who took the drug in the past 14 days"</span>,</span>
-<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">ylab =</span> <span class="st">"expected vectorial capacity reducing effect"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co">#tauP &lt;- seq2(0, 1)</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>prev_treated <span class="ot">&lt;-</span> <span class="fu">seq2</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="co">#ef &lt;- 1 - tauP * effect_on_treated(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>ef <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> prev_treated <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">lambda</span>(<span class="at">D =</span> <span class="dv">28</span> <span class="sc">*</span> <span class="dv">24</span>, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> <span class="dv">14</span>, <span class="at">n =</span> <span class="dv">7</span>))</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="co">#plotl(tauP, ef, ylim = 0:1,</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plotl</span>(prev_treated, ef, <span class="at">ylim =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">1</span>,</span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>      <span class="at">xlab =</span> <span class="st">"prevalence of people who took the drug in the past 28 days"</span>,</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>      <span class="at">ylab =</span> <span class="st">"R0 reduction factor rho"</span>)</span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> .<span class="dv">9</span> <span class="sc">*</span> .<span class="dv">1</span> <span class="sc">*</span> <span class="dv">28</span> <span class="sc">*</span> <span class="dv">24</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">col =</span> <span class="dv">4</span>)</span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> .<span class="dv">9644393</span>, <span class="at">col =</span> <span class="dv">4</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="malarone_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="malarone_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -511,24 +533,24 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <section id="epidemiology" class="level2" data-number="7">
 <h2 data-number="7" class="anchored" data-anchor-id="epidemiology"><span class="header-section-number">7</span> Epidemiology</h2>
 <p>Now that we have characterized the effect of malarone on the vectorial capacity in a context of a given malaria prevalence in the human population, let’s derive the consequences at the epidemiological equilibrium. In order to better characterize the epidemiological consequences of the effect of malarone in mosquitoes, we will here neglect the effect of malarone in humans (<em>i.e.</em> malarone is not affecting the human recovery rate <span class="math inline">\(r = 1/D\)</span>).</p>
-<p>Let’s call <span class="math inline">\(\rho\)</span> the reduction of <span class="math inline">\(R_0\)</span>. From <a href="#eq-ind_vec_cap" class="quarto-xref">Equation&nbsp;3</a> we can see that this reduction naturally depends on the prevalence <span class="math inline">\(\bar{X}\)</span> in the human population:</p>
+<p>Let’s call <span class="math inline">\(\rho\)</span> the reduction of <span class="math inline">\(R_0\)</span>. From we can see that this reduction naturally depends on the prevalence <span class="math inline">\(\bar{X}\)</span> in the human population:</p>
 <p><span class="math display">\[
 \rho(\bar{X}) = \left(1 - \tau \bar{X}\cdot\left(1 - \frac{1}{D}\int_0^D(1 - \alpha(t))e^{-gn\gamma(t)/(1-\gamma(t))}\frac{f((1 - \beta(t))L)}{f(L)}dt\right)\right)R_0
 \]</span></p>
 <p>The modified value of <span class="math inline">\(R_0'\)</span> of <span class="math inline">\(R_0\)</span> thus also depends on the prevalence <span class="math inline">\(\bar{X}\)</span> in the human population:</p>
 <p><span id="eq-R0"><span class="math display">\[
 R_0'(\bar{X}) = \rho(\bar{X}) R_0
-\tag{4}\]</span></span></p>
-<p>Furthermore, according to <a href="#eq-prevalence1" class="quarto-xref">Equation&nbsp;2</a>, a change in <span class="math inline">\(R_0\)</span> will in turn induce a modification of the prevalence <span class="math inline">\(\bar{X}\)</span> in the human population:</p>
+\tag{2}\]</span></span></p>
+<p>Furthermore, according to <a href="#eq-prevalence1" class="quarto-xref">Equation&nbsp;1</a>, a change in <span class="math inline">\(R_0\)</span> will in turn induce a modification of the prevalence <span class="math inline">\(\bar{X}\)</span> in the human population:</p>
 <p><span id="eq-prevalence"><span class="math display">\[
 P(R_0') = \frac{R_0' - 1}{R_0' + c S}
-\tag{5}\]</span></span></p>
-<p>The equilibrium of <a href="#eq-R0" class="quarto-xref">Equation&nbsp;4</a> and <a href="#eq-prevalence" class="quarto-xref">Equation&nbsp;5</a> can be found by reiterating this process a large number of times. Here is a function that creates the <span class="math inline">\(\rho(P)\)</span> function for given values of the parameters <span class="math inline">\(D = 1/r\)</span>, <span class="math inline">\(L\)</span>, <span class="math inline">\(g\)</span>, <span class="math inline">\(n\)</span> and <span class="math inline">\(\tau\)</span>:</p>
+\tag{3}\]</span></span></p>
+<p>The equilibrium of <a href="#eq-R0" class="quarto-xref">Equation&nbsp;2</a> and <a href="#eq-prevalence" class="quarto-xref">Equation&nbsp;3</a> can be found by reiterating this process a large number of times. Here is a function that creates the <span class="math inline">\(\rho(P)\)</span> function for given values of the parameters <span class="math inline">\(D = 1/r\)</span>, <span class="math inline">\(L\)</span>, <span class="math inline">\(g\)</span>, <span class="math inline">\(n\)</span> and <span class="math inline">\(\tau\)</span>:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>make_rho <span class="ot">&lt;-</span> <span class="cf">function</span>(D, L, g, n, tau) {</span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">seq2</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  tauX <span class="ot">&lt;-</span> tau <span class="sc">*</span> X</span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  ef <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> tauX <span class="sc">*</span> <span class="fu">effect_on_treated</span>(<span class="at">D =</span> <span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">n =</span> <span class="dv">7</span> <span class="sc">*</span> <span class="dv">24</span>)</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  tX <span class="ot">&lt;-</span> tau <span class="sc">*</span> X</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  ef <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> tX <span class="sc">*</span> <span class="fu">effect_on_treated</span>(<span class="at">D =</span> <span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">n =</span> <span class="dv">7</span> <span class="sc">*</span> <span class="dv">24</span>)</span>
 <span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">function</span>(x, ...) <span class="fu">approx</span>(X, ef, x, ...)<span class="sc">$</span>y</span>
 <span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
@@ -536,7 +558,7 @@ P(R_0') = \frac{R_0' - 1}{R_0' + c S}
 <div class="cell">
 <div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>rho1 <span class="ot">&lt;-</span> <span class="fu">make_rho</span>(<span class="at">D =</span> <span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">n =</span> <span class="dv">7</span> <span class="sc">*</span> <span class="dv">24</span>, <span class="at">tau =</span> .<span class="dv">9</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Once we have this <code>rho1()</code> function, we can use it in a recursion loop together with the inverse of <a href="#eq-prevalence" class="quarto-xref">Equation&nbsp;5</a>:</p>
+<p>Once we have this <code>rho1()</code> function, we can use it in a recursion loop together with the inverse of <a href="#eq-prevalence" class="quarto-xref">Equation&nbsp;3</a>:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>recursion <span class="ot">&lt;-</span> <span class="cf">function</span>(R0o, cS, n, rho) {</span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  R0 <span class="ot">&lt;-</span> P <span class="ot">&lt;-</span> <span class="fu">numeric</span>(n)</span>
@@ -585,13 +607,6 @@ P(R_0') = \frac{R_0' - 1}{R_0' + c S}
 <p>Which gives:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_recursion</span>(dynamics1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="malarone_files/figure-html/unnamed-chunk-36-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
 </div>
 
 </section>
