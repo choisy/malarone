@@ -493,11 +493,16 @@ $R_0$, $\bar{X}$ and $\tau$ for given values of $g$, $n$, $L$, $r$ and $D$. Firs
 fixed parameters values:
 
 ```{r}
-g <- 1 / 14  # same unit as n
-n <- 7  # same unit as g
+# mosquito death rate (inverse of mosquito life expectancy):
+g <- 1 / 14  # same unit as n (here in days)
+# EPI:
+n <- 7  # same unit as g (here in days)
+# mean sporozoite load in absence of malarone:
 L <- 6e4
-D <- 28 * 24  # in hours
+# recovery rate in humans (inverse of the mean duration of infection in humans):
 r <- 1 / (14 * 24)  # in hours
+# duration over which to perform the integration of the effect of malarone:
+D <- 28 * 24  # in hours (note: this parameter is not a biological parameter)
 ```
 
 Let's now compute the $\Delta$ values for a 3D figure:

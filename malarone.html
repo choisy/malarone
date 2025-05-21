@@ -523,11 +523,16 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 \]</span></p>
 <p>where <span class="math inline">\(\vec\theta = [g,n,L,r,D]^T\)</span>. Let’s now visualize <span class="math inline">\(\Delta\)</span> as a function of <span class="math inline">\(R_0\)</span>, <span class="math inline">\(\bar{X}\)</span> and <span class="math inline">\(\tau\)</span> for given values of <span class="math inline">\(g\)</span>, <span class="math inline">\(n\)</span>, <span class="math inline">\(L\)</span>, <span class="math inline">\(r\)</span> and <span class="math inline">\(D\)</span>. First the fixed parameters values:</p>
 <div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="dv">14</span>  <span class="co"># same unit as n</span></span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">7</span>  <span class="co"># same unit as g</span></span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>L <span class="ot">&lt;-</span> <span class="fl">6e4</span></span>
-<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>D <span class="ot">&lt;-</span> <span class="dv">28</span> <span class="sc">*</span> <span class="dv">24</span>  <span class="co"># in hours</span></span>
-<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>r <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>)  <span class="co"># in hours</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># mosquito death rate (inverse of mosquito life expectancy):</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>g <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="dv">14</span>  <span class="co"># same unit as n (here in days)</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="co"># EPI:</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">7</span>  <span class="co"># same unit as g (here in days)</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="co"># mean sporozoite load in absence of malarone:</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>L <span class="ot">&lt;-</span> <span class="fl">6e4</span></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a><span class="co"># recovery rate in humans (inverse of the mean duration of infection in humans):</span></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>r <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>)  <span class="co"># in hours</span></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a><span class="co"># duration over which to perform the integration of the effect of malarone:</span></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>D <span class="ot">&lt;-</span> <span class="dv">28</span> <span class="sc">*</span> <span class="dv">24</span>  <span class="co"># in hours (note: this parameter is not a biological parameter)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Let’s now compute the <span class="math inline">\(\Delta\)</span> values for a 3D figure:</p>
 <div class="cell" data-layout-align="center">
