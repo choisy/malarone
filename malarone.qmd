@@ -467,112 +467,58 @@ abline(h = .9644393, col = 4)
 
 ## Epidemiology
 
-Now that we have characterized the effect of malarone on the vectorial capacity in a
-context of a given malaria prevalence in the human population, let's derive the
-consequences at the epidemiological equilibrium. In order to better characterize the
-epidemiological consequences of the effect of malarone in mosquitoes, we will here
-neglect the effect of malarone in humans (*i.e.* malarone is not affecting the human
-recovery rate $r = 1/D$).
-
-Let's call $\rho$ the reduction of $R_0$. From we can see that this
-reduction naturally depends on the prevalence $\bar{X}$ in the human population:
-
 $$
-\rho(\bar{X}) = \left(1 - \tau \bar{X}\cdot\left(1 - \frac{1}{D}\int_0^D(1 - \alpha(t))e^{-gn\gamma(t)/(1-\gamma(t))}\frac{f((1 - \beta(t))L)}{f(L)}dt\right)\right)R_0
+\Delta(\bar{X}, R_0, \tau |\theta) = \frac{(1 - \bar{X})(1 - \rho(\bar{X}, \tau|\theta))R_0}{((1-(1-\rho(\bar{X}, \tau|\theta))\bar{X})R_0 - 1)\tau}
 $$
 
-The modified value of $R_0'$ of $R_0$ thus also depends on the prevalence $\bar{X}$ in
-the human population:
+with $\theta = \{g,n,L,r,D\}$. The corresponding R code:
 
-$$
-R_0'(\bar{X}) = \rho(\bar{X}) R_0
-$${#eq-R0}
-
-Furthermore, according to @eq-prevalence1, a change in $R_0$ will in turn induce a
-modification of the prevalence $\bar{X}$ in the human population:
-
-$$
-P(R_0') = \frac{R_0' - 1}{R_0' + c S}
-$${#eq-prevalence}
-
-The equilibrium of @eq-R0 and @eq-prevalence can be found by reiterating this process
-a large number of times. Here is a function that creates the $\rho(P)$ function for
-given values of the parameters $D = 1/r$, $L$, $g$, $n$ and $\tau$:
-
-```{r eval = F}
-make_rho <- function(D, L, g, n, tau) {
-  X <- seq2(0, 1)
-  tX <- tau * X
-#  ef <- 1 - tX * effect_on_treated(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)
-  ef <- 1 - tX * lambda(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)
-  function(x, ...) approx(X, ef, x, ...)$y
+```{r}
+Delta <- function(D, L, g, n, X, tau, r, R0) {
+  rho_val <- rho(D, L, g, n, X, tau, r)
+  ((1 - X) * (1 - rho_val) * R0) / (((1 - (1 - rho_val) * X) * R0 - 1) * tau)
 }
 ```
 
-Let's make one example:
-
-```{r eval = F}
-rho1 <- make_rho(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, tau = .9)
+```{r}
+g <- 1 / 14 # same unit as n
+n <- 7 # same unit as g
+L <- 6e4
+D <- 28 * 24 # in hours
+r <- 1 / (14 * 24) # in hours
+tau <- c(.001, seq(.1, 1, .1))
+X_val <- c(.01, .05, seq(.1, .9, .1))
 ```
 
-Once we have this `rho1()` function, we can use it in a recursion loop together with
-the inverse of @eq-prevalence:
+```{r message = FALSE}
+lambda_val <- lambda(D, L, g, n, nb = 1e6) # that's the bit that takes the most time
 
-```{r eval = F}
-recursion <- function(R0o, cS, n, rho) {
-  R0 <- P <- numeric(n)
-  R0[1] <- R0o
-  for (i in 1:(n - 1)) {
-    P[i] <- (R0[i] - 1) / (R0[i] + cS)
-    R0[i + 1] <- R0o * rho(P[i])
-  }
-  P[n] <- (R0[n] - 1) / (R0[n] + cS)
-  output <- data.frame(R0 = R0, P = P)
-  attr(output, "parms") <- list(R0o = R0o, cS = cS, n = n, rho = rho)
-  output
+rho2 <- function(D, X, tau, r) 1 - tau * X * r * D * (1 - lambda_val)
+
+Delta2 <- function(X, R0, D, tau, r) {
+  rho_val <- rho2(D, X, tau, r)
+  ((1 - X) * (1 - rho_val) * R0) / (((1 - (1 - rho_val) * X) * R0 - 1) * tau)
 }
+
+out <- map(c(5, 10, 15), ~ map_dfc(X_val, Delta2, .x, D, tau, r))
 ```
 
-where `R0o` is the value of $R_0$ in absence of treatment in the population and `n` is
-the number of iterations of the recursion loop.
+A 3D figure:
 
-```{r eval = F}
-dynamics1 <- recursion(R0o = 15, cS = 40, n = 1e3, rho = rho1)
-```
-
-The following function plots the recursion loop:
-
-```{r eval = F}
-plot_recursion <- function(x, max_prev = 1) {
-  prev_val <- seq2(0, max_prev)
-  parms <- attr(x, "parms")
-  with(parms, {
-    plotl(prev_val, rho(prev_val) * R0o, ylim = c(0, R0o),
-          xlab = "prevalence", ylab = "basic reproduction ratio R0")
-    lines2(prev_val, (1 + cS * prev_val) / (1 - prev_val))
-  })
-  nbrows <- nrow(x)
-  abline2(v = x$P[1])
-  abline2(v = x$P[nbrows])
-  abline2(h = x$R0[nbrows])
-  with(x, {
-    segments2(-1, R0[1], P[1], R0[1])
-    for (i in 1:(nbrows - 1)) {
-      segments2(P[i], R0[i], P[i], R0[i + 1])
-      segments2(P[i], R0[i + 1], P[i + 1], R0[i + 1])
-    }
-  })
-  with(parms, {
-    arrows2(0, R0o, 0, x$R0[nbrows])
-    arrows2(x$P[1], 0, x$P[nbrows], 0)
-  })
+```{r}
+persp2 <- function(x, y, z, ...) {
+  persp(x, y, as.matrix(z), theta = 60, zlim = c(0, .15), col = NA, ...)
 }
+persp3 <- function(...) persp2(..., axes = FALSE, box = FALSE)
+persp3(tau, X_val, out[[1]], border = 2); par(new = TRUE)
+persp3(tau, X_val, out[[2]], border = 3); par(new = TRUE)
+persp2(tau, X_val, out[[3]], border = 4,
+       xlab = "treatment rate tau", ylab = "prevalence X",
+       zlab = "number of infections prevented per personne treated")
 ```
 
-Which gives:
+A 2D figure:
 
-```{r eval = F}
-plot_recursion(dynamics1)
-```
+
 
 
