@@ -11,6 +11,28 @@ bibliography: references.bib
 csl: the-american-naturalist.csl
 ---
 
+```{r include = FALSE}
+knitr::knit_hooks$set(
+  margin1 = function(before, options, envir) {
+    if (before) par(mgp = c(1.5, .5, 0), bty = "n",
+                    plt = c(.105, .97, .15, .95))
+    else NULL
+  },
+  margin2 = function(before, options, envir) {
+    if (before) par(mgp = c(1.5, .5, 0), bty = "n",
+#                    cex.axis = 3 / 2, cex.lab = 3 / 2,
+                    plt = c(.22, .97, .15, .95))
+    else NULL
+  })
+
+eps <- .8
+knitr::opts_chunk$set(margin1    = TRUE,
+                      fig.retina = 2,
+                      fig.align  = "center",
+                      fig.height = eps * 5, # default is 5
+                      fig.width = eps * 7) # default is 7
+```
+
 In this analysis we use the formalism of @smith_statics_2004.
 
 ## Parameters
@@ -21,6 +43,12 @@ The path to the data:
 path2data <- paste0(Sys.getenv("HOME"), "/Library/CloudStorage/",
                     "OneDrive-OxfordUniversityClinicalResearchUnit/",
                     "GitHub/choisy/malarone/")
+```
+
+```{r include = FALSE}
+file_exists <- function(x) file.exists(paste0(path2data, "cache/", x))
+readRDS3 <- function(x) readRDS(paste0(path2data, "cache/", x))
+saveRDS2 <- function(object, file) saveRDS(object, paste0(path2data, "cache/", file))
 ```
 
 Whether or not to force the effects to be equal to $0$ at $t = 28$ days (in practice it
@@ -467,31 +495,34 @@ abline(h = .9644393, col = 4)
 
 ## Epidemiology
 
+From a given $R_0$, a given prevalence $\bar{X}$ and a given proportion $\tau$ of
+infected people that are treated, we can compute the number of human infections 
+averted per person treated as so:
+
 $$
-\Delta(\bar{X}, R_0, \tau |\theta) = \frac{(1 - \bar{X})(1 - \rho(\bar{X}, \tau|\theta))R_0}{((1-(1-\rho(\bar{X}, \tau|\theta))\bar{X})R_0 - 1)\tau}
+\Delta(\bar{X}, R_0, \tau |\vec\theta) = \frac{(1 - \bar{X})(1 - \rho(\bar{X}, \tau|\vec\theta))R_0}{((1-(1-\rho(\bar{X}, \tau|\vec\theta))\bar{X})R_0 - 1)\tau}
 $$
 
-with $\theta = \{g,n,L,r,D\}$. The corresponding R code:
+where $\vec\theta = [g,n,L,r,D]^T$. Let's now visualize $\Delta$ as a function of
+$R_0$, $\bar{X}$ and $\tau$ for given values of $g$, $n$, $L$, $r$ and $D$. First the
+fixed parameters values:
 
 ```{r}
-Delta <- function(D, L, g, n, X, tau, r, R0) {
-  rho_val <- rho(D, L, g, n, X, tau, r)
-  ((1 - X) * (1 - rho_val) * R0) / (((1 - (1 - rho_val) * X) * R0 - 1) * tau)
-}
-```
-
-```{r}
-g <- 1 / 14 # same unit as n
-n <- 7 # same unit as g
+g <- 1 / 14  # same unit as n
+n <- 7  # same unit as g
 L <- 6e4
-D <- 28 * 24 # in hours
-r <- 1 / (14 * 24) # in hours
-tau <- c(.001, seq(.1, 1, .1))
-X_val <- c(.01, .05, seq(.1, .9, .1))
+D <- 28 * 24  # in hours
+r <- 1 / (14 * 24)  # in hours
 ```
+
+Let's now compute the $\Delta$ values for a 3D figure:
 
 ```{r message = FALSE}
-lambda_val <- lambda(D, L, g, n, nb = 1e6) # that's the bit that takes the most time
+tau <- c(.001, seq(.1, 1, .1))
+X3D <- c(.01, .05, seq(.1, .9, .1))
+R0 <- c(5, 10, 15)
+
+lambda_val <- lambda(D, L, g, n, nb = 1e6)  # that's the bit that takes the most time
 
 rho2 <- function(D, X, tau, r) 1 - tau * X * r * D * (1 - lambda_val)
 
@@ -500,25 +531,74 @@ Delta2 <- function(X, R0, D, tau, r) {
   ((1 - X) * (1 - rho_val) * R0) / (((1 - (1 - rho_val) * X) * R0 - 1) * tau)
 }
 
-out <- map(c(5, 10, 15), ~ map_dfc(X_val, Delta2, .x, D, tau, r))
+Delta3D <- map(R0, ~ map_dfc(X3D, Delta2, .x, D, tau, r))
 ```
 
-A 3D figure:
+The 3D figure:
 
 ```{r}
 persp2 <- function(x, y, z, ...) {
-  persp(x, y, as.matrix(z), theta = 60, zlim = c(0, .15), col = NA, ...)
+  persp(x, y, as.matrix(z), theta = 65, col = NA,
+        zlim = c(0, max(unlist(Delta3D))), ...)
 }
-persp3 <- function(...) persp2(..., axes = FALSE, box = FALSE)
-persp3(tau, X_val, out[[1]], border = 2); par(new = TRUE)
-persp3(tau, X_val, out[[2]], border = 3); par(new = TRUE)
-persp2(tau, X_val, out[[3]], border = 4,
-       xlab = "treatment rate tau", ylab = "prevalence X",
-       zlab = "number of infections prevented per personne treated")
+
+persp3 <- function(...) {
+  persp2(..., axes = FALSE, box = FALSE)
+  par(new = TRUE)
+}
+
+epsilon <- .05
+opar <- par(plt = c(epsilon, 1 - epsilon, epsilon, 1 - epsilon))
+persp3(tau, X3D, Delta3D[[1]], border = 2)
+persp3(tau, X3D, Delta3D[[2]], border = 3)
+persp2(tau, X3D, Delta3D[[3]], border = 4,
+       xlab = "treatment rate",
+       ylab = "prevalence",
+       zlab = "inf. prevented per treated")
+par(opar)
 ```
 
-A 2D figure:
+Computing the $\Delta$ values for a 2D figure (takes 17"):
 
+```{r eval = FALSE}
+X2D <- seq2(.1, .9)
+Delta2D <- map(R0,
+               ~ map_dfc(X2D, Delta2, .x, D, tau, r) |>
+                 t() |>
+                 as.data.frame())
+```
 
+```{r include = FALSE}
+X2D <- seq2(.1, .9)
+
+if (file_exists("Delta2D.rds")) {
+  Delta2D <- readRDS3("Delta2D.rds")
+} else {
+  Delta2D <- map(R0,
+                 ~ map_dfc(X2D, Delta2, .x, D, tau, r) |>
+                   t() |>
+                   as.data.frame())
+  saveRDS2(Delta2D, "Delta2D.rds")
+}
+```
+
+The 2D figure:
+
+```{r fig.width = 8, fig.height = 3, margin1 = FALSE, margin2 = TRUE}
+plot2D <- function(x, ...) {
+  plot(rep(X2D, length(x)), unlist(x), type = "n",
+       xlim = 0:1, ylim = c(0, max(unlist(Delta2D))),
+       xlab = "prevalence", ylab = "infections prevented per treated", ...)
+  walk(x, lines, x = X2D, ...)
+}
+
+mcx <- 3 / 2
+opar <- par(mfrow = c(1, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
+for (i in 1:3) {
+  plot2D(Delta2D[[i]], col = i + 1)
+  title(bquote(R[0] ~ "=" ~ .(R0[i])), line = 0)
+}
+par(opar)
+```
 
 
