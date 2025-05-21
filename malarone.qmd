@@ -380,7 +380,6 @@ where $L$ is the mean sporozoite load in absence of malarone. The corresponding 
 
 ```{r}
 delta <- function(t, L, g, n) {
-#effect_at_t <- function(t, L, g, n) {
   (1 - alpha(t)) *
     exp(- g * n * gamma(t) / (1 - gamma(t))) *
     f((1 - beta(t)) * L) / f(L)
@@ -401,8 +400,6 @@ corresponding R code is:
 
 ```{r}
 lambda <- function(D, L, g, n, nb = 1e6) {
-#effect_on_treated <- function(D, L, g, n, nb = 1e6) {
-#  trapezoid(function(x) effect_at_t(x, L, g, n), 0, D, nb) / D
   trapezoid(function(x) delta(x, L, g, n), 0, D, nb) / D
 }
 ```
@@ -423,10 +420,6 @@ recovery rate and $\tau$ is the proportion of infected that are treated with mal
 The corresponding R code is:
 
 ```{r}
-#mean_effect <- function(D, L, g, n, X, tau) {
-#  1 - tau * X * (1 - effect_on_treated(D, L, g, n))
-#}
-
 rho <- function(D, L, g, n, X, tau, r) {
   1 - tau * X * r * D * (1 - lambda(D, L, g, n))
 }
@@ -444,7 +437,6 @@ days and an EIP $n$ of 7 days. The malarone reducing effect on $R_0$, and consid
 only mosquito feeding on people 100 hours after drug administration is:
 
 ```{r}
-#(effect_at_t100 <- effect_at_t(t = 100, L = 6e4, g = 1 / (14 * 24), n = 7 * 24))
 (effect_at_t100 <- delta(t = 100, L = 6e4, g = 1 / 14, n = 7))
 ```
 
@@ -453,7 +445,6 @@ hours after drug administration looks like:
 
 ```{r}
 xs3 <- seq(0, 24 * 28, le = 2^10)
-#plotl(xs3, effect_at_t(t = xs3, L = 6e4, g = 1 / (14 * 24), n = 7 * 24),
 plotl(xs3, delta(t = xs3, L = 6e4, g = 1 / (14 * 24), n = 7 * 24), ylim = 0:1,  
       xlab = "time post drug administration (hours)",
       ylab = "R0 reduction factor delta")
@@ -465,8 +456,6 @@ The expected malarone reducing effect on $R_0$ considering mosquitoes feeding on
 people treated by malarone sometimes in the past 28 days is:
 
 ```{r}
-#effect_on_treated(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)
-#lambda(D = 14 * 24, L = 6e4, g = 1 / 14, n = 7)
 lambda(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7)
 ```
 
@@ -474,16 +463,12 @@ The expected malarone reducing effect on $R_0$ considering mosquitoes feeding in
 population with malaria prevalence of 10%, 90% of which are taking drug is:
 
 ```{r}
-#mean_effect(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24, X = .1, tau = .9)
 rho(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7, X = .1, tau = .9, r = 1 / (14 * 24))
 ```
 
 ```{r}
-#tauP <- seq2(0, 1)
 prev_treated <- seq2(0, 1)
-#ef <- 1 - tauP * effect_on_treated(D = 14 * 24, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)
 ef <- 1 - prev_treated * (1 - lambda(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7))
-#plotl(tauP, ef, ylim = 0:1,
 plotl(prev_treated, ef, ylim = 0:1,
       xlab = "prevalence of people who took the drug in the past 28 days",
       ylab = "R0 reduction factor rho")
