@@ -27,6 +27,11 @@ knitr::knit_hooks$set(
     if (before) par(mgp = c(1.5, .5, 0), bty = "n",
                     plt = c(.19, .95, .15, .85))
     else NULL
+  },
+  margin4 = function(before, options, envir) {
+    if (before) par(mgp = c(1.5, .5, 0), bty = "n",
+                    plt = c(.25, .95, .19, .9))
+    else NULL
   })
 
 eps <- .8
@@ -599,37 +604,7 @@ par(opar)
 
 ### Anna and Thierry's idea
 
-```{r margin1 = FALSE, margin3 = TRUE, fig.width = 5, fig.height = 5, eval = FALSE, include=FALSE}
-# mosquito death rate (inverse of mosquito life expectancy):
-g <- 1 / 14  # same unit as n (here in days)
-# EPI:
-n <- 7  # same unit as g (here in days)
-# mean sporozoite load in absence of malarone:
-L <- 6e4
-# recovery rate in humans (inverse of the mean duration of infection in humans):
-r <- 1 / (14 * 24)  # in hours
-# duration over which to perform the integration of the effect of malarone:
-D <- 28 * 24  # in hours (note: this parameter is not a biological parameter)
-
-#lambda_val <- lambda(D, L, g, n, nb = 1e6)  # that's the bit that takes the most time
-
-tau2 <- seq2(0, 1)
-rho3 <- function(X, D, r) 1 - tau2 * X * r * D * (1 - lambda_val)
-X_val <- seq(0, 1, .1)
-out <- map(X_val, rho3, D, r)
-opar <- par(pty = "s")
-plot(rep(tau2, length(X_val)), unlist(out), type = "n", ylim = 0:1,
-     xlab = "proportion of infected that are treated",
-     ylab = "relative decrease of R0",
-     xaxs = "i", yaxs = "i")
-abline(v = seq(0, 1, .05), col = "lightgrey")
-abline(h = seq(0, 1, .05), col = "lightgrey")
-abline(v = seq(0, 1, .1), col = "lightgrey", lwd = 2)
-abline(h = seq(0, 1, .1), col = "lightgrey", lwd = 2)
-box(bty = "o")
-walk(out, lines2, x = tau2)
-par(opar)
-```
+A function that computes $\rho$:
 
 ```{r}
 X_val <- seq(0, 1, .1)
@@ -641,29 +616,67 @@ compute_rho <- function(gn, L, r, D) {
 }
 ```
 
+A function that plots the computed $\rho$ values as a function of the proportion $\tau$
+of infected people that are treated:
+
 ```{r}
+abline3 <- function(...) abline(..., col = "lightgrey")
+abline4 <- function(...) abline3(..., lwd = lwd_val)
+
 plot_rho <- function(rho_val) {
   plot(rep(tau2, length(X_val)), unlist(rho_val), type = "n", ylim = 0:1,
        xlab = "proportion of infected treated",
        ylab = "relative decrease of R0",
        xaxs = "i", yaxs = "i")
-  abline(v = seq(0, 1, .05), col = "lightgrey")
-  abline(h = seq(0, 1, .05), col = "lightgrey")
-  abline(v = seq(0, 1, .1), col = "lightgrey", lwd = 2)
-  abline(h = seq(0, 1, .1), col = "lightgrey", lwd = 2)
+  abline3(v = seq(0, 1, .05))
+  abline3(h = seq(0, 1, .05))
+  abline4(v = seq(0, 1, .1))
+  abline4(h = seq(0, 1, .1))
   box(bty = "o")
   walk(rho_val, lines2, x = tau2)
 }
 ```
 
-```{r fig.width = 8, fig.height = 6, margin1 = FALSE, margin3 = TRUE}
+Computing the $\rho$ values (takes about 8"):
+
+```{r eval = FALSE}
+gn_val <- c(1 / 3, 1, 3)
+L_val <- c(2, 6) * 1e4
+rho_val <- expand.grid(gn_val, L_val) |>
+  with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
+```
+
+```{r include = FALSE}
 gn_val <- c(1 / 3, 1, 3)
 L_val <- c(2, 6) * 1e4
 
-rho_val <- expand.grid(gn_val, L_val) |>
-  with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
+if (file_exists("rho_val.rds")) {
+  rho_val <- readRDS3("rho_val.rds")
+} else {
+  rho_val <- expand.grid(gn_val, L_val) |>
+    with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
+  saveRDS2(rho_val, "rho_val.rds")
+}
+```
 
+Plotting the $\rho$ values for various values of $-\log(P_e)$ and sporozoite load $L$.
+As a reminder, $P_e = e^{-gn}$ is the probability that an infected mosquito becomes
+infectious, with $g$ the mosquito death rate and $n$ the EIP.
+
+```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin4 = TRUE}
+mcx <- 3 / 2
 opar <- par(mfrow = c(2, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
-walk(rho_val, plot_rho)
+plot_rho(rho_val[[1]])
+mtext("L = 20,000", 2, 2.5)
+mtext("-log(Pe) = 1 / 3", 3, .5)
+plot_rho(rho_val[[2]])
+mtext("-log(Pe) = 1", 3, .5)
+plot_rho(rho_val[[3]])
+mtext("-log(Pe) = 3", 3, .5)
+plot_rho(rho_val[[4]])
+mtext("L = 60,000", 2, 2.5)
+plot_rho(rho_val[[5]])
+plot_rho(rho_val[[6]])
 par(opar)
 ```
+
