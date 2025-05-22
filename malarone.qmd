@@ -646,8 +646,6 @@ plot_rho <- function(rho_val) {
   plot(rep(tau2, length(X_val)), unlist(rho_val), type = "n", ylim = 0:1,
        xlab = "proportion of infected treated",
        ylab = "relative decrease of R0",
-#       xlab = "proportion",
-#       ylab = "relative",
        xaxs = "i", yaxs = "i")
   abline(v = seq(0, 1, .05), col = "lightgrey")
   abline(h = seq(0, 1, .05), col = "lightgrey")
@@ -661,13 +659,11 @@ plot_rho <- function(rho_val) {
 ```{r fig.width = 8, fig.height = 6, margin1 = FALSE, margin3 = TRUE}
 gn_val <- c(1 / 3, 1, 3)
 L_val <- c(2, 6) * 1e4
-grd_val <- expand.grid(gn_val = gn_val, L_val = L_val)
-rho_val <- with(grd_val, map2(gn_val, L_val,
-                              compute_rho,
-                              r = 1 / (14 * 24), D = 28 * 24))
 
-opar <- par(mfrow = c(2, 3),
-            mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
+rho_val <- expand.grid(gn_val, L_val) |>
+  with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
+
+opar <- par(mfrow = c(2, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
 walk(rho_val, plot_rho)
 par(opar)
 ```
