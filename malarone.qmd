@@ -20,8 +20,12 @@ knitr::knit_hooks$set(
   },
   margin2 = function(before, options, envir) {
     if (before) par(mgp = c(1.5, .5, 0), bty = "n",
-#                    cex.axis = 3 / 2, cex.lab = 3 / 2,
                     plt = c(.22, .97, .15, .95))
+    else NULL
+  },
+  margin3 = function(before, options, envir) {
+    if (before) par(mgp = c(1.5, .5, 0), bty = "n",
+                    plt = c(.19, .95, .15, .85))
     else NULL
   })
 
@@ -480,6 +484,8 @@ abline(h = .9644393, col = 4)
 
 ## Epidemiology
 
+### infections prevented per treated
+
 From a given $R_0$, a given prevalence $\bar{X}$ and a given proportion $\tau$ of
 infected people that are treated, we can compute the number of human infections 
 averted per person treated as so:
@@ -591,4 +597,77 @@ for (i in 1:3) {
 par(opar)
 ```
 
+### Anna and Thierry's idea
 
+```{r margin1 = FALSE, margin3 = TRUE, fig.width = 5, fig.height = 5, eval = FALSE, include=FALSE}
+# mosquito death rate (inverse of mosquito life expectancy):
+g <- 1 / 14  # same unit as n (here in days)
+# EPI:
+n <- 7  # same unit as g (here in days)
+# mean sporozoite load in absence of malarone:
+L <- 6e4
+# recovery rate in humans (inverse of the mean duration of infection in humans):
+r <- 1 / (14 * 24)  # in hours
+# duration over which to perform the integration of the effect of malarone:
+D <- 28 * 24  # in hours (note: this parameter is not a biological parameter)
+
+#lambda_val <- lambda(D, L, g, n, nb = 1e6)  # that's the bit that takes the most time
+
+tau2 <- seq2(0, 1)
+rho3 <- function(X, D, r) 1 - tau2 * X * r * D * (1 - lambda_val)
+X_val <- seq(0, 1, .1)
+out <- map(X_val, rho3, D, r)
+opar <- par(pty = "s")
+plot(rep(tau2, length(X_val)), unlist(out), type = "n", ylim = 0:1,
+     xlab = "proportion of infected that are treated",
+     ylab = "relative decrease of R0",
+     xaxs = "i", yaxs = "i")
+abline(v = seq(0, 1, .05), col = "lightgrey")
+abline(h = seq(0, 1, .05), col = "lightgrey")
+abline(v = seq(0, 1, .1), col = "lightgrey", lwd = 2)
+abline(h = seq(0, 1, .1), col = "lightgrey", lwd = 2)
+box(bty = "o")
+walk(out, lines2, x = tau2)
+par(opar)
+```
+
+```{r}
+X_val <- seq(0, 1, .1)
+tau2 <- seq2(0, 1)
+
+compute_rho <- function(gn, L, r, D) {
+  K <- tau2 * r * D * (1 - lambda(D, L, 1, gn, nb = 1e6))
+  map(X_val, ~ 1 - .x * K)
+}
+```
+
+```{r}
+plot_rho <- function(rho_val) {
+  plot(rep(tau2, length(X_val)), unlist(rho_val), type = "n", ylim = 0:1,
+       xlab = "proportion of infected treated",
+       ylab = "relative decrease of R0",
+#       xlab = "proportion",
+#       ylab = "relative",
+       xaxs = "i", yaxs = "i")
+  abline(v = seq(0, 1, .05), col = "lightgrey")
+  abline(h = seq(0, 1, .05), col = "lightgrey")
+  abline(v = seq(0, 1, .1), col = "lightgrey", lwd = 2)
+  abline(h = seq(0, 1, .1), col = "lightgrey", lwd = 2)
+  box(bty = "o")
+  walk(rho_val, lines2, x = tau2)
+}
+```
+
+```{r fig.width = 8, fig.height = 6, margin1 = FALSE, margin3 = TRUE}
+gn_val <- c(1 / 3, 1, 3)
+L_val <- c(2, 6) * 1e4
+grd_val <- expand.grid(gn_val = gn_val, L_val = L_val)
+rho_val <- with(grd_val, map2(gn_val, L_val,
+                              compute_rho,
+                              r = 1 / (14 * 24), D = 28 * 24))
+
+opar <- par(mfrow = c(2, 3),
+            mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
+walk(rho_val, plot_rho)
+par(opar)
+```
