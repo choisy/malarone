@@ -12,26 +12,17 @@ csl: the-american-naturalist.csl
 ---
 
 ```{r include = FALSE}
+par2 <- function(...) par(..., mgp = c(1.5, .5, 0), bty = "n")
+
 knitr::knit_hooks$set(
   margin1 = function(before, options, envir) {
-    if (before) par(mgp = c(1.5, .5, 0), bty = "n",
-                    plt = c(.105, .97, .15, .95))
-    else NULL
+    if (before) par2(plt = c(.105, .97, .15, .95)) else NULL
   },
   margin2 = function(before, options, envir) {
-    if (before) par(mgp = c(1.5, .5, 0), bty = "n",
-                    plt = c(.22, .97, .15, .95))
-    else NULL
+    if (before) par2(plt = c(.22, .97, .15, .95)) else NULL
   },
   margin3 = function(before, options, envir) {
-    if (before) par(mgp = c(1.5, .5, 0), bty = "n",
-                    plt = c(.19, .95, .15, .85))
-    else NULL
-  },
-  margin4 = function(before, options, envir) {
-    if (before) par(mgp = c(1.5, .5, 0), bty = "n",
-                    plt = c(.25, .95, .19, .9))
-    else NULL
+    if (before) par2(plt = c(.25, .95, .19, .9)) else NULL
   })
 
 eps <- .8
@@ -55,9 +46,10 @@ path2data <- paste0(Sys.getenv("HOME"), "/Library/CloudStorage/",
 ```
 
 ```{r include = FALSE}
-file_exists <- function(x) file.exists(paste0(path2data, "cache/", x))
-readRDS3 <- function(x) readRDS(paste0(path2data, "cache/", x))
-saveRDS2 <- function(object, file) saveRDS(object, paste0(path2data, "cache/", file))
+make_path <- function(x) paste0(path2data, "cache/", x)
+file_exists <- function(x) file.exists(make_path(x))
+readRDS3 <- function(x) readRDS(make_path(x))
+saveRDS2 <- function(object, file) saveRDS(object, make_path(file))
 ```
 
 Whether or not to force the effects to be equal to $0$ at $t = 28$ days (in practice it
@@ -168,9 +160,9 @@ a function of $R_0$:
 
 $$
 \bar{X} = \frac{R_0 - 1}{R_0 + c S}
-$${#eq-prevalence1}
+$$
 
-## Experimental results
+## Experimental data
 
 The experimental results suggest that malarone
 
@@ -403,7 +395,8 @@ during the past $D$ time units, then the mean reduction factor of $R_0$ reads:
 
 $$
 \lambda(g, n, L, D) = \frac{1}{D}\int_0^D\delta(t, g, n, L)dt
-$$
+$$ {#eq-lambda}
+
 Ideally, we'd like $D$ to be large enough so that $\delta(t = D, g, n, L)\simeq 0$. The
 corresponding R code is:
 
@@ -623,15 +616,15 @@ of infected people that are treated:
 abline3 <- function(...) abline(..., col = "lightgrey")
 abline4 <- function(...) abline3(..., lwd = lwd_val)
 
-plot_rho <- function(rho_val) {
-  plot(rep(tau2, length(X_val)), unlist(rho_val), type = "n", ylim = 0:1,
-       xlab = "proportion of infected treated",
-       ylab = "relative decrease of R0",
-       xaxs = "i", yaxs = "i")
+plot_rho <- function(rho_val, ylim = NULL, ylab = "relative decrease of R0",
+                     hlines1 = seq(0, 1, .1), hlines2 = seq(0, 1, .05)) {
+  if (is.null(ylim)) ylim <- 0:1
+  plot(rep(tau2, length(X_val)), unlist(rho_val), type = "n", ylim = ylim, ylab = ylab,
+       xlab = "proportion of infected treated", xaxs = "i", yaxs = "i")
   abline3(v = seq(0, 1, .05))
-  abline3(h = seq(0, 1, .05))
+  abline3(h = hlines2)
   abline4(v = seq(0, 1, .1))
-  abline4(h = seq(0, 1, .1))
+  abline4(h = hlines1)
   box(bty = "o")
   walk(rho_val, lines2, x = tau2)
 }
@@ -663,20 +656,123 @@ Plotting the $\rho$ values for various values of $-\log(P_e)$ and sporozoite loa
 As a reminder, $P_e = e^{-gn}$ is the probability that an infected mosquito becomes
 infectious, with $g$ the mosquito death rate and $n$ the EIP.
 
-```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin4 = TRUE}
-mcx <- 3 / 2
-opar <- par(mfrow = c(2, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
-plot_rho(rho_val[[1]])
-mtext("L = 20,000", 2, 2.5)
-mtext("-log(Pe) = 1 / 3", 3, .5)
-plot_rho(rho_val[[2]])
-mtext("-log(Pe) = 1", 3, .5)
-plot_rho(rho_val[[3]])
-mtext("-log(Pe) = 3", 3, .5)
-plot_rho(rho_val[[4]])
-mtext("L = 60,000", 2, 2.5)
-plot_rho(rho_val[[5]])
-plot_rho(rho_val[[6]])
-par(opar)
+```{r}
+plot_multipanel <- function(x, gn = paste("-log(Pe) =", c("1 / 3", "1", "3")),
+                            ylim = NULL, ylab = bquote(R[0] ~ .("reduction factor")),
+                            hlines1 = seq(0, 1, .1), hlines2 = seq(0, 1, .05)) {
+  if (is.null(ylim)) ylim <- 0:1
+  mcx <- 3 / 2
+  plot_rho2 <- function(y) plot_rho(y, ylim, ylab, hlines1, hlines2)
+  op <- par(mfrow = c(2, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
+  plot_rho2(x[[1]])
+  mtext("L = 20,000", 2, 2.5)
+  mtext(gn[1], 3, .5)
+  plot_rho2(x[[2]])
+  mtext(gn[2], 3, .5)
+  plot_rho2(x[[3]])
+  mtext(gn[3], 3, .5)
+  plot_rho2(x[[4]])
+  mtext("L = 60,000", 2, 2.5)
+  plot_rho2(x[[5]])
+  plot_rho2(x[[6]])
+  par(op)
+}
+```
+
+```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin3 = TRUE}
+plot_multipanel(rho_val, c("EPI = e(0) / 3", "EPI = e(0)", "EPI = 3 x e(0)"))
+```
+
+Let's try a different range of the EPI compared to the mosquito life expectancy:
+
+```{r eval = FALSE}
+gn_val2 <- c(1 / 2, 1, 2)
+rho_val2 <- expand.grid(gn_val2, L_val) |>
+  with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
+```
+
+```{r include = FALSE}
+gn_val2 <- c(1 / 2, 1, 2)
+
+if (file_exists("rho_val2.rds")) {
+  rho_val2 <- readRDS3("rho_val2.rds")
+} else {
+  rho_val2 <- expand.grid(gn_val2, L_val) |>
+    with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
+  saveRDS2(rho_val2, "rho_val2.rds")
+}
+```
+
+Which give:
+
+```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin3 = TRUE}
+plot_multipanel(rho_val2, c("EPI = e(0) / 2", "EPI = e(0)", "EPI = 2 x e(0)"))
+```
+
+And an even narrower range:
+
+```{r eval = FALSE}
+gn_val3 <- c(.4, .7, 1)
+rho_val3 <- gn_val3 |>
+  expand.grid(L_val) |>
+  with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
+```
+
+```{r include = FALSE}
+gn_val3 <- c(.4, .7, 1)
+
+if (file_exists("rho_val3.rds")) {
+  rho_val3 <- readRDS3("rho_val3.rds")
+} else {
+  rho_val3 <- gn_val3 |>
+    expand.grid(L_val) |>
+    with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
+  saveRDS2(rho_val3, "rho_val3.rds")
+}
+```
+
+Which gives
+
+```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin3 = TRUE}
+plot_multipanel(rho_val3, c("EPI = 0.4 x e(0)", "EPI = 0.7 x e(0)", "EPI = e(0)"))
+```
+
+
+### With $R_0$ values
+
+If we want to look at some specific value of $R_0$, we first need to acknowledge that,
+every else being constant, $R_0$ is proportional to $P_e$:
+
+$$
+R_0 \propto P_e = e^{-gn}
+$$
+With this being considered, let's now consider for example a reference value of
+$R_0=15$ in absence of treatment and when the EPI is equal to the mosquito life
+expectancy:
+
+```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin3 = TRUE}
+rho_val2b <- rho_val
+rho_val2b[c(1, 4)] <- map(rho_val2[c(1, 4)],
+                          function(x) map(x, ~ .x * 15 * exp(1 - 1 / 2)))
+rho_val2b[c(2, 5)] <- map(rho_val2[c(2, 5)], function(x) map(x, ~ .x * 15))
+rho_val2b[c(3, 6)] <- map(rho_val2[c(3, 6)],
+                          function(x) map(x, ~ .x * 15 * exp(1 - 2)))
+plot_multipanel(rho_val2b, c("EPI = e(0) / 2", "EPI = e(0)", "EPI = 2 x e(0)"),
+                c(0, 30), bquote(R[0]), seq(5, 25, 5), 1:29)
+```
+
+A mass treatment programme in which everybody in the human population takes malarone
+every $D$ days (and in absence of synchrony between individuals) would lead to an $R_0$
+reduction factor equal to $\lambda$ as defined in @eq-lambda:
+
+$$
+\lambda(g, n, L, D) = \frac{1}{D}\int_0^D\delta(t, g, n, L)dt
+$$
+
+```{r}
+system.time(
+out <- expand.grid(c(2e4, 6e4), c(.5, 1, 2)) |> 
+  with(map2(Var1, Var2, lambda, D = 28 * 24, g = 1, nb = 1e6))
+)
 ```
 

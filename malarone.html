@@ -132,7 +132,7 @@ window.Quarto = {
   <li><a href="#packages" id="toc-packages" class="nav-link" data-scroll-target="#packages"><span class="header-section-number">2</span> Packages</a></li>
   <li><a href="#functions" id="toc-functions" class="nav-link" data-scroll-target="#functions"><span class="header-section-number">3</span> Functions</a></li>
   <li><a href="#theoretical-results" id="toc-theoretical-results" class="nav-link" data-scroll-target="#theoretical-results"><span class="header-section-number">4</span> Theoretical results</a></li>
-  <li><a href="#experimental-results" id="toc-experimental-results" class="nav-link" data-scroll-target="#experimental-results"><span class="header-section-number">5</span> Experimental results</a>
+  <li><a href="#experimental-data" id="toc-experimental-data" class="nav-link" data-scroll-target="#experimental-data"><span class="header-section-number">5</span> Experimental data</a>
   <ul class="collapse">
   <li><a href="#tba-on-sporozoites" id="toc-tba-on-sporozoites" class="nav-link" data-scroll-target="#tba-on-sporozoites"><span class="header-section-number">5.1</span> TBA on sporozoites</a></li>
   <li><a href="#tra-on-sporozoites" id="toc-tra-on-sporozoites" class="nav-link" data-scroll-target="#tra-on-sporozoites"><span class="header-section-number">5.2</span> TRA on sporozoites</a></li>
@@ -144,6 +144,7 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#infections-prevented-per-treated" id="toc-infections-prevented-per-treated" class="nav-link" data-scroll-target="#infections-prevented-per-treated"><span class="header-section-number">7.1</span> infections prevented per treated</a></li>
   <li><a href="#anna-and-thierrys-idea" id="toc-anna-and-thierrys-idea" class="nav-link" data-scroll-target="#anna-and-thierrys-idea"><span class="header-section-number">7.2</span> Anna and Thierry’s idea</a></li>
+  <li><a href="#with-r_0-values" id="toc-with-r_0-values" class="nav-link" data-scroll-target="#with-r_0-values"><span class="header-section-number">7.3</span> With <span class="math inline">\(R_0\)</span> values</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -247,12 +248,12 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 \]</span></p>
 <p>where <span class="math inline">\(C\)</span> is the above-defined individual vectorial capacity, <span class="math inline">\(b\)</span> is the <strong>transmission efficiency from mosquito to human</strong>, <span class="math inline">\(r\)</span> is the <strong>recovery rate of humans</strong>, and <span class="math inline">\(m\)</span> is the <strong>ratio of mosquitoes to humans</strong>.</p>
 <p>Finally, the proportion <span class="math inline">\(\bar{X}\)</span> of infected humans at equilibrium can be expressed as a function of <span class="math inline">\(R_0\)</span>:</p>
-<p><span id="eq-prevalence1"><span class="math display">\[
+<p><span class="math display">\[
 \bar{X} = \frac{R_0 - 1}{R_0 + c S}
-\tag{1}\]</span></span></p>
+\]</span></p>
 </section>
-<section id="experimental-results" class="level2" data-number="5">
-<h2 data-number="5" class="anchored" data-anchor-id="experimental-results"><span class="header-section-number">5</span> Experimental results</h2>
+<section id="experimental-data" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="experimental-data"><span class="header-section-number">5</span> Experimental data</h2>
 <p>The experimental results suggest that malarone</p>
 <ol type="1">
 <li>decreases by the multiplicative factor <span class="math inline">\(1 - \alpha\)</span> (<span class="math inline">\(0 \leq \alpha \leq 1\)</span>) the number of mosquitoes with sporozoites (with <span class="math inline">\(\alpha\)</span> shown on the <span class="math inline">\(y\)</span> axis of Figure 3B);</li>
@@ -437,9 +438,10 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <p><strong>Note 1:</strong> <span class="math inline">\(g\)</span> and <span class="math inline">\(n\)</span> should be expressed in the same time units.<br>
 <strong>Note 2:</strong> <span class="math inline">\(t\)</span> should be expressed in hours.</p>
 <p>If we now assume that all the mosquitoes feed on people who were treated sometimes during the past <span class="math inline">\(D\)</span> time units, then the mean reduction factor of <span class="math inline">\(R_0\)</span> reads:</p>
-<p><span class="math display">\[
+<p><span id="eq-lambda"><span class="math display">\[
 \lambda(g, n, L, D) = \frac{1}{D}\int_0^D\delta(t, g, n, L)dt
-\]</span> Ideally, we’d like <span class="math inline">\(D\)</span> to be large enough so that <span class="math inline">\(\delta(t = D, g, n, L)\simeq 0\)</span>. The corresponding R code is:</p>
+\tag{1}\]</span></span></p>
+<p>Ideally, we’d like <span class="math inline">\(D\)</span> to be large enough so that <span class="math inline">\(\delta(t = D, g, n, L)\simeq 0\)</span>. The corresponding R code is:</p>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>lambda <span class="ot">&lt;-</span> <span class="cf">function</span>(D, L, g, n, <span class="at">nb =</span> <span class="fl">1e6</span>) {</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">trapezoid</span>(<span class="cf">function</span>(x) <span class="fu">delta</span>(x, L, g, n), <span class="dv">0</span>, D, nb) <span class="sc">/</span> D</span>
@@ -636,15 +638,15 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>abline3 <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">abline</span>(..., <span class="at">col =</span> <span class="st">"lightgrey"</span>)</span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>abline4 <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">abline3</span>(..., <span class="at">lwd =</span> lwd_val)</span>
 <span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>plot_rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val) {</span>
-<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(<span class="fu">rep</span>(tau2, <span class="fu">length</span>(X_val)), <span class="fu">unlist</span>(rho_val), <span class="at">type =</span> <span class="st">"n"</span>, <span class="at">ylim =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">1</span>,</span>
-<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">xlab =</span> <span class="st">"proportion of infected treated"</span>,</span>
-<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">ylab =</span> <span class="st">"relative decrease of R0"</span>,</span>
-<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">xaxs =</span> <span class="st">"i"</span>, <span class="at">yaxs =</span> <span class="st">"i"</span>)</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>plot_rho <span class="ot">&lt;-</span> <span class="cf">function</span>(rho_val, <span class="at">ylim =</span> <span class="cn">NULL</span>, <span class="at">ylab =</span> <span class="st">"relative decrease of R0"</span>,</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>                     <span class="at">hlines1 =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">1</span>), <span class="at">hlines2 =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">05</span>)) {</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(ylim)) ylim <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">1</span></span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(<span class="fu">rep</span>(tau2, <span class="fu">length</span>(X_val)), <span class="fu">unlist</span>(rho_val), <span class="at">type =</span> <span class="st">"n"</span>, <span class="at">ylim =</span> ylim, <span class="at">ylab =</span> ylab,</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">xlab =</span> <span class="st">"proportion of infected treated"</span>, <span class="at">xaxs =</span> <span class="st">"i"</span>, <span class="at">yaxs =</span> <span class="st">"i"</span>)</span>
 <span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline3</span>(<span class="at">v =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">05</span>))</span>
-<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline3</span>(<span class="at">h =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">05</span>))</span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline3</span>(<span class="at">h =</span> hlines2)</span>
 <span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline4</span>(<span class="at">v =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">1</span>))</span>
-<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline4</span>(<span class="at">h =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">1</span>))</span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">abline4</span>(<span class="at">h =</span> hlines1)</span>
 <span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">box</span>(<span class="at">bty =</span> <span class="st">"o"</span>)</span>
 <span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">walk</span>(rho_val, lines2, <span class="at">x =</span> tau2)</span>
 <span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -657,29 +659,101 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">with</span>(<span class="fu">map2</span>(Var1, Var2, compute_rho, <span class="at">r =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">D =</span> <span class="dv">28</span> <span class="sc">*</span> <span class="dv">24</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Plotting the <span class="math inline">\(\rho\)</span> values for various values of <span class="math inline">\(-\log(P_e)\)</span> and sporozoite load <span class="math inline">\(L\)</span>. As a reminder, <span class="math inline">\(P_e = e^{-gn}\)</span> is the probability that an infected mosquito becomes infectious, with <span class="math inline">\(g\)</span> the mosquito death rate and <span class="math inline">\(n\)</span> the EIP.</p>
-<div class="cell" data-layout-align="center" data-margin4="true">
-<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>mcx <span class="ot">&lt;-</span> <span class="dv">3</span> <span class="sc">/</span> <span class="dv">2</span></span>
-<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>opar <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">3</span>), <span class="at">mex =</span> mcx, <span class="at">cex.axis =</span> mcx, <span class="at">cex.lab =</span> mcx, <span class="at">cex.main =</span> mcx)</span>
-<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_rho</span>(rho_val[[<span class="dv">1</span>]])</span>
-<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">"L = 20,000"</span>, <span class="dv">2</span>, <span class="fl">2.5</span>)</span>
-<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">"-log(Pe) = 1 / 3"</span>, <span class="dv">3</span>, .<span class="dv">5</span>)</span>
-<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_rho</span>(rho_val[[<span class="dv">2</span>]])</span>
-<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">"-log(Pe) = 1"</span>, <span class="dv">3</span>, .<span class="dv">5</span>)</span>
-<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_rho</span>(rho_val[[<span class="dv">3</span>]])</span>
-<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">"-log(Pe) = 3"</span>, <span class="dv">3</span>, .<span class="dv">5</span>)</span>
-<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_rho</span>(rho_val[[<span class="dv">4</span>]])</span>
-<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext</span>(<span class="st">"L = 60,000"</span>, <span class="dv">2</span>, <span class="fl">2.5</span>)</span>
-<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_rho</span>(rho_val[[<span class="dv">5</span>]])</span>
-<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_rho</span>(rho_val[[<span class="dv">6</span>]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>plot_multipanel <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">gn =</span> <span class="fu">paste</span>(<span class="st">"-log(Pe) ="</span>, <span class="fu">c</span>(<span class="st">"1 / 3"</span>, <span class="st">"1"</span>, <span class="st">"3"</span>)),</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>                            <span class="at">ylim =</span> <span class="cn">NULL</span>, <span class="at">ylab =</span> <span class="fu">bquote</span>(R[<span class="dv">0</span>] <span class="sc">~</span> .(<span class="st">"reduction factor"</span>)),</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>                            <span class="at">hlines1 =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">1</span>), <span class="at">hlines2 =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, .<span class="dv">05</span>)) {</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(ylim)) ylim <span class="ot">&lt;-</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">1</span></span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>  mcx <span class="ot">&lt;-</span> <span class="dv">3</span> <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>  plot_rho2 <span class="ot">&lt;-</span> <span class="cf">function</span>(y) <span class="fu">plot_rho</span>(y, ylim, ylab, hlines1, hlines2)</span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>  op <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">3</span>), <span class="at">mex =</span> mcx, <span class="at">cex.axis =</span> mcx, <span class="at">cex.lab =</span> mcx, <span class="at">cex.main =</span> mcx)</span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_rho2</span>(x[[<span class="dv">1</span>]])</span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mtext</span>(<span class="st">"L = 20,000"</span>, <span class="dv">2</span>, <span class="fl">2.5</span>)</span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mtext</span>(gn[<span class="dv">1</span>], <span class="dv">3</span>, .<span class="dv">5</span>)</span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_rho2</span>(x[[<span class="dv">2</span>]])</span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mtext</span>(gn[<span class="dv">2</span>], <span class="dv">3</span>, .<span class="dv">5</span>)</span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_rho2</span>(x[[<span class="dv">3</span>]])</span>
+<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mtext</span>(gn[<span class="dv">3</span>], <span class="dv">3</span>, .<span class="dv">5</span>)</span>
+<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_rho2</span>(x[[<span class="dv">4</span>]])</span>
+<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mtext</span>(<span class="st">"L = 60,000"</span>, <span class="dv">2</span>, <span class="fl">2.5</span>)</span>
+<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_rho2</span>(x[[<span class="dv">5</span>]])</span>
+<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot_rho2</span>(x[[<span class="dv">6</span>]])</span>
+<span id="cb43-19"><a href="#cb43-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">par</span>(op)</span>
+<span id="cb43-20"><a href="#cb43-20" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-layout-align="center" data-margin3="true">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_multipanel</span>(rho_val, <span class="fu">c</span>(<span class="st">"EPI = e(0) / 3"</span>, <span class="st">"EPI = e(0)"</span>, <span class="st">"EPI = 3 x e(0)"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="malarone_files/figure-html/unnamed-chunk-42-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="768"></p>
+<p><img src="malarone_files/figure-html/unnamed-chunk-43-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="768"></p>
 </figure>
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(opar)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>Let’s try a different range of the EPI compared to the mosquito life expectancy:</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>gn_val2 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span> <span class="sc">/</span> <span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">2</span>)</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>rho_val2 <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(gn_val2, L_val) <span class="sc">|&gt;</span></span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">with</span>(<span class="fu">map2</span>(Var1, Var2, compute_rho, <span class="at">r =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">D =</span> <span class="dv">28</span> <span class="sc">*</span> <span class="dv">24</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Which give:</p>
+<div class="cell" data-layout-align="center" data-margin3="true">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_multipanel</span>(rho_val2, <span class="fu">c</span>(<span class="st">"EPI = e(0) / 2"</span>, <span class="st">"EPI = e(0)"</span>, <span class="st">"EPI = 2 x e(0)"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="malarone_files/figure-html/unnamed-chunk-46-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>And an even narrower range:</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>gn_val3 <span class="ot">&lt;-</span> <span class="fu">c</span>(.<span class="dv">4</span>, .<span class="dv">7</span>, <span class="dv">1</span>)</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>rho_val3 <span class="ot">&lt;-</span> gn_val3 <span class="sc">|&gt;</span></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">expand.grid</span>(L_val) <span class="sc">|&gt;</span></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">with</span>(<span class="fu">map2</span>(Var1, Var2, compute_rho, <span class="at">r =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>), <span class="at">D =</span> <span class="dv">28</span> <span class="sc">*</span> <span class="dv">24</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Which gives</p>
+<div class="cell" data-layout-align="center" data-margin3="true">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_multipanel</span>(rho_val3, <span class="fu">c</span>(<span class="st">"EPI = 0.4 x e(0)"</span>, <span class="st">"EPI = 0.7 x e(0)"</span>, <span class="st">"EPI = e(0)"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="malarone_files/figure-html/unnamed-chunk-49-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="with-r_0-values" class="level3" data-number="7.3">
+<h3 data-number="7.3" class="anchored" data-anchor-id="with-r_0-values"><span class="header-section-number">7.3</span> With <span class="math inline">\(R_0\)</span> values</h3>
+<p>If we want to look at some specific value of <span class="math inline">\(R_0\)</span>, we first need to acknowledge that, every else being constant, <span class="math inline">\(R_0\)</span> is proportional to <span class="math inline">\(P_e\)</span>:</p>
+<p><span class="math display">\[
+R_0 \propto P_e = e^{-gn}
+\]</span> With this being considered, let’s now consider for example a reference value of <span class="math inline">\(R_0=15\)</span> in absence of treatment and when the EPI is equal to the mosquito life expectancy:</p>
+<div class="cell" data-layout-align="center" data-margin3="true">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>rho_val2b <span class="ot">&lt;-</span> rho_val</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>rho_val2b[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">4</span>)] <span class="ot">&lt;-</span> <span class="fu">map</span>(rho_val2[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">4</span>)],</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>                          <span class="cf">function</span>(x) <span class="fu">map</span>(x, <span class="sc">~</span> .x <span class="sc">*</span> <span class="dv">15</span> <span class="sc">*</span> <span class="fu">exp</span>(<span class="dv">1</span> <span class="sc">-</span> <span class="dv">1</span> <span class="sc">/</span> <span class="dv">2</span>)))</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>rho_val2b[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5</span>)] <span class="ot">&lt;-</span> <span class="fu">map</span>(rho_val2[<span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">5</span>)], <span class="cf">function</span>(x) <span class="fu">map</span>(x, <span class="sc">~</span> .x <span class="sc">*</span> <span class="dv">15</span>))</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>rho_val2b[<span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">6</span>)] <span class="ot">&lt;-</span> <span class="fu">map</span>(rho_val2[<span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">6</span>)],</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>                          <span class="cf">function</span>(x) <span class="fu">map</span>(x, <span class="sc">~</span> .x <span class="sc">*</span> <span class="dv">15</span> <span class="sc">*</span> <span class="fu">exp</span>(<span class="dv">1</span> <span class="sc">-</span> <span class="dv">2</span>)))</span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_multipanel</span>(rho_val2b, <span class="fu">c</span>(<span class="st">"EPI = e(0) / 2"</span>, <span class="st">"EPI = e(0)"</span>, <span class="st">"EPI = 2 x e(0)"</span>),</span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>                <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">30</span>), <span class="fu">bquote</span>(R[<span class="dv">0</span>]), <span class="fu">seq</span>(<span class="dv">5</span>, <span class="dv">25</span>, <span class="dv">5</span>), <span class="dv">1</span><span class="sc">:</span><span class="dv">29</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="malarone_files/figure-html/unnamed-chunk-50-1.png" class="img-fluid quarto-figure quarto-figure-center figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>A mass treatment programme in which everybody in the human population takes malarone every <span class="math inline">\(D\)</span> days (in absence of synchrony between individuals) would lead to an <span class="math inline">\(R_0\)</span> reduction factor equal to <span class="math inline">\(\lambda\)</span> as defined in <a href="#eq-lambda" class="quarto-xref">Equation&nbsp;1</a>:</p>
+<p><span class="math display">\[
+\lambda(g, n, L, D) = \frac{1}{D}\int_0^D\delta(t, g, n, L)dt
+\]</span></p>
 
 </section>
 </section>
