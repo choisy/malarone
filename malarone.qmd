@@ -263,7 +263,7 @@ function coded in `alpha()` looks like together with the experimental data:
 
 ```{r}
 plot_experimental_data(sporozoitsTBA, ylim = c(-1, 1),
-                       ylab = expression(paste("sporozoite TBA ", alpha)))
+                       ylab = bquote(.("sporozoite TBA") ~ alpha))
 xs <- seq2(0, 700)
 lines2(xs, alpha(xs))
 ```
@@ -329,7 +329,7 @@ And let's visualize this function $\beta(t)$ together with the experimental data
 
 ```{r}
 plot_experimental_data(sporozoitsTRA, ylim = c(-.15, .15),
-                       ylab = expression(paste("sporozoite TRA ", beta)))
+                       ylab = bquote("sporozoite TRA" ~ beta))
 lines2(xs, beta(xs))
 ```
 
@@ -363,8 +363,7 @@ And let's visualize this function $\gamma(t)$ together with the experimental dat
 
 ```{r}
 plot_experimental_data(oocysts_size, ylim = c(-.65, .65),
-                       ylab = expression(paste(
-                         "sporozoite size reduction factor ", gamma)))
+                       ylab = bquote(.("sporozoite size reduction factor") ~ gamma))
 lines2(xs, gamma(xs))
 ```
 
@@ -409,23 +408,54 @@ lambda <- function(D, L, g, n, nb = 1e6) {
 **Note 1:** $g$ and $n$ should be expressed in the same time units.  
 **Note 2:** $D$ should be expressed in hours.
 
-Finally, assuming that mosquitoes feed on treated individuals with a probability equal
-to the proportion $\tau\bar{X}rD$ of individuals who were treated sometimes during the
-past $D$ time units, then the mean reduction factor of $R_0$ reads:
+#### Mass treatment
+
+Mass treatment is not affected by the epidemiological context
 
 $$
-\rho(g, n, L, \tau, \bar{X}, r, D) = 1 - (1 - \lambda(g, n, L, D))\tau\bar{X}rD
+\pi(\mu, g, n, L, D) = 1 - (1 - \lambda(g, n, L, D))\mu
 $$
-
-where $\bar{X}$ is the disease prevalence in the human population, $r$ is the human
-recovery rate and $\tau$ is the proportion of infected that are treated with malarone.
-The corresponding R code is:
 
 ```{r}
-rho <- function(D, L, g, n, X, tau, r) {
-  1 - tau * X * r * D * (1 - lambda(D, L, g, n))
+pi1 <- function(D, L, g, n, mu) mu * (1 - lambda(D, L, g, n))
+```
+
+```{r}
+pi2 <- function(lmbd, mu) mu * (1 - lmbd)
+```
+
+#### Treatment of infected
+
+Finally, let's put the effect of malarone into an epidemiological context. If $\bar{X}$
+is the disease prevalence and $r$ the human recovery rate, then we can approximate the
+disease incidence by $\bar{X}r$. If $\tau$ is the treatment rate (*i.e.* the
+proportion of new cases who receive treatment), then the treatment incidence is
+$\tau\bar{X}r$. This means that the proportion of people who received treatment
+sometimes during the past $D$ time units is $1 - e^{-\tau\bar{X}rD}$ and that the
+mean reduction factor of $R_0$ reads:
+
+$$
+\rho(g, n, L, \tau, \bar{X}, r, D) = 1 - \left(1 - e^{-\tau\bar{X}rD}\right)(1 - \lambda(g, n, L, D))
+$$ {#eq-rho}
+
+The corresponding R codes:
+
+```{r}
+rho1 <- function(D, L, g, n, X, tau, r) {
+  1 - (1 - exp(- tau * X * r * D)) * (1 - lambda(D, L, g, n))
 }
 ```
+
+and 
+
+```{r}
+rho2 <- function(lmbd, D, X, tau, r) {
+  1 - (1 - exp(- tau * X * r * D)) * (1 - lmbd)
+}
+```
+
+Given that $\lambda(g, n, L, D)$ is what takes time to compute, it might sometimes be
+advantageous to `rho2()` instead `rho1()` (see below).
 
 **Note 1:** $g$ and $n$ should be expressed in the same time units.  
 **Note 2:** $r$ and $D$ should be both expressed in hours.
@@ -434,345 +464,299 @@ rho <- function(D, L, g, n, X, tau, r) {
 
 Table of parameters here.
 
-In the numerical exploration below we assume a mosquito life expectancy $1/g$ of 14
-days and an EIP $n$ of 7 days. The malarone reducing effect on $R_0$, and considering
-only mosquito feeding on people 100 hours after drug administration is:
+### Reducing factor $\delta(t)$
+
+The $R_0$ reducing factor $\rho(t)$ is computed by assuming that all the mosquitoes 
+feed on people $t$ hours after drug administration. For a mosquito life expectancy
+$1/G$ of 14 days, an EPI $n$ of 7 days, a sporozoite load of 60,000, if the all the
+mosquitoes feed on people 100 hours after drug administration, the $R_0$ reducing
+factor $\delta$ is:
 
 ```{r}
 (effect_at_t100 <- delta(t = 100, L = 6e4, g = 1 / 14, n = 7))
 ```
 
-The malarone reducing effect on $R_0$ considering mosquitoes feeding on people $t$
-hours after drug administration looks like:
+More generally, if all the mosquitoes feed on people $t$ hours after drug 
+administration, the $R_0$ reducing factor looks like:
 
 ```{r}
 xs3 <- seq(0, 24 * 28, le = 2^10)
-plotl(xs3, delta(t = xs3, L = 6e4, g = 1 / (14 * 24), n = 7 * 24), ylim = 0:1,  
+ys <- delta(t = xs3, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)
+plotl(xs3, ys, ylim = 0:1,  
       xlab = "time post drug administration (hours)",
-      ylab = "R0 reduction factor delta")
+      ylab = bquote(R[0] ~ .("reduction factor") ~ delta))
 abline(v = 100, col = 4)
 abline(h = effect_at_t100, col = 4)
+points(100, effect_at_t100, col = 4)
 ```
 
-The expected malarone reducing effect on $R_0$ considering mosquitoes feeding only on
-people treated by malarone sometimes in the past 28 days is:
+where the blue point and lines show the case where all the mosquitoes feed of people
+100 hours after drug administration.
 
-```{r}
-lambda(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7)
-```
+### Mass treatment
 
-The expected malarone reducing effect on $R_0$ considering mosquitoes feeding in a
-population with malaria prevalence of 10%, 90% of which are taking drug is:
-
-```{r}
-rho(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7, X = .1, tau = .9, r = 1 / (14 * 24))
-```
-
-```{r}
-prev_treated <- seq2(0, 1)
-ef <- 1 - prev_treated * (1 - lambda(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7))
-plotl(prev_treated, ef, ylim = 0:1,
-      xlab = "prevalence of people who took the drug in the past 28 days",
-      ylab = "R0 reduction factor rho")
-
-abline(v = .9 * .1 * 28 * 24 / (14 * 24), col = 4)
-abline(h = .9644393, col = 4)
-```
-
-
-## Epidemiology
-
-### infections prevented per treated
-
-From a given $R_0$, a given prevalence $\bar{X}$ and a given proportion $\tau$ of
-infected people that are treated, we can compute the number of human infections 
-averted per person treated as so:
-
-$$
-\Delta(\bar{X}, R_0, \tau |\vec\theta) = \frac{(1 - \bar{X})(1 - \rho(\bar{X}, \tau|\vec\theta))R_0}{((1-(1-\rho(\bar{X}, \tau|\vec\theta))\bar{X})R_0 - 1)\tau}
-$$
-
-where $\vec\theta = [g,n,L,r,D]^T$. Let's now visualize $\Delta$ as a function of
-$R_0$, $\bar{X}$ and $\tau$ for given values of $g$, $n$, $L$, $r$ and $D$. First the
-fixed parameters values:
-
-```{r}
-# mosquito death rate (inverse of mosquito life expectancy):
-g <- 1 / 14  # same unit as n (here in days)
-# EPI:
-n <- 7  # same unit as g (here in days)
-# mean sporozoite load in absence of malarone:
-L <- 6e4
-# recovery rate in humans (inverse of the mean duration of infection in humans):
-r <- 1 / (14 * 24)  # in hours
-# duration over which to perform the integration of the effect of malarone:
-D <- 28 * 24  # in hours (note: this parameter is not a biological parameter)
-```
-
-Let's now compute the $\Delta$ values for a 3D figure:
-
-```{r message = FALSE}
-tau <- c(.001, seq(.1, 1, .1))
-X3D <- c(.01, .05, seq(.1, .9, .1))
-R0 <- c(5, 10, 15)
-
-lambda_val <- lambda(D, L, g, n, nb = 1e6)  # that's the bit that takes the most time
-
-rho2 <- function(D, X, tau, r) 1 - tau * X * r * D * (1 - lambda_val)
-
-Delta2 <- function(X, R0, D, tau, r) {
-  rho_val <- rho2(D, X, tau, r)
-  ((1 - X) * (1 - rho_val) * R0) / (((1 - (1 - rho_val) * X) * R0 - 1) * tau)
-}
-
-Delta3D <- map(R0, ~ map_dfc(X3D, Delta2, .x, D, tau, r))
-```
-
-The 3D figure:
-
-```{r}
-persp2 <- function(x, y, z, ...) {
-  persp(x, y, as.matrix(z), theta = 65, col = NA,
-        zlim = c(0, max(unlist(Delta3D))), ...)
-}
-
-persp3 <- function(...) {
-  persp2(..., axes = FALSE, box = FALSE)
-  par(new = TRUE)
-}
-
-epsilon <- .05
-opar <- par(plt = c(epsilon, 1 - epsilon, epsilon, 1 - epsilon))
-persp3(tau, X3D, Delta3D[[1]], border = 2)
-persp3(tau, X3D, Delta3D[[2]], border = 3)
-persp2(tau, X3D, Delta3D[[3]], border = 4,
-       xlab = "treatment rate",
-       ylab = "prevalence",
-       zlab = "inf. prevented per treated")
-par(opar)
-```
-
-Computing the $\Delta$ values for a 2D figure (takes 17"):
+The $R_0$ reducing factor $\lambda(t)$ is computed by assuming that all the mosquitoes
+feed on people that were treated sometimes during the past $D$ time units. Considering
+that all the mosquitoes feed of people who received treatment in the past 28 days, the
+$R_0$ reducing factor $\lambda$ is:
 
 ```{r eval = FALSE}
-X2D <- seq2(.1, .9)
-Delta2D <- map(R0,
-               ~ map_dfc(X2D, Delta2, .x, D, tau, r) |>
-                 t() |>
-                 as.data.frame())
+(mean_effect_over28days <- lambda(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7))
 ```
 
 ```{r include = FALSE}
-X2D <- seq2(.1, .9)
-
-if (file_exists("Delta2D.rds")) {
-  Delta2D <- readRDS3("Delta2D.rds")
+if (file_exists("mean_effect_over28days.rds")) {
+  mean_effect_over28days <- readRDS3("mean_effect_over28days.rds")
+  print(mean_effect_over28days)
 } else {
-  Delta2D <- map(R0,
-                 ~ map_dfc(X2D, Delta2, .x, D, tau, r) |>
-                   t() |>
-                   as.data.frame())
-  saveRDS2(Delta2D, "Delta2D.rds")
+  (mean_effect_over28days <- lambda(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7))
+  saveRDS2(mean_effect_over28days, "mean_effect_over28days.rds")
 }
 ```
 
-The 2D figure:
-
-```{r fig.width = 8, fig.height = 3, margin1 = FALSE, margin2 = TRUE}
-plot2D <- function(x, ...) {
-  plot(rep(X2D, length(x)), unlist(x), type = "n",
-       xlim = 0:1, ylim = c(0, max(unlist(Delta2D))),
-       xlab = "prevalence", ylab = "infections prevented per treated", ...)
-  walk(x, lines, x = X2D, ...)
-}
-
-mcx <- 3 / 2
-opar <- par(mfrow = c(1, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
-for (i in 1:3) {
-  plot2D(Delta2D[[i]], col = i + 1)
-  title(bquote(R[0] ~ "=" ~ .(R0[i])), line = 0)
-}
-par(opar)
-```
-
-### Anna and Thierry's idea
-
-A function that computes $\rho$:
+(takes ca 1.5" ) which, on the previous plot, looks like:
 
 ```{r}
-X_val <- seq(0, 1, .1)
-tau2 <- seq2(0, 1)
+plot(xs3, ys, ylim = 0:1, xaxs = "i", yaxs = "i", type = "n",
+     xlab = "time post drug administration (hours)",
+     ylab = bquote(R[0] ~ .("reduction factor") ~ delta))
+polygon(c(xs3[1], xs3, tail(xs3, 1)), c(0, ys, 0),
+        border = NA, col = adjustcolor(4, .2))
+lines2(xs3, ys)
+abline(h = mean_effect_over28days, col = 4, lty = 2, lwd = lwd_val)
+text(mean(xs3), 1.04 * mean_effect_over28days, col = 4,
+     bquote(.("mean") ~ R[0] ~ .("reduction factor") ~ lambda))
+box(bty = "o")
+```
 
-compute_rho <- function(gn, L, r, D) {
-  K <- tau2 * r * D * (1 - lambda(D, L, 1, gn, nb = 1e6))
-  map(X_val, ~ 1 - .x * K)
+Let's now look at what a mass treatment would look like
+
+```{r}
+compute_lambda_val <- function(D_val, gn_val, L_val) {
+  out <- with(expand.grid(gn_val, L_val),
+              map2(Var1, Var2, ~ map_dbl(D_val, lambda, L = .y, g = 1, n = .x)))
+  attr(out, "params") <- list(D_val = D_val, gn_val = gn_val, L_val = L_val)
+  out
+}
+```
+
+4'00":
+
+```{r eval = FALSE}
+lambda_vals <- compute_lambda_val(D_val = 1:28 * 24,
+                                  gn_val = c(.4, .7, 1),
+                                  L_val = c(2, 6) * 1e4)
+```
+
+```{r include = FALSE}
+if (file_exists("lambda_vals.rds")) {
+  lambda_vals <- readRDS3("lambda_vals.rds")
+} else {
+  lambda_vals <- compute_lambda_val(D_val = 1:28 * 24,
+                                    gn_val = c(.4, .7, 1),
+                                    L_val = c(2, 6) * 1e4)
+  saveRDS2(lambda_vals, "lambda_vals.rds")
+}
+```
+
+
+```{r}
+plot_mass_treatment <- function(x, y) {
+  plot(x, y, ylim = 0:1, type = "n",
+       xlab = "days between intakes",
+       ylab = bquote(R[0] ~ .("reduction factor") ~ pi))
+  walk(seq(0, 1, .1), ~ lines2(x, 1 - (1 - y) * .x))
+}
+```
+
+```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin3 = TRUE}
+params <- attr(lambda_vals, "params")
+mtext2 <- function(x) mtext(paste("EPI =", format(x, nsmall = 1), "x e(0)"), 3, .5)
+mtext3 <- function(x) mtext(paste("L =", format(x, big.mark = ",")), 2, 2.5)
+plot_mass_treatment2 <- function(y) plot_mass_treatment(params$D_val / 24, y)
+
+mcx <- 3 / 2
+op <- par(mfrow = c(2, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
+
+plot_mass_treatment2(lambda_vals[[1]])
+mtext3(params$L_val[1])
+mtext2(params$gn_val[1])
+plot_mass_treatment2(lambda_vals[[2]])
+mtext2(params$gn_val[2])
+plot_mass_treatment2(lambda_vals[[3]])
+mtext2(params$gn_val[3])
+plot_mass_treatment2(lambda_vals[[4]])
+mtext3(params$L_val[2])
+plot_mass_treatment2(lambda_vals[[5]])
+plot_mass_treatment2(lambda_vals[[6]])
+par(op)
+```
+
+
+### Treatment of infected
+
+If we take the example of the previous section and put it into an epidemiological
+context of a prevalence of 10% and assuming that 90% of the people infected are given
+a treatment, the $R_0$ reducing factor $\rho$ is:
+
+```{r eval = FALSE}
+rho1(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7, X = .1, tau = .9, r = 1 / (14 * 24))
+```
+
+```{r include = FALSE}
+if (file_exists("rho1_val.rds")) {
+  readRDS3("rho1_val.rds")
+} else {
+  (rho1_val <- rho1(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7, X = .1, tau = .9,
+                    r = 1 / (14 * 24)))
+  saveRDS2(rho1_val, "rho1_val.rds")
+}
+```
+
+(which takes 1.5"). Alternatively (and faster):
+
+```{r}
+rho2(mean_effect_over28days, D = 28 * 24, X = .1, tau = .9, r = 1 / (14 * 24))
+```
+
+A function that computes the $\rho$ values:
+
+```{r}
+compute_rho_val <- function(X_val, tau_val, gn_val, L_val, D, L, r, nb) {
+  compute_rho_val_ <- function(gn, L) {
+    lambda_val <- lambda(D, L, 1, gn, nb)
+    expand.grid(X_val, tau_val) |>
+      with(map2_dbl(Var1, Var2, rho2, lmbd = lambda_val, D = D, r = r)) |> 
+      matrix(length(X_val)) |> 
+      t() |> 
+      as.data.frame()
+  }
+  out <- with(expand.grid(gn_val, L_val), map2(Var1, Var2, compute_rho_val_))
+  attr(out, "params") <- list(X_val = X_val, tau_val = tau_val, gn_val = gn_val,
+                              L_val = L_val, D = D, L = L, r = r, nb = nb)
+  out
 }
 ```
 
 A function that plots the computed $\rho$ values as a function of the proportion $\tau$
-of infected people that are treated:
+of infected people that are treated (i.e. one slot of the output of
+`compute_rho_val()`:
 
 ```{r}
 abline3 <- function(...) abline(..., col = "lightgrey")
 abline4 <- function(...) abline3(..., lwd = lwd_val)
 
-plot_rho <- function(rho_val, ylim = NULL, ylab = "relative decrease of R0",
+plot_rho <- function(tau, X, rho_val, ylim = NULL,
+                     ylab = bquote(R[0] ~ .("reduction factor") ~ rho),
                      hlines1 = seq(0, 1, .1), hlines2 = seq(0, 1, .05)) {
   if (is.null(ylim)) ylim <- 0:1
-  plot(rep(tau2, length(X_val)), unlist(rho_val), type = "n", ylim = ylim, ylab = ylab,
-       xlab = "proportion of infected treated", xaxs = "i", yaxs = "i")
+  plot(rep(tau, length(X)), unlist(rho_val), type = "n", ylim = ylim, ylab = ylab,
+       xlab = bquote(.("proportion") ~ tau ~ .("treated")), xaxs = "i", yaxs = "i")
   abline3(v = seq(0, 1, .05))
   abline3(h = hlines2)
   abline4(v = seq(0, 1, .1))
   abline4(h = hlines1)
   box(bty = "o")
-  walk(rho_val, lines2, x = tau2)
+  walk(rho_val, lines2, x = tau)
 }
 ```
 
-Computing the $\rho$ values (takes about 8"):
-
-```{r eval = FALSE}
-gn_val <- c(1 / 3, 1, 3)
-L_val <- c(2, 6) * 1e4
-rho_val <- expand.grid(gn_val, L_val) |>
-  with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
-```
-
-```{r include = FALSE}
-gn_val <- c(1 / 3, 1, 3)
-L_val <- c(2, 6) * 1e4
-
-if (file_exists("rho_val.rds")) {
-  rho_val <- readRDS3("rho_val.rds")
-} else {
-  rho_val <- expand.grid(gn_val, L_val) |>
-    with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
-  saveRDS2(rho_val, "rho_val.rds")
-}
-```
-
-Plotting the $\rho$ values for various values of $-\log(P_e)$ and sporozoite load $L$.
-As a reminder, $P_e = e^{-gn}$ is the probability that an infected mosquito becomes
-infectious, with $g$ the mosquito death rate and $n$ the EIP.
+A function that plots in a multi-panel figure the 6 slots of the output of
+`compute_rho_val()`:
 
 ```{r}
-plot_multipanel <- function(x, gn = paste("-log(Pe) =", c("1 / 3", "1", "3")),
-                            ylim = NULL, ylab = bquote(R[0] ~ .("reduction factor")),
+plot_multipanel <- function(rho_val, ylim = NULL,
+                            ylab = bquote(R[0] ~ .("reduction factor") ~ rho),
                             hlines1 = seq(0, 1, .1), hlines2 = seq(0, 1, .05)) {
   if (is.null(ylim)) ylim <- 0:1
   mcx <- 3 / 2
-  plot_rho2 <- function(y) plot_rho(y, ylim, ylab, hlines1, hlines2)
+  params <- attr(rho_val, "params")
+  gn_val <- params$gn_val
+  L_val <- params$L_val
+  
+  plot_rho2 <- function(y) {
+    plot_rho(params$tau_val, params$X_val, y, ylim, ylab, hlines1, hlines2)
+  }
+  
+  mtext2 <- function(x) mtext(paste("EPI =", format(x, nsmall = 1), "x e(0)"), 3, .5)
+  mtext3 <- function(x) mtext(paste("L =", format(x, big.mark = ",")), 2, 2.5)
+  
   op <- par(mfrow = c(2, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
-  plot_rho2(x[[1]])
-  mtext("L = 20,000", 2, 2.5)
-  mtext(gn[1], 3, .5)
-  plot_rho2(x[[2]])
-  mtext(gn[2], 3, .5)
-  plot_rho2(x[[3]])
-  mtext(gn[3], 3, .5)
-  plot_rho2(x[[4]])
-  mtext("L = 60,000", 2, 2.5)
-  plot_rho2(x[[5]])
-  plot_rho2(x[[6]])
+  plot_rho2(rho_val[[1]])
+  mtext3(L_val[1])
+  mtext2(gn_val[1])
+  plot_rho2(rho_val[[2]])
+  mtext2(gn_val[2])
+  plot_rho2(rho_val[[3]])
+  mtext2(gn_val[3])
+  plot_rho2(rho_val[[4]])
+  mtext3(L_val[2])
+  plot_rho2(rho_val[[5]])
+  plot_rho2(rho_val[[6]])
   par(op)
 }
 ```
 
-```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin3 = TRUE}
-plot_multipanel(rho_val, c("EPI = e(0) / 3", "EPI = e(0)", "EPI = 3 x e(0)"))
-```
-
-Let's try a different range of the EPI compared to the mosquito life expectancy:
+Let's compute some $\rho$ values (it takes 10"):
 
 ```{r eval = FALSE}
-gn_val2 <- c(1 / 2, 1, 2)
-rho_val2 <- expand.grid(gn_val2, L_val) |>
-  with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
+rho_val1 <- compute_rho_val(X_val = seq(0, 1, .1),
+                            tau_val = seq2(0, 1),
+                            gn_val = c(.4, .7, 1),
+                            L_val = c(2, 6) * 1e4,
+                            D = 28 * 24,
+                            L = 6e4,
+                            r = 1 / (14 * 24),
+                            nb = 1e6)
 ```
 
 ```{r include = FALSE}
-gn_val2 <- c(1 / 2, 1, 2)
-
-if (file_exists("rho_val2.rds")) {
-  rho_val2 <- readRDS3("rho_val2.rds")
+if (file_exists("rho_val1.rds")) {
+  rho_val1 <- readRDS3("rho_val1.rds")
 } else {
-  rho_val2 <- expand.grid(gn_val2, L_val) |>
-    with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
-  saveRDS2(rho_val2, "rho_val2.rds")
+  rho_val1 <- compute_rho_val(X_val = seq(0, 1, .1),
+                              tau_val = seq2(0, 1),
+                              gn_val = c(.4, .7, 1),
+                              L_val = c(2, 6) * 1e4,
+                              D = 28 * 24,
+                              L = 6e4,
+                              r = 1 / (14 * 24),
+                              nb = 1e6)
+  saveRDS2(rho_val1, "rho_val1.rds")
 }
 ```
 
-Which give:
+Which gives:
 
 ```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin3 = TRUE}
-plot_multipanel(rho_val2, c("EPI = e(0) / 2", "EPI = e(0)", "EPI = 2 x e(0)"))
+plot_multipanel(rho_val1)
 ```
 
-And an even narrower range:
+If we want to look at a specific example of $R_0$, we need to acknowledge that,
+everything else being constant, $R_0$ is proportional to the probability $P_e$ of an
+infected mosquito to become infectious:
 
-```{r eval = FALSE}
-gn_val3 <- c(.4, .7, 1)
-rho_val3 <- gn_val3 |>
-  expand.grid(L_val) |>
-  with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
-```
+$$
+R_0 \propto e^{-gn}
+$$
 
-```{r include = FALSE}
-gn_val3 <- c(.4, .7, 1)
-
-if (file_exists("rho_val3.rds")) {
-  rho_val3 <- readRDS3("rho_val3.rds")
-} else {
-  rho_val3 <- gn_val3 |>
-    expand.grid(L_val) |>
-    with(map2(Var1, Var2, compute_rho, r = 1 / (14 * 24), D = 28 * 24))
-  saveRDS2(rho_val3, "rho_val3.rds")
-}
-```
-
-Which gives
+with this being considered, let's now consider for example a reference value of
+$R_0 = 5$ in absence of treatment and when the EPI $n$ is equal to the mosquito life
+expectancy $e(0) = 1/g$.
 
 ```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin3 = TRUE}
-plot_multipanel(rho_val3, c("EPI = 0.4 x e(0)", "EPI = 0.7 x e(0)", "EPI = e(0)"))
+R0o <- 5
+ymax <- 10
+rho_val2 <- rho_val1
+rho_val2[c(1, 4)] <- map(rho_val2[c(1, 4)],
+                          function(x) map(x, ~ .x * R0o * exp(1 - .4)))
+rho_val2[c(2, 5)] <- map(rho_val2[c(2, 5)],
+                         function(x) map(x, ~ .x * R0o * exp(1 - .7)))
+rho_val2[c(3, 6)] <- map(rho_val2[c(3, 6)], function(x) map(x, ~ .x * R0o))
+plot_multipanel(rho_val2, c(0, ymax), bquote(R[0]), seq(0, ymax, 1), seq(0, ymax, .5))
 ```
 
 
-### With $R_0$ values
 
-If we want to look at some specific value of $R_0$, we first need to acknowledge that,
-every else being constant, $R_0$ is proportional to $P_e$:
 
-$$
-R_0 \propto P_e = e^{-gn}
-$$
-With this being considered, let's now consider for example a reference value of
-$R_0=15$ in absence of treatment and when the EPI is equal to the mosquito life
-expectancy:
-
-```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin3 = TRUE}
-rho_val2b <- rho_val
-rho_val2b[c(1, 4)] <- map(rho_val2[c(1, 4)],
-                          function(x) map(x, ~ .x * 15 * exp(1 - 1 / 2)))
-rho_val2b[c(2, 5)] <- map(rho_val2[c(2, 5)], function(x) map(x, ~ .x * 15))
-rho_val2b[c(3, 6)] <- map(rho_val2[c(3, 6)],
-                          function(x) map(x, ~ .x * 15 * exp(1 - 2)))
-plot_multipanel(rho_val2b, c("EPI = e(0) / 2", "EPI = e(0)", "EPI = 2 x e(0)"),
-                c(0, 30), bquote(R[0]), seq(5, 25, 5), 1:29)
-```
-
-A mass treatment programme in which everybody in the human population takes malarone
-every $D$ days (and in absence of synchrony between individuals) would lead to an $R_0$
-reduction factor equal to $\lambda$ as defined in @eq-lambda:
-
-$$
-\lambda(g, n, L, D) = \frac{1}{D}\int_0^D\delta(t, g, n, L)dt
-$$
-
-```{r}
-system.time(
-out <- expand.grid(c(2e4, 6e4), c(.5, 1, 2)) |> 
-  with(map2(Var1, Var2, lambda, D = 28 * 24, g = 1, nb = 1e6))
-)
-```
 
