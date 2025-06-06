@@ -592,6 +592,10 @@ plot_mass_treatment2(lambda_vals[[6]])
 par(op)
 ```
 
+```{r}
+plot_mass_treatment2(lambda_vals[[3]])
+```
+
 
 ### Treatment of infected
 
@@ -605,7 +609,7 @@ rho1(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7, X = .1, tau = .9, r = 1 / (14 * 24
 
 ```{r include = FALSE}
 if (file_exists("rho1_val.rds")) {
-  readRDS3("rho1_val.rds")
+  rho1_val <- readRDS3("rho1_val.rds")
 } else {
   (rho1_val <- rho1(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7, X = .1, tau = .9,
                     r = 1 / (14 * 24)))
@@ -756,7 +760,45 @@ rho_val2[c(3, 6)] <- map(rho_val2[c(3, 6)], function(x) map(x, ~ .x * R0o))
 plot_multipanel(rho_val2, c(0, ymax), bquote(R[0]), seq(0, ymax, 1), seq(0, ymax, .5))
 ```
 
+Panel A
 
+```{r}
+colors_lines <- hcl.colors(11, "YlOrRd", rev = TRUE)
+
+params1 <- attr(lambda_vals, "params")
+x <- params1$D_val / 24
+y <- lambda_vals[[3]]
+plot(x, y, ylim = 0:1, type = "n", xaxs = "i", yaxs = "i",
+     xlab = "days D between intakes", ylab = bquote(R[0] ~ .("reduction factor")))
+abline4(v = 2:27)
+abline3(h = seq(0, 1, .05))
+abline4(h = seq(0, 1, .1))
+box(bty = "o")
+walk2(seq(0, 1, .1), colors_lines, ~ lines(x, 1 - (1 - y) * .x, col = .y, lwd = 3))
+```
+
+Panel B
+
+```{r}
+params2 <- attr(rho_val1, "params")
+
+tau <- params2$tau_val
+X <- params2$X_val
+rho_val <- rho_val1[[3]]
+plot(rep(tau, length(X)), unlist(rho_val), type = "n", ylim = 0:1,
+     ylab = bquote(R[0] ~ .("reduction factor")),
+     xlab = bquote(.("proportion") ~ tau ~ .("treated")), xaxs = "i", yaxs = "i")
+abline3(v = seq(0, 1, .05))
+abline3(h = seq(0, 1, .05))
+abline4(v = seq(0, 1, .1))
+abline4(h = seq(0, 1, .1))
+box(bty = "o")
+walk2(rho_val, colors_lines, ~ lines(tau, .x, col = .y, lwd = 3))
+```
+
+```{r}
+image(matrix(1:11), col = colors_lines)
+```
 
 
 
