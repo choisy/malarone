@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Mosquito-mediated epidemiological effects of malarone</title>
+<title>Mosquito-mediated epidemiological effects of malarone treatment</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -152,7 +152,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Mosquito-mediated epidemiological effects of malarone</h1>
+<h1 class="title">Mosquito-mediated epidemiological effects of malarone treatment</h1>
 </div>
 
 
@@ -187,7 +187,7 @@ window.Quarto = {
 <h2 data-number="2" class="anchored" data-anchor-id="packages"><span class="header-section-number">2</span> Packages</h2>
 <p>Required packages:</p>
 <div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>required_packages <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"readr"</span>, <span class="st">"readxl"</span>, <span class="st">"dplyr"</span>, <span class="st">"purrr"</span>, <span class="st">"stringr"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>required_packages <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"readr"</span>, <span class="st">"readxl"</span>, <span class="st">"dplyr"</span>, <span class="st">"purrr"</span>, <span class="st">"stringr"</span>, <span class="st">"tibble"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Installing those that are not installed:</p>
 <div class="cell" data-layout-align="center">
@@ -300,7 +300,7 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bind_rows</span>(<span class="fu">tibble</span>(<span class="at">time_hours =</span> <span class="dv">0</span>, <span class="at">median_val =</span> <span class="dv">0</span>)) <span class="sc">|&gt;</span> </span>
 <span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(time_hours) <span class="sc">|&gt;</span> </span>
 <span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">apply_correction</span>() <span class="sc">|&gt;</span> </span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">with</span>(<span class="cf">function</span>(x, ...) <span class="fu">approx</span>(time_hours, median_val, x, ...)<span class="sc">$</span>y)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">with</span>(<span class="fu">approxfun</span>(time_hours, median_val))</span>
 <span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>where <code>correction = TRUE</code> means that the value at <span class="math inline">\(t = 28\)</span> days is forced to be equal to <span class="math inline">\(0\)</span>. Let’s now pull out the data from Figure 3B:</p>
@@ -372,7 +372,7 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 </div>
 <p>With this defined, let’s now pull out the data from Figure 4B:</p>
 <div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>sporozoitsTRA <span class="ot">&lt;-</span> <span class="fu">reading_exp_data</span>(<span class="st">"percentage_inhibition13.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>sporozoitsTRA <span class="ot">&lt;-</span> <span class="fu">reading_exp_data</span>(<span class="st">"newTRA.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>and create a function <code>beta(t)</code> on the percentage <span class="math inline">\(\beta(t)\)</span> inhibition on sporozoite intensity as a function of time <span class="math inline">\(t\)</span> post drug administration:</p>
 <div class="cell" data-layout-align="center">
@@ -380,7 +380,7 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 </div>
 <p>And let’s visualize this function <span class="math inline">\(\beta(t)\)</span> together with the experimental data:</p>
 <div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_experimental_data</span>(sporozoitsTRA, <span class="at">ylim =</span> <span class="fu">c</span>(<span class="sc">-</span>.<span class="dv">15</span>, .<span class="dv">15</span>),</span>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_experimental_data</span>(sporozoitsTRA, <span class="at">ylim =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>),</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">ylab =</span> <span class="fu">bquote</span>(<span class="st">"sporozoite TRA"</span> <span class="sc">~</span> beta))</span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">lines2</span>(xs, <span class="fu">beta</span>(xs))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
@@ -453,12 +453,15 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <p><span class="math display">\[
 \pi(\mu, g, n, L, D) = 1 - (1 - \lambda(g, n, L, D))\mu
 \]</span></p>
+<p>The corresponding R codes:</p>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>pi1 <span class="ot">&lt;-</span> <span class="cf">function</span>(D, L, g, n, mu) mu <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> <span class="fu">lambda</span>(D, L, g, n))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>and</p>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>pi2 <span class="ot">&lt;-</span> <span class="cf">function</span>(lmbd, mu) mu <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> lmbd)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>Given that <span class="math inline">\(\lambda(g, n, L, D)\)</span> is what takes time to compute, it might sometimes be advantageous to <code>pi2()</code> instead <code>pi1()</code> (see below).</p>
 </section>
 <section id="treatment-of-infected" class="level4" data-number="5.4.2">
 <h4 data-number="5.4.2" class="anchored" data-anchor-id="treatment-of-infected"><span class="header-section-number">5.4.2</span> Treatment of infected</h4>
@@ -489,11 +492,11 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <p>Table of parameters here.</p>
 <section id="reducing-factor-deltat" class="level3" data-number="6.1">
 <h3 data-number="6.1" class="anchored" data-anchor-id="reducing-factor-deltat"><span class="header-section-number">6.1</span> Reducing factor <span class="math inline">\(\delta(t)\)</span></h3>
-<p>The <span class="math inline">\(R_0\)</span> reducing factor <span class="math inline">\(\rho(t)\)</span> is computed by assuming that all the mosquitoes feed on people <span class="math inline">\(t\)</span> hours after drug administration. For a mosquito life expectancy <span class="math inline">\(1/G\)</span> of 14 days, an EPI <span class="math inline">\(n\)</span> of 7 days, a sporozoite load of 60,000, if the all the mosquitoes feed on people 100 hours after drug administration, the <span class="math inline">\(R_0\)</span> reducing factor <span class="math inline">\(\delta\)</span> is:</p>
+<p>The <span class="math inline">\(R_0\)</span> reducing factor <span class="math inline">\(\rho(t)\)</span> is computed by assuming that all the mosquitoes feed on people <span class="math inline">\(t\)</span> hours after drug administration. For a mosquito life expectancy <span class="math inline">\(1/g\)</span> of 14 days, an EPI <span class="math inline">\(n\)</span> of 7 days, a sporozoite load of 60,000, if the all the mosquitoes feed on people 100 hours after drug administration, the <span class="math inline">\(R_0\)</span> reducing factor <span class="math inline">\(\delta\)</span> is:</p>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>(effect_at_t100 <span class="ot">&lt;-</span> <span class="fu">delta</span>(<span class="at">t =</span> <span class="dv">100</span>, <span class="at">L =</span> <span class="fl">6e4</span>, <span class="at">g =</span> <span class="dv">1</span> <span class="sc">/</span> <span class="dv">14</span>, <span class="at">n =</span> <span class="dv">7</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.2802043</code></pre>
+<pre><code>[1] 0.2560804</code></pre>
 </div>
 </div>
 <p>More generally, if all the mosquitoes feed on people <span class="math inline">\(t\)</span> hours after drug administration, the <span class="math inline">\(R_0\)</span> reducing factor looks like:</p>
@@ -615,7 +618,7 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rho2</span>(mean_effect_over28days, <span class="at">D =</span> <span class="dv">28</span> <span class="sc">*</span> <span class="dv">24</span>, <span class="at">X =</span> .<span class="dv">1</span>, <span class="at">tau =</span> .<span class="dv">9</span>, <span class="at">r =</span> <span class="dv">1</span> <span class="sc">/</span> (<span class="dv">14</span> <span class="sc">*</span> <span class="dv">24</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.9674561</code></pre>
+<pre><code>[1] 0.9656542</code></pre>
 </div>
 </div>
 <p>A function that computes the <span class="math inline">\(\rho\)</span> values:</p>

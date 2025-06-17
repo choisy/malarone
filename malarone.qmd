@@ -1,5 +1,5 @@
 ---
-title: "Mosquito-mediated epidemiological effects of malarone"
+title: "Mosquito-mediated epidemiological effects of malarone treatment"
 number-sections: true
 format:
   html:
@@ -64,7 +64,7 @@ t28_0 <- TRUE
 Required packages:
 
 ```{r}
-required_packages <- c("readr", "readxl", "dplyr", "purrr", "stringr")
+required_packages <- c("readr", "readxl", "dplyr", "purrr", "stringr", "tibble")
 ```
 
 Installing those that are not installed:
@@ -229,7 +229,7 @@ data2function <- function(data, correction = t28_0) {
     bind_rows(tibble(time_hours = 0, median_val = 0)) |> 
     arrange(time_hours) |> 
     apply_correction() |> 
-    with(function(x, ...) approx(time_hours, median_val, x, ...)$y)
+    with(approxfun(time_hours, median_val))
 }
 ```
 
@@ -315,7 +315,7 @@ plotl(xs2, f(xs2),
 With this defined, let's now pull out the data from Figure 4B:
 
 ```{r}
-sporozoitsTRA <- reading_exp_data("percentage_inhibition13.rds")
+sporozoitsTRA <- reading_exp_data("newTRA.rds")
 ```
 
 and create a function `beta(t)` on the percentage  $\beta(t)$ inhibition on sporozoite
@@ -328,7 +328,7 @@ beta <- data2function(sporozoitsTRA)
 And let's visualize this function $\beta(t)$ together with the experimental data:
 
 ```{r}
-plot_experimental_data(sporozoitsTRA, ylim = c(-.15, .15),
+plot_experimental_data(sporozoitsTRA, ylim = c(-1, 1),
                        ylab = bquote("sporozoite TRA" ~ beta))
 lines2(xs, beta(xs))
 ```
@@ -416,13 +416,20 @@ $$
 \pi(\mu, g, n, L, D) = 1 - (1 - \lambda(g, n, L, D))\mu
 $$
 
+The corresponding R codes:
+
 ```{r}
 pi1 <- function(D, L, g, n, mu) mu * (1 - lambda(D, L, g, n))
 ```
 
+and
+
 ```{r}
 pi2 <- function(lmbd, mu) mu * (1 - lmbd)
 ```
+
+Given that $\lambda(g, n, L, D)$ is what takes time to compute, it might sometimes be
+advantageous to `pi2()` instead `pi1()` (see below).
 
 #### Treatment of infected
 
@@ -468,7 +475,7 @@ Table of parameters here.
 
 The $R_0$ reducing factor $\rho(t)$ is computed by assuming that all the mosquitoes 
 feed on people $t$ hours after drug administration. For a mosquito life expectancy
-$1/G$ of 14 days, an EPI $n$ of 7 days, a sporozoite load of 60,000, if the all the
+$1/g$ of 14 days, an EPI $n$ of 7 days, a sporozoite load of 60,000, if the all the
 mosquitoes feed on people 100 hours after drug administration, the $R_0$ reducing
 factor $\delta$ is:
 
