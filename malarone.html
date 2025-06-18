@@ -640,7 +640,7 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>colors_lines_11 <span class="ot">&lt;-</span> <span class="fu">hcl.colors</span>(<span class="dv">11</span>, <span class="st">"YlOrRd"</span>, <span class="at">rev =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>plot_mass_treatment <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y, <span class="at">x_axis =</span> <span class="cn">TRUE</span>, <span class="at">y_axis =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>                                <span class="at">xlab =</span> <span class="st">"days D between intakes"</span>,</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>                                <span class="at">xlab =</span> <span class="st">" nb of days D between intakes"</span>,</span>
 <span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>                                <span class="at">ylab =</span> <span class="fu">bquote</span>(R[<span class="dv">0</span>] <span class="sc">~</span> <span class="st">"reduction factor"</span> <span class="sc">~</span> pi)) {</span>
 <span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(x, y, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">30</span>), <span class="at">ylim =</span> <span class="dv">0</span><span class="sc">:</span><span class="dv">1</span>, <span class="at">type =</span> <span class="st">"n"</span>,</span>
 <span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">xlab =</span> xlab, <span class="at">ylab =</span> ylab, <span class="at">xaxs =</span> <span class="st">"i"</span>, <span class="at">yaxs =</span> <span class="st">"i"</span>, <span class="at">axes =</span> <span class="cn">FALSE</span>)</span>
@@ -675,21 +675,29 @@ R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
 <span id="cb41-19"><a href="#cb41-19" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb41-20"><a href="#cb41-20" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment3</span>(lambda_vals[[<span class="dv">7</span>]])</span>
 <span id="cb41-21"><a href="#cb41-21" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext2</span>(params<span class="sc">$</span>n_val[<span class="dv">1</span>])</span>
-<span id="cb41-22"><a href="#cb41-22" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment5</span>(lambda_vals[[<span class="dv">8</span>]])</span>
-<span id="cb41-23"><a href="#cb41-23" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext2</span>(params<span class="sc">$</span>n_val[<span class="dv">2</span>])</span>
-<span id="cb41-24"><a href="#cb41-24" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment5</span>(lambda_vals[[<span class="dv">9</span>]])</span>
-<span id="cb41-25"><a href="#cb41-25" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext2</span>(params<span class="sc">$</span>n_val[<span class="dv">3</span>])</span>
-<span id="cb41-26"><a href="#cb41-26" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext3</span>(params<span class="sc">$</span>L_val[<span class="dv">3</span>])</span>
-<span id="cb41-27"><a href="#cb41-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-28"><a href="#cb41-28" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment3</span>(lambda_vals[[<span class="dv">4</span>]])</span>
-<span id="cb41-29"><a href="#cb41-29" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment5</span>(lambda_vals[[<span class="dv">5</span>]])</span>
-<span id="cb41-30"><a href="#cb41-30" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment5</span>(lambda_vals[[<span class="dv">6</span>]])</span>
-<span id="cb41-31"><a href="#cb41-31" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext3</span>(params<span class="sc">$</span>L_val[<span class="dv">2</span>])</span>
-<span id="cb41-32"><a href="#cb41-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb41-33"><a href="#cb41-33" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment2</span>(lambda_vals[[<span class="dv">1</span>]])</span>
-<span id="cb41-34"><a href="#cb41-34" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment4</span>(lambda_vals[[<span class="dv">2</span>]])</span>
-<span id="cb41-35"><a href="#cb41-35" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment4</span>(lambda_vals[[<span class="dv">3</span>]])</span>
-<span id="cb41-36"><a href="#cb41-36" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext3</span>(params<span class="sc">$</span>L_val[<span class="dv">1</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb41-22"><a href="#cb41-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-23"><a href="#cb41-23" aria-hidden="true" tabindex="-1"></a>colors_lines_11 <span class="ot">&lt;-</span> <span class="fu">hcl.colors</span>(<span class="dv">11</span>, <span class="st">"YlOrRd"</span>, <span class="at">rev =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb41-24"><a href="#cb41-24" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">xpd =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb41-25"><a href="#cb41-25" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"bottomright"</span>, <span class="at">title =</span> <span class="st">"proportion treated"</span>, <span class="at">lty =</span> <span class="dv">1</span>, <span class="at">lwd =</span> <span class="dv">2</span>, <span class="at">adj =</span> <span class="fu">c</span>(<span class="dv">1</span>, .<span class="dv">5</span>),</span>
+<span id="cb41-26"><a href="#cb41-26" aria-hidden="true" tabindex="-1"></a>       <span class="at">col =</span> colors_lines_11, <span class="at">inset =</span> <span class="fu">c</span>(<span class="sc">-</span>.<span class="dv">15</span>, <span class="sc">-</span>.<span class="dv">23</span>), <span class="at">x.intersp =</span> <span class="dv">4</span>, <span class="at">text.width =</span> .<span class="dv">5</span>, </span>
+<span id="cb41-27"><a href="#cb41-27" aria-hidden="true" tabindex="-1"></a>       <span class="at">legend =</span> <span class="fu">paste</span>(<span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">100</span>, <span class="dv">10</span>), <span class="st">"%"</span>))</span>
+<span id="cb41-28"><a href="#cb41-28" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">xpd =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb41-29"><a href="#cb41-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-30"><a href="#cb41-30" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment5</span>(lambda_vals[[<span class="dv">8</span>]])</span>
+<span id="cb41-31"><a href="#cb41-31" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext2</span>(params<span class="sc">$</span>n_val[<span class="dv">2</span>])</span>
+<span id="cb41-32"><a href="#cb41-32" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment5</span>(lambda_vals[[<span class="dv">9</span>]])</span>
+<span id="cb41-33"><a href="#cb41-33" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext2</span>(params<span class="sc">$</span>n_val[<span class="dv">3</span>])</span>
+<span id="cb41-34"><a href="#cb41-34" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext3</span>(params<span class="sc">$</span>L_val[<span class="dv">3</span>])</span>
+<span id="cb41-35"><a href="#cb41-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-36"><a href="#cb41-36" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment3</span>(lambda_vals[[<span class="dv">4</span>]])</span>
+<span id="cb41-37"><a href="#cb41-37" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment5</span>(lambda_vals[[<span class="dv">5</span>]])</span>
+<span id="cb41-38"><a href="#cb41-38" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment5</span>(lambda_vals[[<span class="dv">6</span>]])</span>
+<span id="cb41-39"><a href="#cb41-39" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext3</span>(params<span class="sc">$</span>L_val[<span class="dv">2</span>])</span>
+<span id="cb41-40"><a href="#cb41-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-41"><a href="#cb41-41" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment2</span>(lambda_vals[[<span class="dv">1</span>]])</span>
+<span id="cb41-42"><a href="#cb41-42" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment4</span>(lambda_vals[[<span class="dv">2</span>]])</span>
+<span id="cb41-43"><a href="#cb41-43" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_mass_treatment4</span>(lambda_vals[[<span class="dv">3</span>]])</span>
+<span id="cb41-44"><a href="#cb41-44" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext3</span>(params<span class="sc">$</span>L_val[<span class="dv">1</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">

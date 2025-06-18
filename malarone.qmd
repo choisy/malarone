@@ -647,7 +647,7 @@ A function that plot the mass treatment:
 colors_lines_11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
 
 plot_mass_treatment <- function(x, y, x_axis = TRUE, y_axis = TRUE,
-                                xlab = "days D between intakes",
+                                xlab = " nb of days D between intakes",
                                 ylab = bquote(R[0] ~ "reduction factor" ~ pi)) {
   plot(x, y, xlim = c(0, 30), ylim = 0:1, type = "n",
        xlab = xlab, ylab = ylab, xaxs = "i", yaxs = "i", axes = FALSE)
@@ -683,6 +683,14 @@ opar <- par(mfrow = c(3, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main 
 
 plot_mass_treatment3(lambda_vals[[7]])
 mtext2(params$n_val[1])
+
+colors_lines_11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
+par(xpd = TRUE)
+legend("bottomright", title = "proportion treated", lty = 1, lwd = 2, adj = c(1, .5),
+       col = colors_lines_11, inset = c(-.15, -.23), x.intersp = 4, text.width = .5, 
+       legend = paste(seq(0, 100, 10), "%"))
+par(xpd = FALSE)
+
 plot_mass_treatment5(lambda_vals[[8]])
 mtext2(params$n_val[2])
 plot_mass_treatment5(lambda_vals[[9]])
