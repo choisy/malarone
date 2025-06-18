@@ -23,6 +23,15 @@ knitr::knit_hooks$set(
   },
   margin3 = function(before, options, envir) {
     if (before) par2(plt = c(.25, .95, .19, .9)) else NULL
+  },
+  margin3b = function(before, options, envir) {
+    if (before) par2(plt = c(.25, .96, .17, .9)) else NULL
+  },
+  margin3c = function(before, options, envir) {
+    if (before) par2(plt = c(.18, .89, .17, .9)) else NULL
+  },
+  margin4 = function(before, options, envir) {
+    if (before) par2(plt = c(.05, .92, .15, .95)) else NULL
   })
 
 eps <- .8
@@ -108,6 +117,14 @@ trapezoid <- function(f, lower, upper, nb = 1e4) {
 }
 ```
 
+A function that replaces the value at index `i` in a vector `v` by the minimum of the
+values of `v` with an index equal or higher than `i`:
+
+```{r}
+min_of_following <- function(x) {
+  c(min(x), map_dbl(1:(length(x) - 1), ~ min(x[-(1:(.x))])))
+}
+```
 
 ## Theoretical results
 
@@ -149,7 +166,7 @@ mosquito and can be expressed as:
 
 $$
 R_0 = \frac{C \cdot b \cdot a \cdot m}{r}
-$$
+$$ {#eq-R0}
 
 where $C$ is the above-defined individual vectorial capacity, $b$ is the
 **transmission efficiency from mosquito to human**, $r$ is the
@@ -182,19 +199,10 @@ Let's see below how we can integrate these 3 effects $\alpha$, $\beta$ and $\gam
 into the theoretical equations of the previous section.
 
 
-### TBA on sporozoites
+### Mosquitoes with sporozoites
 
-The transmission-blocking activity on sporozoites converts directly into a similar
-reduction of the mean individual vectorial capacity:
-
-$$
-(1 - \alpha(t))\cdot C
-$$
-
-where $C$ is the vectorial capacity in absence of malarone and $t$ is the time post
-drug administration. Below we generate the function $\alpha(t)$ from the experimental
-data of Figure 3B. First we need a function that reads experimental data for the
-treatment group:
+Below, we generate the function $\alpha(t)$ from the experimental data of Figure 3B.
+First we need a function that reads experimental data for the treatment group:
 
 ```{r}
 make_reading_exp_data <- function() {
@@ -263,56 +271,32 @@ function coded in `alpha()` looks like together with the experimental data:
 
 ```{r}
 plot_experimental_data(sporozoitsTBA, ylim = c(-1, 1),
-                       ylab = bquote(.("sporozoite TBA") ~ alpha))
+                       ylab = bquote("reduction" ~ alpha ~
+                                     "of mosquitoes with sporozoites"))
 xs <- seq2(0, 700)
 lines2(xs, alpha(xs))
 ```
 
-
-### TRA on sporozoites
-
-The transmission-reducing activity on sporozoites reads
-
-$$
-(1 - \beta(t))\cdot L
-$$
-
-where $L$ is the sporozoite load in absence of malarone. Figure 2B from
-@aleshnick_experimental_2020 suggests a non-linear relationship between the sporozoite
-load and the transmission efficiency from mosquito to human. The effect of $\beta$ on
-$b$ is thus modelled as so:
+The reduction factor $1 - \alpha$ of the number of mosquitoes with sporozoites (Figure
+3B) converts directly into a transmission-blocking activity (TBA) of similar magnitude
+on the mean individual vectorial capacity:
 
 $$
-\frac{f((1 - \beta(t))L)}{f(L)}b
+(1 - \alpha(t))\cdot C
 $$
 
-where $b$ is the mosquito-to-human transmission efficiency in absence of malarone and 
-$f$ is the functional relationship between the sporozoite load and the
-mosquito-to-human transmission efficiency documented on Figure 2B of
-@aleshnick_experimental_2020 and that we reproduce here:
+where $C$ is the vectorial capacity in absence of malarone and $t$ is the time post
+drug administration. Similarly, @eq-R0 shows that the reduction of $R_0$ is
 
-```{r}
-make_f <- function(x1, x2, y1, y2) {
-  function(x) {
-    purrr::map_dbl(x, function(x) {
-                        if (x < x1) return(x * y1 / x1)
-                        y1 + (x - x1) * (y2 - y1) / (x2 - x1)
-                      })
-  }
-}
+$$
+(1 - \alpha(t))\cdot R_0
+$$
 
-f <- make_f(x1 = 21111, x2 = 1e5, y1 = .285, y2 = .344)
-```
+where $R_0$ is the basic reproduction ratio in absence of malarone.
 
-And this is what this function $f$ coded in `f()` looks like:
+### Number of sporozoites
 
-```{r}
-xs2 <- seq2(0, 1e5)
-plotl(xs2, f(xs2),
-      xlab = "salivary gland sporozoite load", ylab = "infection probability")
-```
-
-With this defined, let's now pull out the data from Figure 4B:
+Let's pull out the data from Figure 4B:
 
 ```{r}
 sporozoitsTRA <- reading_exp_data("newTRA.rds")
@@ -329,8 +313,82 @@ And let's visualize this function $\beta(t)$ together with the experimental data
 
 ```{r}
 plot_experimental_data(sporozoitsTRA, ylim = c(-1, 1),
-                       ylab = bquote("sporozoite TRA" ~ beta))
-lines2(xs, beta(xs))
+                       ylab = bquote("reduction" ~ beta ~
+                                       "of the number L of sporozoites"))
+betas <- beta(xs)
+lines2(xs, betas)
+```
+
+Our next step consists in converting a reduction in the sporozoite load $L$ into an
+transmission-reducing activity (TRA) on $R_0$. Figure 2B from
+@aleshnick_experimental_2020 suggests a non-linear relationship between the sporozoite
+load $L$ and the transmission efficiency $b$ from mosquito to human. The effect of
+$\beta$ on $b$ can thus be modelled as so:
+
+$$
+\frac{f((1 - \beta(t))L)}{f(L)}b
+$$ {#eq-TRA}
+
+where $b$ is the mosquito-to-human transmission efficiency in absence of malarone and 
+$f$ is the functional relationship between the sporozoite load $L$ and the
+mosquito-to-human transmission efficiency $b$ documented on Figure 2B of
+@aleshnick_experimental_2020 and that we reproduce here:
+
+```{r}
+make_f <- function(x1, x2, y1, y2) {
+  function(x) {
+    purrr::map_dbl(x, function(x) {
+                        if(is.na(x)) return(NA)
+                        if (x < x1) return(x * y1 / x1)
+                        y1 + (x - x1) * (y2 - y1) / (x2 - x1)
+                      })
+  }
+}
+
+f <- make_f(x1 = 21111, x2 = 1e5, y1 = .285, y2 = .344)
+```
+
+And this is what this function $f$ coded in `f()` looks like:
+
+```{r}
+xs2 <- seq2(0, 1e5)
+plotl(xs2, f(xs2),
+      xlab = "salivary gland sporozoite load L", ylab = "infection probability f")
+```
+
+From here, let's compute the TRA as a function of (unknown) $L$ using @eq-TRA:
+
+```{r fig.height = eps * 6, fig.width = eps * 8, margin1 = FALSE, margin4 = TRUE}
+colors_lines_10 <- hcl.colors(10, "YlOrRd", rev = TRUE)
+
+opar <- par(pty = "s", xpd = TRUE)
+plot(0:1, 0:1, type = "l", xaxs = "i", yaxs = "i",
+     xlab = "reducing factor on sporozoite load L",
+     ylab = bquote("reducing factor on" ~ R[0]))
+
+x_val <- seq2(0, 1)
+walk2(1:10 * 1e4, colors_lines_10,
+      ~ lines(x_val, f(x_val * .x) / f(.x), col = .y, lwd = lwd_val))
+box(bty = "o")
+
+legend2 <- function(...) {
+  legend(title = "sporozoite load L", bty = "n", col = rev(colors_lines_10), lty = 1,
+         legend = c(bquote(1 ~ "x" ~ 10^5),
+                    sapply(9:1, function(a) bquote(.(a) ~ "x" ~ 10^4))), lwd = 2, ...)
+}
+
+legend2("topright", inset = c(-.5, 0))
+par(opar)
+```
+
+
+```{r}
+plot(NA, xlim = c(0, 700), ylim = 0:1,
+     xlab = "time post drug administration (hours)",
+     ylab = bquote("reducing factor on b and" ~ R[0]))
+walk2(1:10 * 1e4, colors_lines_10,
+      ~ lines(xs, f((1 - betas) * .x) / f(.x), col = .y, lwd = lwd_val))
+legend2("right")
 ```
 
 
@@ -413,10 +471,12 @@ lambda <- function(D, L, g, n, nb = 1e6) {
 Mass treatment is not affected by the epidemiological context
 
 $$
-\pi(\mu, g, n, L, D) = 1 - (1 - \lambda(g, n, L, D))\mu
+\pi(\mu, g, n, L, D) = 1 - \left(1 - \min_{\Delta \ge D}\lambda\left(g, n, L, \Delta\right)\right)\mu
 $$
 
-The corresponding R codes:
+where $\mu$ is the proportion of the population that receive the treatment and $1/D$ is
+the frequency of treatment, assuming an absence of synchrony of treatment intake
+between people. The corresponding R codes:
 
 ```{r}
 pi1 <- function(D, L, g, n, mu) mu * (1 - lambda(D, L, g, n))
@@ -491,7 +551,7 @@ xs3 <- seq(0, 24 * 28, le = 2^10)
 ys <- delta(t = xs3, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)
 plotl(xs3, ys, ylim = 0:1,  
       xlab = "time post drug administration (hours)",
-      ylab = bquote(R[0] ~ .("reduction factor") ~ delta))
+      ylab = bquote(R[0] ~ "reduction factor" ~ delta))
 abline(v = 100, col = 4)
 abline(h = effect_at_t100, col = 4)
 points(100, effect_at_t100, col = 4)
@@ -499,6 +559,21 @@ points(100, effect_at_t100, col = 4)
 
 where the blue point and lines show the case where all the mosquitoes feed of people
 100 hours after drug administration.
+
+Let's now look at the effect of the value of $L$ on this curve:
+
+```{r}
+plot(NA, xlim = c(0, 700), ylim = 0:1,
+     xlab = "time post drug administration (hours)",
+     ylab = bquote(R[0] ~ "reduction factor" ~ delta))
+
+walk2(1:10 * 1e4, colors_lines_10,
+      ~ lines(xs, delta(t = xs, L = .x, g = 1 / (14 * 24), n = 7 * 24),
+              col = .y, lwd = lwd_val))
+
+legend2("right")
+```
+
 
 ### Mass treatment
 
@@ -536,73 +611,96 @@ text(mean(xs3), 1.04 * mean_effect_over28days, col = 4,
 box(bty = "o")
 ```
 
-Let's now look at what a mass treatment would look like
+A function that computes the values for $\lambda$:
 
 ```{r}
-compute_lambda_val <- function(D_val, gn_val, L_val) {
-  out <- with(expand.grid(gn_val, L_val),
-              map2(Var1, Var2, ~ map_dbl(D_val, lambda, L = .y, g = 1, n = .x)))
-  attr(out, "params") <- list(D_val = D_val, gn_val = gn_val, L_val = L_val)
+compute_lambda_val <- function(D_val, n_val, L_val) {
+  out <- with(expand.grid(n_val, L_val),
+              map2(Var1, Var2, ~ map_dbl(D_val, lambda, L = .y, g = 1 / 14, n = .x)))
+  attr(out, "params") <- list(D_val = D_val, n_val = n_val, L_val = L_val)
   out
 }
 ```
 
-4'00":
+Let's now look at what a mass treatment would look like (takes ca 7'00"):
 
 ```{r eval = FALSE}
-lambda_vals <- compute_lambda_val(D_val = 1:28 * 24,
-                                  gn_val = c(.4, .7, 1),
-                                  L_val = c(2, 6) * 1e4)
+lambda_vals <- compute_lambda_val(D_val = c(seq(1, 7, .1), 8:28) * 24,
+                                  n_val = c(6, 10, 14),
+                                  L_val = c(1, 5, 10) * 1e4)
 ```
 
 ```{r include = FALSE}
 if (file_exists("lambda_vals.rds")) {
   lambda_vals <- readRDS3("lambda_vals.rds")
 } else {
-  lambda_vals <- compute_lambda_val(D_val = 1:28 * 24,
-                                    gn_val = c(.4, .7, 1),
-                                    L_val = c(2, 6) * 1e4)
+  lambda_vals <- compute_lambda_val(D_val = c(seq(1, 7, .1), 8:28) * 24,
+                                    n_val = c(6, 10, 14),
+                                    L_val = c(1, 5, 10) * 1e4)
   saveRDS2(lambda_vals, "lambda_vals.rds")
 }
 ```
 
+A function that plot the mass treatment:
 
 ```{r}
-plot_mass_treatment <- function(x, y) {
-  plot(x, y, ylim = 0:1, type = "n",
-       xlab = "days between intakes",
-       ylab = bquote(R[0] ~ .("reduction factor") ~ pi))
-  walk(seq(0, 1, .1), ~ lines2(x, 1 - (1 - y) * .x))
+colors_lines_11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
+
+plot_mass_treatment <- function(x, y, x_axis = TRUE, y_axis = TRUE,
+                                xlab = "days D between intakes",
+                                ylab = bquote(R[0] ~ "reduction factor" ~ pi)) {
+  plot(x, y, xlim = c(0, 30), ylim = 0:1, type = "n",
+       xlab = xlab, ylab = ylab, xaxs = "i", yaxs = "i", axes = FALSE)
+  box(bty = "o")
+  if (x_axis) {axis(1, seq(0, 30, 5)); axis(1, c(15, 25))}
+  if (y_axis) axis(2)
+  abline(v = seq(0, 30, 5), col = "grey")
+  abline(h = seq(0, 1, .1), col = "grey")
+  walk2(seq(0, 1, .1), colors_lines_11,
+        ~ lines(x, 1 - (1 - min_of_following(y)) * .x, col = .y, lwd = lwd_val))
 }
 ```
 
-```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin3 = TRUE}
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 params <- attr(lambda_vals, "params")
-mtext2 <- function(x) mtext(paste("EPI =", format(x, nsmall = 1), "x e(0)"), 3, .5)
-mtext3 <- function(x) mtext(paste("L =", format(x, big.mark = ",")), 2, 2.5)
-plot_mass_treatment2 <- function(y) plot_mass_treatment(params$D_val / 24, y)
+mtext2 <- function(x) mtext(paste("EPI =", x, "days"), 3, .5)
+mtext3 <- function(x) {
+  mtext(paste("L =", format(x, scientific = FALSE, big.mark = ",")), 4, .75)
+}
+plot_mass_treatment2 <- function(y, ...) plot_mass_treatment(params$D_val / 24, y, ...)
+plot_mass_treatment3 <- function(y, ...) {
+  plot_mass_treatment2(y, xlab = NA, x_axis = FALSE, ...)
+}
+plot_mass_treatment4 <- function(y, ...) {
+  plot_mass_treatment2(y, ylab = NA, y_axis = FALSE, ...)
+}
+plot_mass_treatment5 <- function(y, ...) {
+  plot_mass_treatment4(y, xlab = NA, x_axis = FALSE, ...)
+}
 
 mcx <- 3 / 2
-op <- par(mfrow = c(2, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
+opar <- par(mfrow = c(3, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
+
+plot_mass_treatment3(lambda_vals[[7]])
+mtext2(params$n_val[1])
+plot_mass_treatment5(lambda_vals[[8]])
+mtext2(params$n_val[2])
+plot_mass_treatment5(lambda_vals[[9]])
+mtext2(params$n_val[3])
+mtext3(params$L_val[3])
+
+plot_mass_treatment3(lambda_vals[[4]])
+plot_mass_treatment5(lambda_vals[[5]])
+plot_mass_treatment5(lambda_vals[[6]])
+mtext3(params$L_val[2])
 
 plot_mass_treatment2(lambda_vals[[1]])
+plot_mass_treatment4(lambda_vals[[2]])
+plot_mass_treatment4(lambda_vals[[3]])
 mtext3(params$L_val[1])
-mtext2(params$gn_val[1])
-plot_mass_treatment2(lambda_vals[[2]])
-mtext2(params$gn_val[2])
-plot_mass_treatment2(lambda_vals[[3]])
-mtext2(params$gn_val[3])
-plot_mass_treatment2(lambda_vals[[4]])
-mtext3(params$L_val[2])
-plot_mass_treatment2(lambda_vals[[5]])
-plot_mass_treatment2(lambda_vals[[6]])
-par(op)
-```
 
-```{r}
-plot_mass_treatment2(lambda_vals[[3]])
+par(opar)
 ```
-
 
 ### Treatment of infected
 
