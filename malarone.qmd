@@ -649,68 +649,148 @@ A function that plot the mass treatment:
 ```{r}
 colors_lines_11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
 
-plot_mass_treatment <- function(x, y, x_axis = TRUE, y_axis = TRUE,
-                                xlab = " nb of days D between intakes",
-                                ylab = bquote(R[0] ~ "reduction factor" ~ pi)) {
-  plot(x, y, xlim = c(0, 30), ylim = 0:1, type = "n",
+#plot_mass_treatment <- function(x, y, x_axis = TRUE, y_axis = TRUE,
+#                                xlab = "nb of days D between intakes",
+#                                ylab = bquote(R[0] ~ "reduction factor" ~ pi)) {
+#  plot(x, y, xlim = c(0, 30), ylim = 0:1, type = "n",
+#       xlab = xlab, ylab = ylab, xaxs = "i", yaxs = "i", axes = FALSE)
+#  box(bty = "o")
+#  if (x_axis) {axis(1, seq(0, 30, 5)); axis(1, c(15, 25))}
+#  if (y_axis) axis(2)
+#  abline(v = seq(0, 30, 5), col = "grey")
+#  abline(h = seq(0, 1, .1), col = "grey")
+#  walk2(seq(0, 1, .1), colors_lines_11,
+#        ~ lines(x, 1 - (1 - min_of_following(y)) * .x, col = .y, lwd = lwd_val))
+#}
+
+plot_mass_treatment <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
+                                xlab = "nb of days D between intakes",
+                                ylab = bquote(R[0] ~ "reduction factor" ~ pi),
+                                hlines = seq(0, 1, .1)) {
+  plot(x, y, xlim = c(0, 30), ylim = ylim, type = "n",
        xlab = xlab, ylab = ylab, xaxs = "i", yaxs = "i", axes = FALSE)
   box(bty = "o")
   if (x_axis) {axis(1, seq(0, 30, 5)); axis(1, c(15, 25))}
   if (y_axis) axis(2)
   abline(v = seq(0, 30, 5), col = "grey")
-  abline(h = seq(0, 1, .1), col = "grey")
+  abline(h = hlines, col = "grey")
   walk2(seq(0, 1, .1), colors_lines_11,
         ~ lines(x, 1 - (1 - min_of_following(y)) * .x, col = .y, lwd = lwd_val))
 }
 ```
 
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-params <- attr(lambda_vals, "params")
+#params <- attr(lambda_vals, "params")
+#mtext2 <- function(x) mtext(paste("EPI =", x, "days"), 3, .5)
+#mtext3 <- function(x) {
+#  mtext(paste("L =", format(x, scientific = FALSE, big.mark = ",")), 4, .75)
+#}
+#plot_mass_treatment2 <- function(y, ...) plot_mass_treatment(params$D_val / 24, y, ...)
+#plot_mass_treatment3 <- function(y, ...) {
+#  plot_mass_treatment2(y, xlab = NA, x_axis = FALSE, ...)
+#}
+#plot_mass_treatment4 <- function(y, ...) {
+#  plot_mass_treatment2(y, ylab = NA, y_axis = FALSE, ...)
+#}
+#plot_mass_treatment5 <- function(y, ...) {
+#  plot_mass_treatment4(y, xlab = NA, x_axis = FALSE, ...)
+#}
+#
+#mcx <- 3 / 2
+#opar <- par(mfrow = c(3, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
+#
+#plot_mass_treatment3(lambda_vals[[7]])
+#mtext2(params$n_val[1])
+#
+#colors_lines_11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
+#par(xpd = TRUE)
+#legend("bottomright", title = "proportion treated", lty = 1, lwd = 2, adj = c(1, .5),
+#       col = colors_lines_11, inset = c(-.15, -.23), x.intersp = 4, text.width = .5, 
+#       legend = paste(seq(0, 100, 10), "%"))
+#par(xpd = FALSE)
+#
+#plot_mass_treatment5(lambda_vals[[8]])
+#mtext2(params$n_val[2])
+#plot_mass_treatment5(lambda_vals[[9]])
+#mtext2(params$n_val[3])
+#mtext3(params$L_val[3])
+#
+#plot_mass_treatment3(lambda_vals[[4]])
+#plot_mass_treatment5(lambda_vals[[5]])
+#plot_mass_treatment5(lambda_vals[[6]])
+#mtext3(params$L_val[2])
+#
+#plot_mass_treatment2(lambda_vals[[1]])
+#plot_mass_treatment4(lambda_vals[[2]])
+#plot_mass_treatment4(lambda_vals[[3]])
+#mtext3(params$L_val[1])
+#
+#par(opar)
+```
+
+```{r}
+mcx <- 3 / 2
+
 mtext2 <- function(x) mtext(paste("EPI =", x, "days"), 3, .5)
 mtext3 <- function(x) {
   mtext(paste("L =", format(x, scientific = FALSE, big.mark = ",")), 4, .75)
 }
-plot_mass_treatment2 <- function(y, ...) plot_mass_treatment(params$D_val / 24, y, ...)
-plot_mass_treatment3 <- function(y, ...) {
-  plot_mass_treatment2(y, xlab = NA, x_axis = FALSE, ...)
+```
+
+
+```{r}
+plot_multipanels1 <- function(lambda_vals, ylim = 0:1,
+                              ylab = bquote(R[0] ~ "reduction factor" ~ pi),
+                              hlines = seq(0, 1, .1)) {
+  params <- attr(lambda_vals, "params")
+  plot_mass_treatment2 <- function(y, ylob = ylab, ...) {
+    plot_mass_treatment(params$D_val / 24, y, ylim = ylim, ylab = ylob,
+                        hlines = hlines, ...)
+  }
+  plot_mass_treatment3 <- function(y, ...) {
+    plot_mass_treatment2(y, xlab = NA, x_axis = FALSE, ...)
+  }
+  plot_mass_treatment4 <- function(y, ...) {
+    plot_mass_treatment2(y, ylob = NA, y_axis = FALSE, ...)
+  }
+  plot_mass_treatment5 <- function(y, ...) {
+    plot_mass_treatment4(y, xlab = NA, x_axis = FALSE, ...)
+  }
+  
+  op <- par(mfrow = c(3, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
+  
+  plot_mass_treatment3(lambda_vals[[7]])
+  mtext2(params$n_val[1])
+  
+  colors_lines_11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
+  par(xpd = TRUE)
+  legend("bottomright", title = "proportion treated", lty = 1, lwd = 2, adj = c(1, .5),
+         col = colors_lines_11, inset = c(-.15, -.23), x.intersp = 4, text.width = .5, 
+         legend = paste(seq(0, 100, 10), "%"))
+  par(xpd = FALSE)
+  
+  plot_mass_treatment5(lambda_vals[[8]])
+  mtext2(params$n_val[2])
+  plot_mass_treatment5(lambda_vals[[9]])
+  mtext2(params$n_val[3])
+  mtext3(params$L_val[3])
+  
+  plot_mass_treatment3(lambda_vals[[4]])
+  plot_mass_treatment5(lambda_vals[[5]])
+  plot_mass_treatment5(lambda_vals[[6]])
+  mtext3(params$L_val[2])
+  
+  plot_mass_treatment2(lambda_vals[[1]])
+  plot_mass_treatment4(lambda_vals[[2]])
+  plot_mass_treatment4(lambda_vals[[3]])
+  mtext3(params$L_val[1])
+  
+  par(op)
 }
-plot_mass_treatment4 <- function(y, ...) {
-  plot_mass_treatment2(y, ylab = NA, y_axis = FALSE, ...)
-}
-plot_mass_treatment5 <- function(y, ...) {
-  plot_mass_treatment4(y, xlab = NA, x_axis = FALSE, ...)
-}
+```
 
-mcx <- 3 / 2
-opar <- par(mfrow = c(3, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
-
-plot_mass_treatment3(lambda_vals[[7]])
-mtext2(params$n_val[1])
-
-colors_lines_11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
-par(xpd = TRUE)
-legend("bottomright", title = "proportion treated", lty = 1, lwd = 2, adj = c(1, .5),
-       col = colors_lines_11, inset = c(-.15, -.23), x.intersp = 4, text.width = .5, 
-       legend = paste(seq(0, 100, 10), "%"))
-par(xpd = FALSE)
-
-plot_mass_treatment5(lambda_vals[[8]])
-mtext2(params$n_val[2])
-plot_mass_treatment5(lambda_vals[[9]])
-mtext2(params$n_val[3])
-mtext3(params$L_val[3])
-
-plot_mass_treatment3(lambda_vals[[4]])
-plot_mass_treatment5(lambda_vals[[5]])
-plot_mass_treatment5(lambda_vals[[6]])
-mtext3(params$L_val[2])
-
-plot_mass_treatment2(lambda_vals[[1]])
-plot_mass_treatment4(lambda_vals[[2]])
-plot_mass_treatment4(lambda_vals[[3]])
-mtext3(params$L_val[1])
-
-par(opar)
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+plot_multipanels1(lambda_vals)
 ```
 
 
@@ -896,6 +976,12 @@ transformation <- function(rho_val, R0o) {
 ```
 
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+#ymax <- 10
+#plot_multipanels(transformation(lambda_val, 5), ylim = c(0, ymax), ylab = bquote(R[0]),
+#                 hlines1 = 0:ymax, hlines2 = seq(0, ymax, .5))
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 ymax <- 10
 plot_multipanels(transformation(rho_val1, 5), ylim = c(0, ymax), ylab = bquote(R[0]),
                  hlines1 = 0:ymax, hlines2 = seq(0, ymax, .5))
@@ -908,12 +994,12 @@ opar <- par(mfrow = 1:2)
 
 plot_mass_treatment(params1$D_val / 24, lambda_vals[[5]])
 leg <- paste(seq(0, 100, 10), "%")
-nb_middle <- 3
+nb_mid <- 3
 par(xpd = TRUE)
 legend("bottomright", title = "proportion treated", lty = 1, lwd = 2, adj = c(1, .5),
        x.intersp = 4, text.width = .5, 
-       col = c(colors_lines_11[1:3], rep("#FFFFFF", nb_middle), colors_lines_11[10:11]), 
-       legend = c(leg[1:3], rep(".", nb_middle), leg[10:11]))
+       col = c(colors_lines_11[1:3], rep("#FFFFFF", nb_mid), colors_lines_11[10:11]), 
+       legend = c(leg[1:3], rep(".", nb_mid), leg[10:11]))
 par(xpd = FALSE)
 mtext("a", line = -.5, at = -4.7, cex = 2, font = 2)
 
