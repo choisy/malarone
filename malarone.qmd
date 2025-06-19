@@ -617,10 +617,10 @@ box(bty = "o")
 A function that computes the values for $\lambda$:
 
 ```{r}
-compute_lambda_val <- function(D_val, n_val, L_val) {
+compute_lambda_val <- function(D_val, n_val, L_val, g) {
   out <- with(expand.grid(n_val, L_val),
-              map2(Var1, Var2, ~ map_dbl(D_val, lambda, L = .y, g = 1 / 14, n = .x)))
-  attr(out, "params") <- list(D_val = D_val, n_val = n_val, L_val = L_val)
+              map2(Var1, Var2, ~ map_dbl(D_val, lambda, L = .y, g = g, n = .x)))
+  attr(out, "params") <- list(D_val = D_val, n_val = n_val, L_val = L_val, g = g)
   out
 }
 ```
@@ -630,7 +630,8 @@ Let's now look at what a mass treatment would look like (takes ca 7'00"):
 ```{r eval = FALSE}
 lambda_vals <- compute_lambda_val(D_val = c(seq(1, 7, .1), 8:28) * 24,
                                   n_val = c(6, 10, 14),
-                                  L_val = c(1, 5, 10) * 1e4)
+                                  L_val = c(1, 5, 10) * 1e4,
+                                  g = 1 / 14)
 ```
 
 ```{r include = FALSE}
@@ -639,7 +640,8 @@ if (file_exists("lambda_vals.rds")) {
 } else {
   lambda_vals <- compute_lambda_val(D_val = c(seq(1, 7, .1), 8:28) * 24,
                                     n_val = c(6, 10, 14),
-                                    L_val = c(1, 5, 10) * 1e4)
+                                    L_val = c(1, 5, 10) * 1e4,
+                                    g = 1 / 14)
   saveRDS2(lambda_vals, "lambda_vals.rds")
 }
 ```
@@ -976,9 +978,9 @@ transformation <- function(rho_val, R0o) {
 ```
 
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-#ymax <- 10
-#plot_multipanels(transformation(lambda_val, 5), ylim = c(0, ymax), ylab = bquote(R[0]),
-#                 hlines1 = 0:ymax, hlines2 = seq(0, ymax, .5))
+ymax <- 10
+plot_multipanels1(transformation(lambda_vals, 5), ylim = c(0, ymax), ylab = bquote(R[0]),
+                  hlines = 0:ymax)
 ```
 
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
