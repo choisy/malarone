@@ -71,6 +71,23 @@ does not change things much anyway):
 t28_0 <- TRUE
 ```
 
+Colors:
+
+```{r}
+YlOrRd10 <- hcl.colors(10, "YlOrRd", rev = TRUE)
+YlOrRd11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
+```
+
+Plots parameters sets:
+
+```{r}
+mcx <- 3 / 2
+parmfrow33 <- function() {
+  par(mfrow = c(3, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
+}
+```
+
+
 ## Packages
 
 Required packages:
@@ -275,7 +292,7 @@ function coded in `alpha()` looks like together with the experimental data:
 ```{r}
 plot_experimental_data(sporozoitsTBA, ylim = c(-1, 1),
                        ylab = bquote("reduction" ~ alpha ~
-                                     "of mosquitoes with sporozoites"))
+                                       "of mosquitoes with sporozoites"))
 xs <- seq2(0, 700)
 lines2(xs, alpha(xs))
 ```
@@ -359,28 +376,30 @@ plotl(xs2, f(xs2),
       xlab = "salivary gland sporozoite load L", ylab = "infection probability f")
 ```
 
-From here, let's compute the TRA as a function of (unknown) $L$ using @eq-TRA:
+A tuning of `legend()`:
 
-```{r fig.height = eps * 6, fig.width = eps * 8, margin1 = FALSE, margin4 = TRUE}
-colors_lines_10 <- hcl.colors(10, "YlOrRd", rev = TRUE)
-
-opar <- par(pty = "s", xpd = TRUE)
-plot(0:1, 0:1, type = "l", xaxs = "i", yaxs = "i",
-     xlab = "reducing factor on sporozoite load L",
-     ylab = bquote("reducing factor on" ~ R[0]))
-
-x_val <- seq2(0, 1)
-walk2(1:10 * 1e4, colors_lines_10,
-      ~ lines(x_val, f(x_val * .x) / f(.x), col = .y, lwd = lwd_val))
-box(bty = "o")
-
+```{r}
 legend2 <- function(...) {
-  legend(title = "sporozoite load L", bty = "n", col = rev(colors_lines_10), lty = 1,
+  legend(title = "sporozoite load L", bty = "n", col = rev(YlOrRd10), lty = 1,
          legend = c(bquote(1 ~ "x" ~ 10^5),
                     sapply(9:1, function(a) bquote(.(a) ~ "x" ~ 10^4))), lwd = 2, ...)
 }
+```
 
+From here, let's compute the TRA as a function of (unknown) $L$ using @eq-TRA:
+
+```{r fig.height = eps * 6, fig.width = eps * 8, margin1 = FALSE, margin4 = TRUE}
+x_val <- seq2(0, 1)
+opar <- par(pty = "s", xpd = TRUE)
+
+plot(0:1, 0:1, type = "l", xaxs = "i", yaxs = "i",
+     xlab = "reducing factor on sporozoite load L",
+     ylab = bquote("reducing factor on" ~ R[0]))
+walk2(1:10 * 1e4, YlOrRd10,
+      ~ lines(x_val, f(x_val * .x) / f(.x), col = .y, lwd = lwd_val))
 legend2("topright", inset = c(-.5, 0))
+
+box(bty = "o")
 par(opar)
 ```
 
@@ -389,7 +408,7 @@ par(opar)
 plot(NA, xlim = c(0, 700), ylim = 0:1,
      xlab = "time post drug administration (hours)",
      ylab = bquote("reducing factor on b and" ~ R[0]))
-walk2(1:10 * 1e4, colors_lines_10,
+walk2(1:10 * 1e4, YlOrRd10,
       ~ lines(xs, f((1 - betas) * .x) / f(.x), col = .y, lwd = lwd_val))
 legend2("right")
 ```
@@ -424,7 +443,7 @@ And let's visualize this function $\gamma(t)$ together with the experimental dat
 
 ```{r}
 plot_experimental_data(oocysts_size, ylim = c(-.65, .65),
-                       ylab = bquote(.("sporozoite size reduction factor") ~ gamma))
+                       ylab = bquote("sporozoite size reduction factor" ~ gamma))
 lines2(xs, gamma(xs))
 ```
 
@@ -570,7 +589,7 @@ plot(NA, xlim = c(0, 700), ylim = 0:1,
      xlab = "time post drug administration (hours)",
      ylab = bquote(R[0] ~ "reduction factor" ~ delta))
 
-walk2(1:10 * 1e4, colors_lines_10,
+walk2(1:10 * 1e4, YlOrRd10,
       ~ lines(xs, delta(t = xs, L = .x, g = 1 / (14 * 24), n = 7 * 24),
               col = .y, lwd = lwd_val))
 
@@ -610,7 +629,7 @@ polygon(c(xs3[1], xs3, tail(xs3, 1)), c(0, ys, 0),
 lines2(xs3, ys)
 abline(h = mean_effect_over28days, col = 4, lty = 2, lwd = lwd_val)
 text(mean(xs3), 1.04 * mean_effect_over28days, col = 4,
-     bquote(.("mean") ~ R[0] ~ .("reduction factor") ~ lambda))
+     bquote("  mean" ~ R[0] ~ "reduction factor" ~ lambda))
 box(bty = "o")
 ```
 
@@ -646,11 +665,9 @@ if (file_exists("lambda_vals.rds")) {
 }
 ```
 
-A function that plot the mass treatment:
+A function that plots the mass treatment:
 
 ```{r}
-colors_lines_11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
-
 plot_mass_treatment <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
                                 xlab = "intake frequency (every D days)",
                                 ylab = bquote(R[0] ~ "reduction factor" ~ pi),
@@ -662,7 +679,7 @@ plot_mass_treatment <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
   if (y_axis) axis(2)
   abline(v = seq(0, 30, 5), col = "grey")
   abline(h = hlines, col = "grey")
-  walk2(seq(0, 1, .1), colors_lines_11,
+  walk2(seq(0, 1, .1), YlOrRd11,
         ~ lines(rev(x), rev((1 - (1 - min_of_following(y)) * .x) * transform),
                 col = .y, lwd = lwd_val))
 }
@@ -670,8 +687,7 @@ plot_mass_treatment <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
 
 
 ```{r}
-mcx <- 3 / 2
-
+#mcx <- 3 / 2
 mtext2 <- function(x) mtext(paste("EPI =", x, "days"), 3, .5)
 mtext3 <- function(x) {
   mtext(paste("L =", format(x, scientific = FALSE, big.mark = ",")), 4, .75)
@@ -705,7 +721,8 @@ plot_multipanels1 <- function(lambda_vals, ylim = 0:1,
     plot_mass_treatment4(y, xlab = NA, x_axis = FALSE, ...)
   }
   
-  op <- par(mfrow = c(3, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
+#  op <- par(mfrow = c(3, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
+  opar <- parmfrow33()
   
   plot_mass_treatment3(lambda_vals[[7]], transf = trnsfrm[1])
   mtext2(params$n_val[1])
@@ -714,10 +731,9 @@ plot_multipanels1 <- function(lambda_vals, ylim = 0:1,
   plot_mass_treatment5(lambda_vals[[8]], transf = trnsfrm[2])
   mtext2(params$n_val[2])
   
-  colors_lines_11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
   par(xpd = TRUE)
   legend("bottomleft", title = "proportion treated", lty = 1, lwd = 2, adj = c(1, .5),
-         col = colors_lines_11, inset = c(-.25, -.23), x.intersp = 4, text.width = .5, 
+         col = YlOrRd11, inset = c(-.25, -.23), x.intersp = 4, text.width = .5, 
          legend = paste(seq(0, 100, 10), "%"))
   par(xpd = FALSE)
   
@@ -735,7 +751,7 @@ plot_multipanels1 <- function(lambda_vals, ylim = 0:1,
   plot_mass_treatment4(lambda_vals[[3]], transf = trnsfrm[3])
   mtext3(params$L_val[1])
   
-  par(op)
+  par(opar)
 }
 ```
 
@@ -809,7 +825,7 @@ plot_treatment_infected <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0
   abline4(h = hlines1)
   abline3(h = hlines2)
   box(bty = "o")
-  walk2(y, colors_lines_11, ~ lines(x, .x * transform, col = .y, lwd = lwd_val))
+  walk2(y, YlOrRd11, ~ lines(x, .x * transform, col = .y, lwd = lwd_val))
 }
 ```
 
@@ -885,7 +901,7 @@ plot_multipanels <- function(rho_val, ylim = 0:1,
   
   par(xpd = TRUE)
   legend("bottomleft", title = "prevalence", lty = 1, lwd = 2, adj = c(1, .5),
-         col = colors_lines_11, inset = c(-.25, -.23), x.intersp = 4, text.width = 0, 
+         col = YlOrRd11, inset = c(-.25, -.23), x.intersp = 4, text.width = 0, 
          legend = paste(seq(0, 100, 10), "%"))
   par(xpd = FALSE)
   
@@ -958,7 +974,7 @@ nb_mid <- 3
 par(xpd = TRUE)
 legend("bottomleft", title = "proportion treated", lty = 1, lwd = 2, adj = c(1, .5),
        x.intersp = 4, text.width = .5, 
-       col = c(colors_lines_11[1:3], rep("#FFFFFF", nb_mid), colors_lines_11[10:11]), 
+       col = c(YlOrRd11[1:3], rep("#FFFFFF", nb_mid), YlOrRd11[10:11]), 
        legend = c(leg[1:3], rep(".", nb_mid), leg[10:11]))
 par(xpd = FALSE)
 mtext("a", line = -.5, at = 34.7, cex = 2, font = 2)
@@ -966,7 +982,7 @@ mtext("a", line = -.5, at = 34.7, cex = 2, font = 2)
 plot_treatment_infected(params2$tau, rho_val1[[5]])
 par(xpd = TRUE)
 legend("bottomleft", title = "prevalence", lty = 1, lwd = 2, adj = c(1, .5),
-       col = colors_lines_11, x.intersp = 4, text.width = 0,
+       col = YlOrRd11, x.intersp = 4, text.width = 0,
        legend = paste(seq(0, 100, 10), "%"))
 par(xpd = FALSE)
 mtext("b", line = -.5, at = -4.7 / 30, cex = 2, font = 2)
