@@ -32,6 +32,9 @@ knitr::knit_hooks$set(
   },
   margin4 = function(before, options, envir) {
     if (before) par2(plt = c(.05, .92, .15, .95)) else NULL
+  },
+  margin5 = function(before, options, envir) {
+    if (before) par2(plt = c(.15, .95, .15, .95)) else NULL
   })
 
 eps <- .8
@@ -710,6 +713,7 @@ mtext3(params$L_val[1])
 par(opar)
 ```
 
+
 ### Treatment of infected
 
 If we take the example of the previous section and put it into an epidemiological
@@ -739,18 +743,16 @@ rho2(mean_effect_over28days, D = 28 * 24, X = .1, tau = .9, r = 1 / (14 * 24))
 A function that computes the $\rho$ values:
 
 ```{r}
-compute_rho_val <- function(X_val, tau_val, gn_val, L_val, D, L, r, nb) {
-  compute_rho_val_ <- function(gn, L) {
-    lambda_val <- lambda(D, L, 1, gn, nb)
-    expand.grid(X_val, tau_val) |>
+compute_rho_val <- function(X_val, tau_val, n_val, L_val, D, g, r, nb) {
+  one_subplot <- function(n, L) { # i.e. for given values of n and L
+    lambda_val <- lambda(D, L, g, n, nb)
+    expand.grid(X_val, tau_val) |> 
       with(map2_dbl(Var1, Var2, rho2, lmbd = lambda_val, D = D, r = r)) |> 
-      matrix(length(X_val)) |> 
-      t() |> 
-      as.data.frame()
+      matrix(length(X_val)) |> t() |> as.data.frame()
   }
-  out <- with(expand.grid(gn_val, L_val), map2(Var1, Var2, compute_rho_val_))
-  attr(out, "params") <- list(X_val = X_val, tau_val = tau_val, gn_val = gn_val,
-                              L_val = L_val, D = D, L = L, r = r, nb = nb)
+  out <- with(expand.grid(n_val, L_val), map2(Var1, Var2, one_subplot))
+  attr(out, "params") <- list(X_val = X_val, tau_val = tau_val, n_val = n_val,
+                              L_val = L_val, D = D, g = g, r = r, nb = nb)
   out
 }
 ```
@@ -763,66 +765,36 @@ of infected people that are treated (i.e. one slot of the output of
 abline3 <- function(...) abline(..., col = "lightgrey")
 abline4 <- function(...) abline3(..., lwd = lwd_val)
 
-plot_rho <- function(tau, X, rho_val, ylim = NULL,
-                     ylab = bquote(R[0] ~ .("reduction factor") ~ rho),
-                     hlines1 = seq(0, 1, .1), hlines2 = seq(0, 1, .05)) {
-  if (is.null(ylim)) ylim <- 0:1
-  plot(rep(tau, length(X)), unlist(rho_val), type = "n", ylim = ylim, ylab = ylab,
-       xlab = bquote(.("proportion") ~ tau ~ .("treated")), xaxs = "i", yaxs = "i")
+plot_treatment_infected <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
+                                    xlab = bquote("proportion" ~ tau ~ "treated"),
+                                    ylab = bquote(R[0] ~ "reduction factor" ~ rho),
+                                    hlines1 = seq(0, 1, .1),
+                                    hlines2 = seq(0, 1, .05)) {
+  plot(NA, xlim = 0:1, ylim = ylim, type = "n", xaxs = "i", yaxs = "i", axes = FALSE,
+       xlab = xlab, ylab = ylab)
+  if (x_axis) axis(1)
+  if (y_axis) axis(2)
   abline3(v = seq(0, 1, .05))
-  abline3(h = hlines2)
   abline4(v = seq(0, 1, .1))
   abline4(h = hlines1)
+  abline3(h = hlines2)
   box(bty = "o")
-  walk(rho_val, lines2, x = tau)
+  walk2(y, colors_lines_11, ~ lines(x, .x, col = .y, lwd = lwd_val))
 }
 ```
 
 A function that plots in a multi-panel figure the 6 slots of the output of
 `compute_rho_val()`:
 
-```{r}
-plot_multipanel <- function(rho_val, ylim = NULL,
-                            ylab = bquote(R[0] ~ .("reduction factor") ~ rho),
-                            hlines1 = seq(0, 1, .1), hlines2 = seq(0, 1, .05)) {
-  if (is.null(ylim)) ylim <- 0:1
-  mcx <- 3 / 2
-  params <- attr(rho_val, "params")
-  gn_val <- params$gn_val
-  L_val <- params$L_val
-  
-  plot_rho2 <- function(y) {
-    plot_rho(params$tau_val, params$X_val, y, ylim, ylab, hlines1, hlines2)
-  }
-  
-  mtext2 <- function(x) mtext(paste("EPI =", format(x, nsmall = 1), "x e(0)"), 3, .5)
-  mtext3 <- function(x) mtext(paste("L =", format(x, big.mark = ",")), 2, 2.5)
-  
-  op <- par(mfrow = c(2, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
-  plot_rho2(rho_val[[1]])
-  mtext3(L_val[1])
-  mtext2(gn_val[1])
-  plot_rho2(rho_val[[2]])
-  mtext2(gn_val[2])
-  plot_rho2(rho_val[[3]])
-  mtext2(gn_val[3])
-  plot_rho2(rho_val[[4]])
-  mtext3(L_val[2])
-  plot_rho2(rho_val[[5]])
-  plot_rho2(rho_val[[6]])
-  par(op)
-}
-```
-
-Let's compute some $\rho$ values (it takes 10"):
+Let's compute some $\rho$ values (it takes 15"):
 
 ```{r eval = FALSE}
 rho_val1 <- compute_rho_val(X_val = seq(0, 1, .1),
                             tau_val = seq2(0, 1),
-                            gn_val = c(.4, .7, 1),
-                            L_val = c(2, 6) * 1e4,
+                            n_val = c(6, 10, 14),
+                            L_val = c(1, 5, 10) * 1e4,
                             D = 28 * 24,
-                            L = 6e4,
+                            g = 1 / 14,
                             r = 1 / (14 * 24),
                             nb = 1e6)
 ```
@@ -845,8 +817,58 @@ if (file_exists("rho_val1.rds")) {
 
 Which gives:
 
-```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin3 = TRUE}
-plot_multipanel(rho_val1)
+```{r}
+plot_multipanels <- function(rho_val, ylim = 0:1,
+                             ylab = bquote(R[0] ~ "reduction factor" ~ rho),
+                             hlines1 = seq(0, 1, .1), hlines2 = seq(0, 1, .05)) {
+  params <- attr(rho_val, "params")
+  plot_treatment_infected2 <- function(y, ylob = ylab, ...) {
+    plot_treatment_infected(params$tau_val, y, ylim = ylim, ylab = ylob,
+                            hlines1 = hlines1, hlines2 = hlines2, ...)
+  }
+  plot_treatment_infected3 <- function(y, ...) {
+    plot_treatment_infected2(y, xlab = NA, x_axis = FALSE, ...)
+  }
+  plot_treatment_infected4 <- function(y, ...) {
+    plot_treatment_infected2(y, ylob = NA, y_axis = FALSE, ...)
+  }
+  plot_treatment_infected5 <- function(y, ...) {
+    plot_treatment_infected4(y, xlab = NA, x_axis = FALSE, ...)
+  }
+  
+  op <- par(mfrow = c(3, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
+  
+  plot_treatment_infected3(rho_val[[7]])
+  mtext2(params$n_val[1])
+  
+  par(xpd = TRUE)
+  legend("bottomright", title = "prevalence", lty = 1, lwd = 2, adj = c(1, .5),
+         col = colors_lines_11, inset = c(-.07, -.22), x.intersp = 4, text.width = 0, 
+         legend = paste(seq(0, 100, 10), "%"))
+  par(xpd = FALSE)
+  
+  plot_treatment_infected5(rho_val[[8]])
+  mtext2(params$n_val[2])
+  plot_treatment_infected5(rho_val[[9]])
+  mtext2(params$n_val[3])
+  mtext3(params$L_val[3])
+  
+  plot_treatment_infected3(rho_val[[4]])
+  plot_treatment_infected5(rho_val[[5]])
+  plot_treatment_infected5(rho_val[[6]])
+  mtext3(params$L_val[2])
+  
+  plot_treatment_infected2(rho_val[[1]])
+  plot_treatment_infected4(rho_val[[2]])
+  plot_treatment_infected4(rho_val[[3]])
+  mtext3(params$L_val[1])
+  
+  par(op)
+}
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+plot_multipanels(rho_val1)
 ```
 
 If we want to look at a specific example of $R_0$, we need to acknowledge that,
@@ -859,59 +881,51 @@ $$
 
 with this being considered, let's now consider for example a reference value of
 $R_0 = 5$ in absence of treatment and when the EPI $n$ is equal to the mosquito life
-expectancy $e(0) = 1/g$.
+expectancy $1/g = 14$ days. A function that does the transformation:
 
-```{r fig.width = 8, fig.height = 5.25, margin1 = FALSE, margin3 = TRUE}
-R0o <- 5
+```{r}
+transformation <- function(rho_val, R0o) {
+  indexes <- as.data.frame(t(matrix(1:9, 3)))
+  gn_vals <- with(attr(rho_val, "params"), g * n_val)
+  for (i in 1:3) {
+    rho_val[indexes[[i]]] <- map(rho_val[indexes[[i]]],
+                                 function(x) map(x, ~ .x * R0o * exp(1 - gn_vals[i])))
+  }
+  rho_val
+}
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 ymax <- 10
-rho_val2 <- rho_val1
-rho_val2[c(1, 4)] <- map(rho_val2[c(1, 4)],
-                          function(x) map(x, ~ .x * R0o * exp(1 - .4)))
-rho_val2[c(2, 5)] <- map(rho_val2[c(2, 5)],
-                         function(x) map(x, ~ .x * R0o * exp(1 - .7)))
-rho_val2[c(3, 6)] <- map(rho_val2[c(3, 6)], function(x) map(x, ~ .x * R0o))
-plot_multipanel(rho_val2, c(0, ymax), bquote(R[0]), seq(0, ymax, 1), seq(0, ymax, .5))
+plot_multipanels(transformation(rho_val1, 5), ylim = c(0, ymax), ylab = bquote(R[0]),
+                 hlines1 = 0:ymax, hlines2 = seq(0, ymax, .5))
 ```
 
-Panel A
-
-```{r}
-colors_lines <- hcl.colors(11, "YlOrRd", rev = TRUE)
-
+```{r fig.width = 8, margin1 = FALSE, margin5 = TRUE}
 params1 <- attr(lambda_vals, "params")
-x <- params1$D_val / 24
-y <- lambda_vals[[3]]
-plot(x, y, ylim = 0:1, type = "n", xaxs = "i", yaxs = "i",
-     xlab = "days D between intakes", ylab = bquote(R[0] ~ .("reduction factor")))
-abline4(v = 2:27)
-abline3(h = seq(0, 1, .05))
-abline4(h = seq(0, 1, .1))
-box(bty = "o")
-walk2(seq(0, 1, .1), colors_lines, ~ lines(x, 1 - (1 - y) * .x, col = .y, lwd = 3))
-```
-
-Panel B
-
-```{r}
 params2 <- attr(rho_val1, "params")
+opar <- par(mfrow = 1:2)
 
-tau <- params2$tau_val
-X <- params2$X_val
-rho_val <- rho_val1[[3]]
-plot(rep(tau, length(X)), unlist(rho_val), type = "n", ylim = 0:1,
-     ylab = bquote(R[0] ~ .("reduction factor")),
-     xlab = bquote(.("proportion") ~ tau ~ .("treated")), xaxs = "i", yaxs = "i")
-abline3(v = seq(0, 1, .05))
-abline3(h = seq(0, 1, .05))
-abline4(v = seq(0, 1, .1))
-abline4(h = seq(0, 1, .1))
-box(bty = "o")
-walk2(rho_val, colors_lines, ~ lines(tau, .x, col = .y, lwd = 3))
+plot_mass_treatment(params1$D_val / 24, lambda_vals[[5]])
+leg <- paste(seq(0, 100, 10), "%")
+nb_middle <- 3
+par(xpd = TRUE)
+legend("bottomright", title = "proportion treated", lty = 1, lwd = 2, adj = c(1, .5),
+       x.intersp = 4, text.width = .5, 
+       col = c(colors_lines_11[1:3], rep("#FFFFFF", nb_middle), colors_lines_11[10:11]), 
+       legend = c(leg[1:3], rep(".", nb_middle), leg[10:11]))
+par(xpd = FALSE)
+mtext("a", line = -.5, at = -4.7, cex = 2, font = 2)
+
+plot_treatment_infected(params2$tau, rho_val1[[5]])
+par(xpd = TRUE)
+legend("bottomleft", title = "prevalence", lty = 1, lwd = 2, adj = c(1, .5),
+       col = colors_lines_11, x.intersp = 4, text.width = 0,
+       legend = paste(seq(0, 100, 10), "%"))
+par(xpd = FALSE)
+mtext("b", line = -.5, at = -4.7 / 30, cex = 2, font = 2)
+
+par(opar)
 ```
-
-```{r}
-image(matrix(1:11), col = colors_lines)
-```
-
 
 
