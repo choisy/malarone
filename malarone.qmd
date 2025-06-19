@@ -651,20 +651,6 @@ A function that plot the mass treatment:
 ```{r}
 colors_lines_11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
 
-#plot_mass_treatment <- function(x, y, x_axis = TRUE, y_axis = TRUE,
-#                                xlab = "nb of days D between intakes",
-#                                ylab = bquote(R[0] ~ "reduction factor" ~ pi)) {
-#  plot(x, y, xlim = c(0, 30), ylim = 0:1, type = "n",
-#       xlab = xlab, ylab = ylab, xaxs = "i", yaxs = "i", axes = FALSE)
-#  box(bty = "o")
-#  if (x_axis) {axis(1, seq(0, 30, 5)); axis(1, c(15, 25))}
-#  if (y_axis) axis(2)
-#  abline(v = seq(0, 30, 5), col = "grey")
-#  abline(h = seq(0, 1, .1), col = "grey")
-#  walk2(seq(0, 1, .1), colors_lines_11,
-#        ~ lines(x, 1 - (1 - min_of_following(y)) * .x, col = .y, lwd = lwd_val))
-#}
-
 plot_mass_treatment <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
                                 xlab = "nb of days D between intakes",
                                 ylab = bquote(R[0] ~ "reduction factor" ~ pi),
@@ -676,65 +662,12 @@ plot_mass_treatment <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
   if (y_axis) axis(2)
   abline(v = seq(0, 30, 5), col = "grey")
   abline(h = hlines, col = "grey")
-#  if (transform) {
-    walk2(seq(0, 1, .1), colors_lines_11,
-          ~ lines(x, (1 - (1 - min_of_following(y)) * .x) * transform,
-                  col = .y, lwd = lwd_val))
- # } else {
-#    walk2(seq(0, 1, .1), colors_lines_11,
-#          ~ lines(x, 1 - (1 - min_of_following(y)) * .x, col = .y, lwd = lwd_val))
-#  }
+  walk2(seq(0, 1, .1), colors_lines_11,
+        ~ lines(x, (1 - (1 - min_of_following(y)) * .x) * transform, col = .y,
+                lwd = lwd_val))
 }
 ```
 
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-#params <- attr(lambda_vals, "params")
-#mtext2 <- function(x) mtext(paste("EPI =", x, "days"), 3, .5)
-#mtext3 <- function(x) {
-#  mtext(paste("L =", format(x, scientific = FALSE, big.mark = ",")), 4, .75)
-#}
-#plot_mass_treatment2 <- function(y, ...) plot_mass_treatment(params$D_val / 24, y, ...)
-#plot_mass_treatment3 <- function(y, ...) {
-#  plot_mass_treatment2(y, xlab = NA, x_axis = FALSE, ...)
-#}
-#plot_mass_treatment4 <- function(y, ...) {
-#  plot_mass_treatment2(y, ylab = NA, y_axis = FALSE, ...)
-#}
-#plot_mass_treatment5 <- function(y, ...) {
-#  plot_mass_treatment4(y, xlab = NA, x_axis = FALSE, ...)
-#}
-#
-#mcx <- 3 / 2
-#opar <- par(mfrow = c(3, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
-#
-#plot_mass_treatment3(lambda_vals[[7]])
-#mtext2(params$n_val[1])
-#
-#colors_lines_11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
-#par(xpd = TRUE)
-#legend("bottomright", title = "proportion treated", lty = 1, lwd = 2, adj = c(1, .5),
-#       col = colors_lines_11, inset = c(-.15, -.23), x.intersp = 4, text.width = .5, 
-#       legend = paste(seq(0, 100, 10), "%"))
-#par(xpd = FALSE)
-#
-#plot_mass_treatment5(lambda_vals[[8]])
-#mtext2(params$n_val[2])
-#plot_mass_treatment5(lambda_vals[[9]])
-#mtext2(params$n_val[3])
-#mtext3(params$L_val[3])
-#
-#plot_mass_treatment3(lambda_vals[[4]])
-#plot_mass_treatment5(lambda_vals[[5]])
-#plot_mass_treatment5(lambda_vals[[6]])
-#mtext3(params$L_val[2])
-#
-#plot_mass_treatment2(lambda_vals[[1]])
-#plot_mass_treatment4(lambda_vals[[2]])
-#plot_mass_treatment4(lambda_vals[[3]])
-#mtext3(params$L_val[1])
-#
-#par(opar)
-```
 
 ```{r}
 mcx <- 3 / 2
@@ -863,8 +796,8 @@ abline4 <- function(...) abline3(..., lwd = lwd_val)
 plot_treatment_infected <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
                                     xlab = bquote("proportion" ~ tau ~ "treated"),
                                     ylab = bquote(R[0] ~ "reduction factor" ~ rho),
-                                    hlines1 = seq(0, 1, .1),
-                                    hlines2 = seq(0, 1, .05)) {
+                                    hlines1 = seq(0, 1, .1), hlines2 = seq(0, 1, .05),
+                                    transform = 1) {
   plot(NA, xlim = 0:1, ylim = ylim, type = "n", xaxs = "i", yaxs = "i", axes = FALSE,
        xlab = xlab, ylab = ylab)
   if (x_axis) axis(1)
@@ -874,7 +807,7 @@ plot_treatment_infected <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0
   abline4(h = hlines1)
   abline3(h = hlines2)
   box(bty = "o")
-  walk2(y, colors_lines_11, ~ lines(x, .x, col = .y, lwd = lwd_val))
+  walk2(y, colors_lines_11, ~ lines(x, .x * transform, col = .y, lwd = lwd_val))
 }
 ```
 
@@ -915,8 +848,16 @@ Which gives:
 ```{r}
 plot_multipanels <- function(rho_val, ylim = 0:1,
                              ylab = bquote(R[0] ~ "reduction factor" ~ rho),
-                             hlines1 = seq(0, 1, .1), hlines2 = seq(0, 1, .05)) {
+                             hlines1 = seq(0, 1, .1), hlines2 = seq(0, 1, .05),
+                             R0o = NULL) {
   params <- attr(rho_val, "params")
+  
+  if (is.null(R0o)) {
+    trnsfrm <- rep(1, 3)
+  } else {
+    trnsfrm <- with(params, R0o * exp(1 - g * n_val))
+  }
+  
   plot_treatment_infected2 <- function(y, ylob = ylab, ...) {
     plot_treatment_infected(params$tau_val, y, ylim = ylim, ylab = ylob,
                             hlines1 = hlines1, hlines2 = hlines2, ...)
@@ -933,7 +874,7 @@ plot_multipanels <- function(rho_val, ylim = 0:1,
   
   op <- par(mfrow = c(3, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
   
-  plot_treatment_infected3(rho_val[[7]])
+  plot_treatment_infected3(rho_val[[7]], transf = trnsfrm[1])
   mtext2(params$n_val[1])
   
   par(xpd = TRUE)
@@ -942,20 +883,20 @@ plot_multipanels <- function(rho_val, ylim = 0:1,
          legend = paste(seq(0, 100, 10), "%"))
   par(xpd = FALSE)
   
-  plot_treatment_infected5(rho_val[[8]])
+  plot_treatment_infected5(rho_val[[8]], transf = trnsfrm[2])
   mtext2(params$n_val[2])
-  plot_treatment_infected5(rho_val[[9]])
+  plot_treatment_infected5(rho_val[[9]], transf = trnsfrm[3])
   mtext2(params$n_val[3])
   mtext3(params$L_val[3])
   
-  plot_treatment_infected3(rho_val[[4]])
-  plot_treatment_infected5(rho_val[[5]])
-  plot_treatment_infected5(rho_val[[6]])
+  plot_treatment_infected3(rho_val[[4]], transf = trnsfrm[1])
+  plot_treatment_infected5(rho_val[[5]], transf = trnsfrm[2])
+  plot_treatment_infected5(rho_val[[6]], transf = trnsfrm[3])
   mtext3(params$L_val[2])
   
-  plot_treatment_infected2(rho_val[[1]])
-  plot_treatment_infected4(rho_val[[2]])
-  plot_treatment_infected4(rho_val[[3]])
+  plot_treatment_infected2(rho_val[[1]], transf = trnsfrm[1])
+  plot_treatment_infected4(rho_val[[2]], transf = trnsfrm[2])
+  plot_treatment_infected4(rho_val[[3]], transf = trnsfrm[3])
   mtext3(params$L_val[1])
   
   par(op)
@@ -998,8 +939,8 @@ transformation <- function(rho_val, R0o) {
 
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 ymax <- 10
-plot_multipanels(transformation(rho_val1, 5), ylim = c(0, ymax), ylab = bquote(R[0]),
-                 hlines1 = 0:ymax, hlines2 = seq(0, ymax, .5))
+plot_multipanels(rho_val1, ylim = c(0, ymax), ylab = bquote(R[0]),
+                 hlines1 = 0:ymax, hlines2 = seq(0, ymax, .5), R0o = 5)
 ```
 
 ```{r fig.width = 8, margin1 = FALSE, margin5 = TRUE}
