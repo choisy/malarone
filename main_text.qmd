@@ -1,0 +1,135 @@
+---
+title: "Main text"
+number-sections: true
+format:
+  html:
+    toc: true
+editor: source
+editor_options: 
+  chunk_output_type: console
+bibliography: references.bib
+csl: the-american-naturalist.csl
+---
+
+## Material and methods
+
+The classical formula for the basic reproduction number $R_0$ for malaria, accouting
+for both human and vector parameters reads [@smith_statics_2004]:
+
+$$
+R_0 = \frac{cba^2m}{rg}e^{-gn}
+$$ {#eq-R0}
+
+where $a$ is the mosquito biting rate, $b$ is the transmission efficiency from
+mosquito to human (*i.e.* the probability of transmission upon biting), $c$ is the
+transmission efficient from human to mosquito, $m$ is the ratio of mosquitoes to
+humans, $g$ is the mosquito death rate, $n$ is the duration of the extrinsic incubation
+period (EIP) and $r$ is the recovery rate in humans. The original purpose of malarone
+is to treat infected people. Its effect is thus to increase $r$. Our focus here is on
+all the other effects that malarone has besides its effect on $r$. For that reason, in
+what follows we will ignore the effect of malarone on $r$.
+
+The experimental results presented above show that, besides its effect on $r$, malarone
+has (i) no significant effect on $a$, (ii) no significant effect on $g$, (iii) a direct
+effect on $R_0$ by reducing the number of mosquitoes harboring parasites by a
+multiplicate factor $1 - \alpha(t)$ ($\alpha(t)$ being represented on the $y$ axis of
+[**Figure X**]{.mark}, $t$ being the time post treatment), (iv) an effect on $b$ by
+reducing the sporozoite load of mosquitoes harboring parasites by a multiplicative
+factor $1 - \beta(t)$ ($\beta(t)$ being represented on the $y$ axis of
+[**Figure Y**]{.mark}) and (v) likely some effect on $n$ as suggested by the reduction
+in oocyst size at 7 dpi by a multiplicative factor 1 - \gamma(t) ($\gamma(t)$ being
+represented on the $y$ axis of [**Figure Z**]{.mark}).
+
+For the purpose of the demonstration, let's first imagine a situation where all
+mosquitoes would feed on people that took malarone sometimes in the past $D$ time
+units. The basic reproduction number would then be:
+
+$$
+{R_0}_m = \underbrace{\left(\frac{1}{D} \int_0^D\left(1-\alpha(t)\right)\frac{f((1-\beta(t))L)}{f(L)}e^{-gn\gamma(t)/(1 - \gamma(t))} dt \right)}_\lambda R_0
+$$ {#eq-R0m}
+
+where $R_0$ is the basic reproduction number in absence of malarone as expressed in
+@eq-R0, $\lambda$ is the reduction factor of the basic reproduction number due to the
+indirect effects $\alpha$, $\beta$ and $\gamma$ of malarone, $f$ in a nonlinear
+functional relationship between the sporozoite load and $b$ as documented by
+@aleshnick_experimental_2020 (see
+[Supplementary Materials](https://choisy.github.io/malarone/malarone.html), and
+[**Figure S-X**]{.mark}) and $L$ is the (unknown) sporozoite load in absence of
+malarone. The role of $\gamma(t)$ in @eq-R0m is based on (i) the assumption that the
+EIP ends when the oocysts reach a given size and (ii) the results of
+@werling_steroid_2019 that document a linear relationship between the development time
+and the oocyst size. Finally, we can verify that ${R_0}_m = R_0$ when
+$\alpha(t) = \beta(t) = \gamma(t) = 0$. Now that the reduction factor $\lambda$ in the
+imaginary case where all mosquitoes feed on people that took malarone sometimes in the
+past $D$ time units is expressed (@eq-R0m), let's use it to explore the indirect
+epidemiological consequences of malarone in two different situations: (i) mass
+administration of malarone to people, independently of their infection status and (ii)
+treatment of infected people with malarone.
+
+If malarone is given to a proportion $\mu$ of the total population every $\Delta$ days
+(asynchronously across people) and independently of their clinical status, then the
+basic reproduction number reads:
+$$
+{R_0}_{\mbox{\tiny ma}} = \underbrace{\left(1 - (1 - \min_{\Delta>D}\lambda(D))\mu\right)}_\pi R_0
+$$ {#eq-R0ma}
+
+where $R_0$ is the basic reproduction number in absence of malarone as expressed in
+@eq-R0, $\lambda$ is the reduction factor of the basic reproduction number due to the
+indirect effects $\alpha$, $\beta$ and $\gamma$ of malarone in the imaginary case where
+all mosquitoes feed on people that took malarone sometimes in the past $D$ time units,
+as expressed in @eq-R0m and $\pi$ is thus the reduction of the basic reproduction
+number due to the indirect effects $\alpha$, $\beta$ and $\gamma$ of malarone in the
+case where malarone is given to a proportion $\mu$ of the population. We can verify
+here that if $\mu = 1$ (and if $\Delta$ is large enough, see
+[Supplementary Materials](https://choisy.github.io/malarone/malarone.html)) then
+$\pi = \lambda$ and ${R_0}_{\mbox{\tiny ma}} = {R_0}_m$.
+
+
+If $\bar{X}$ is the malaria prevalence in the population and if treatment is given to
+a proportion $\tau$ of newly infected people, then the basic reproduction number reads:
+
+$$
+{R_0}_{\mbox{\tiny ti}} = \underbrace{\left( 1 - (1 - \lambda)\left(1 - e^{-\tau\bar{X}rD}\right) \right)}_\rho R_0
+$$ {#eq-R0ti}
+
+where $R_0$ is the basic reproduction number in absence of malarone as expressed in
+@eq-R0, $\lambda$ is the reduction factor of the basic reproduction number due to the
+indirect effects $\alpha$, $\beta$ and $\gamma$ of malarone in the imaginary case where
+all mosquitoes feed on people that took malarone sometimes in the past $D$ time units,
+as expressed in @eq-R0m, and $\rho$ is thus the reduction of the basic reproduction
+number due to the indirect effects $\alpha$, $\beta$ and $\gamma$ of malarone in the
+case where malarone is given to a proportion $\tau$ of the newly infected. Note here
+that treatment is given to infected only once and $D$ here is just an integration
+variable that has to be large enough so that
+$\alpha(D) = \beta(D) = \gamma(D)\simeq 0$. We can verify that when the disease
+incidence (as proxied by $r$) increases to infinity, ${R_0}_{\mbox{\tiny ti}}$ tends
+towards ${R_0}_m$:
+$$
+\lim_{r\rightarrow+\infty}{{R_0}_{\mbox{\tiny ti}}} = {R_0}_m
+$$
+
+## Results
+
+Numerical examples of the indirect epidemiological effects of malarone in the case of
+mass administration (@eq-R0ma) and treatment of new cases (@eq-R0ti) are show in
+@fig-results **a** and **b** respectively.
+
+![indirect epidemiological effects of malarone in the case of mass administration (**a**) and treatment of new cases (**b**). **a**: reduction factor  $\pi$ from mass administration (@eq-R0ma) as a function of intake frequency $1/\Delta$ ($x$-axis) and the proportion $\mu$ of the total population that is given malarone (color code). **b**: reduction factor  $\rho$ from treatment of new cases (@eq-R0ti) as a function of the proportion $\tau$ of new cases that is given malarone ($x$-axis) and the malaria prevalence in the population (color code). Parameters values: $L = 50,000$, $g = 1 / 14$ /day, $n = 10$ days, $r = 1 / 14$ /day, and $D = 28$ days (**b** only). ](malarone_files/figure-html/unnamed-chunk-61-1.png){#fig-results}
+
+Outputs for other values of $L$ and $n$ are shown in the
+[Supplementary Materials](https://choisy.github.io/malarone/malarone.html)),
+[**Figure S-Y**]{.mark}.
+
+## Discussion
+
+If 100% of the population take malarone every week, the basic reproduction number can
+be decreased by 82%, which can bring malaria to extinction if the value of $R_0$ after
+having accounted for the direct effect of malarone on $r$ is lower than
+$1 / (1 - 0.82)\simeq 5.56$. For comparison, in a realistic situation of a malaria
+prevalence of 20% in the population, if the 100% of the new cases are given malarone
+treatment, the basic reproduction number can be decreased by 13%, which can bring
+malaria to extinction if the value of $R_0$ after having accounted for the direct
+effect of malarone on $r$ is lower than $1 / (1 - 0.13)\simeq 1.15$.
+
+
+
