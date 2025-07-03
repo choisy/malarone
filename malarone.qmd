@@ -1036,3 +1036,28 @@ par(opar)
 ```
 
 
+```{r fig.width = 8, margin1 = FALSE, margin5 = TRUE}
+mtext4 <- function(...) mtext(..., line = -.5, cex = 2, font = 2)
+at_val <- 4.7
+xmax <- 30
+
+leg <- paste(seq(0, 100, 10), "%")
+nb_mid <- 3
+
+opar <- par(mfrow = 1:2)
+
+plot_treatment_infected(attr(rho_val1, "params")$tau, rho_val1[[5]])
+legend4("bottomleft", title = "prevalence", col = YlOrRd11, text.width = 0,
+        legend = leg)
+
+mtext4("a", at = - at_val / xmax)
+
+plot_mass_treatment(attr(lambda_vals, "params")$D_val / 24, lambda_vals[[5]])
+legend4("bottomleft", title = "proportion treated", text.width = .5,
+        col = c(YlOrRd11[1:3], rep("#FFFFFF", nb_mid), YlOrRd11[10:11]), 
+        legend = c(leg[1:3], rep(".", nb_mid), leg[10:11]))
+
+mtext4("b", at = at_val + xmax)
+
+par(opar)
+```
