@@ -1,6 +1,7 @@
 ---
 title: "Main text"
 number-sections: true
+#format: docx
 format:
   html:
     toc: true
@@ -70,7 +71,8 @@ If malarone is given to a proportion $\mu$ of the total population every $\Delta
 (asynchronously across people) and independently of their clinical status, then the
 basic reproduction number reads:
 $$
-{R_0}_{\mbox{\tiny ma}} = \underbrace{\left(1 - (1 - \min_{\Delta>D}\lambda(D))\mu\right)}_\pi R_0
+%{R_0}_{\mbox{\tiny ma}} = \underbrace{\left(1 - (1 - \min_{\Delta>D}\lambda(D))\mu\right)}_\pi R_0
+{R_0}_{\mbox{ma}} = \underbrace{\left(1 - (1 - \min_{\Delta>D}\lambda(D))\mu\right)}_\pi R_0
 $$ {#eq-R0ma}
 
 where $R_0$ is the basic reproduction number in absence of malarone as expressed in
@@ -82,14 +84,18 @@ number due to the indirect effects $\alpha$, $\beta$ and $\gamma$ of malarone in
 case where malarone is given to a proportion $\mu$ of the population. We can verify
 here that if $\mu = 1$ (and if $\Delta$ is large enough, see
 [Supplementary Materials](https://choisy.github.io/malarone/malarone.html)) then
+<!--
 $\pi = \lambda$ and ${R_0}_{\mbox{\tiny ma}} = {R_0}_m$.
+-->
+$\pi = \lambda$ and ${R_0}_{\mbox{ma}} = {R_0}_m$.
 
 
 If $\bar{X}$ is the malaria prevalence in the population and if treatment is given to
 a proportion $\tau$ of newly infected people, then the basic reproduction number reads:
 
 $$
-{R_0}_{\mbox{\tiny ti}} = \underbrace{\left( 1 - (1 - \lambda)\left(1 - e^{-\tau\bar{X}rD}\right) \right)}_\rho R_0
+%{R_0}_{\mbox{\tiny ti}} = \underbrace{\left( 1 - (1 - \lambda)\left(1 - e^{-\tau\bar{X}rD}\right) \right)}_\rho R_0
+{R_0}_{\mbox{ti}} = \underbrace{\left( 1 - (1 - \lambda)\left(1 - e^{-\tau\bar{X}rD}\right) \right)}_\rho R_0
 $$ {#eq-R0ti}
 
 where $R_0$ is the basic reproduction number in absence of malarone as expressed in
@@ -98,14 +104,19 @@ indirect effects $\alpha$, $\beta$ and $\gamma$ of malarone in the imaginary cas
 all mosquitoes feed on people that took malarone sometimes in the past $D$ time units,
 as expressed in @eq-R0m, and $\rho$ is thus the reduction of the basic reproduction
 number due to the indirect effects $\alpha$, $\beta$ and $\gamma$ of malarone in the
-case where malarone is given to a proportion $\tau$ of the newly infected. Note here
-that treatment is given to infected only once and $D$ here is just an integration
+case where malarone is given to a proportion $\tau$ of the newly infected. Note the
+symmetric (*i.e.* interchangeable) roles played by $\tau$ and $\bar{X}$. Note too that
+here treatment is given to infected only once and $D$ here is just an integration
 variable that has to be large enough so that
 $\alpha(D) = \beta(D) = \gamma(D)\simeq 0$. We can verify that when the disease
+<!--
 incidence (as proxied by $r$) increases to infinity, ${R_0}_{\mbox{\tiny ti}}$ tends
+-->
+incidence (as proxied by $r$) increases to infinity, ${R_0}_{\mbox{ti}}$ tends
 towards ${R_0}_m$:
 $$
-\lim_{r\rightarrow+\infty}{{R_0}_{\mbox{\tiny ti}}} = {R_0}_m
+%\lim_{r\rightarrow+\infty}{{R_0}_{\mbox{\tiny ti}}} = {R_0}_m
+\lim_{r\rightarrow+\infty}{{R_0}_{\mbox{ti}}} = {R_0}_m
 $$
 
 ## Results
@@ -114,7 +125,11 @@ Numerical examples of the indirect epidemiological effects of malarone in the ca
 mass administration (@eq-R0ma) and treatment of new cases (@eq-R0ti) are show in
 @fig-results **a** and **b** respectively.
 
+<!--
 ![indirect epidemiological effects of malarone in the case of mass administration (**a**) and treatment of new cases (**b**). **a**: reduction factor  $\pi$ from mass administration (@eq-R0ma) as a function of intake frequency $1/\Delta$ ($x$-axis) and the proportion $\mu$ of the total population that is given malarone (color code). **b**: reduction factor  $\rho$ from treatment of new cases (@eq-R0ti) as a function of the proportion $\tau$ of new cases that is given malarone ($x$-axis) and the malaria prevalence in the population (color code). Parameters values: $L = 50,000$, $g = 1 / 14$ /day, $n = 10$ days, $r = 1 / 14$ /day, and $D = 28$ days (**b** only). ](malarone_files/figure-html/unnamed-chunk-61-1.png){#fig-results}
+-->
+
+![indirect epidemiological effects of malarone in the case of treatment of new cases (**a**) and  mass administration (**b**). **a**: reduction factor  $\rho$ from treatment of new cases (@eq-R0ti) as a function of the proportion $\tau$ of new cases that is given malarone ($x$-axis) and the malaria prevalence in the population (color code). Note the interchangeable roles of $\tau$ and $\bar{X}$ on this figure (see @eq-R0ti). **b**: reduction factor  $\pi$ from mass administration (@eq-R0ma) as a function of intake frequency $1/\Delta$ ($x$-axis) and the proportion $\mu$ of the total population that is given malarone (color code). Parameters values: $L = 50,000$, $1/g = 14$ days, $n = 10$ days, $1/r = 14$ days, and $D = 28$ days (**a** only). ](malarone_files/figure-html/unnamed-chunk-62-1.png){#fig-results}
 
 Outputs for other values of $L$ and $n$ are shown in the
 [Supplementary Materials](https://choisy.github.io/malarone/malarone.html)),

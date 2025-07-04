@@ -1041,8 +1041,8 @@ R_0 \propto e^{-gn}
 <span id="cb61-8"><a href="#cb61-8" aria-hidden="true" tabindex="-1"></a>opar <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mfrow =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>)</span>
 <span id="cb61-9"><a href="#cb61-9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb61-10"><a href="#cb61-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_treatment_infected</span>(<span class="fu">attr</span>(rho_val1, <span class="st">"params"</span>)<span class="sc">$</span>tau, rho_val1[[<span class="dv">5</span>]])</span>
-<span id="cb61-11"><a href="#cb61-11" aria-hidden="true" tabindex="-1"></a><span class="fu">legend4</span>(<span class="st">"bottomleft"</span>, <span class="at">title =</span> <span class="st">"prevalence"</span>, <span class="at">col =</span> YlOrRd11, <span class="at">text.width =</span> <span class="dv">0</span>,</span>
-<span id="cb61-12"><a href="#cb61-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend =</span> leg)</span>
+<span id="cb61-11"><a href="#cb61-11" aria-hidden="true" tabindex="-1"></a><span class="fu">legend4</span>(<span class="st">"bottomleft"</span>, <span class="at">title =</span> <span class="fu">expression</span>(<span class="fu">paste</span>(<span class="st">"prevalence "</span>, <span class="fu">bar</span>(X))),</span>
+<span id="cb61-12"><a href="#cb61-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">col =</span> YlOrRd11, <span class="at">text.width =</span> <span class="dv">0</span>, <span class="at">legend =</span> leg)</span>
 <span id="cb61-13"><a href="#cb61-13" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb61-14"><a href="#cb61-14" aria-hidden="true" tabindex="-1"></a><span class="fu">mtext4</span>(<span class="st">"a"</span>, <span class="at">at =</span> <span class="sc">-</span> at_val <span class="sc">/</span> xmax)</span>
 <span id="cb61-15"><a href="#cb61-15" aria-hidden="true" tabindex="-1"></a></span>

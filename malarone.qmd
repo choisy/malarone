@@ -1047,8 +1047,8 @@ nb_mid <- 3
 opar <- par(mfrow = 1:2)
 
 plot_treatment_infected(attr(rho_val1, "params")$tau, rho_val1[[5]])
-legend4("bottomleft", title = "prevalence", col = YlOrRd11, text.width = 0,
-        legend = leg)
+legend4("bottomleft", title = expression(paste("prevalence ", bar(X))),
+        col = YlOrRd11, text.width = 0, legend = leg)
 
 mtext4("a", at = - at_val / xmax)
 
