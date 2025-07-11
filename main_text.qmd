@@ -46,7 +46,11 @@ mosquitoes would feed on people that took malarone sometimes in the past $D$ tim
 units. The basic reproduction number would then be:
 
 $$
-{R_0}_m = \underbrace{\left(\frac{1}{D} \int_0^D\left(1-\alpha(t)\right)\frac{f((1-\beta(t))L)}{f(L)}e^{-gn\gamma(t)/(1 - \gamma(t))} dt \right)}_\lambda R_0
+{R_0}_m = \underbrace{\left(\frac{1}{D} \int_0^D\left(1-\alpha(t)\right)\frac{b((1-\beta(t))L^*)}{b(L^*)}e^{-gn\gamma(t)/(1 - \gamma(t))} dt \right)}_\lambda R_0
+$$ 
+
+$$
+{R_0}_m = \underbrace{\left(\frac{1}{D} \int_0^D\overbrace{\left(1-\alpha(t)\right)}^{1 - \mbox{\tiny TBA}}\overbrace{\frac{b((1-\beta(t))L^*)}{b(L^*)}}^{1-\mbox{\tiny TRA}}e^{-gn\gamma(t)/(1 - \gamma(t))} dt \right)}_\lambda R_0
 $$ {#eq-R0m}
 
 where $R_0$ is the basic reproduction number in absence of malarone as expressed in
@@ -66,6 +70,17 @@ past $D$ time units is expressed (@eq-R0m), let's use it to explore the indirect
 epidemiological consequences of malarone in two different situations: (i) mass
 administration of malarone to people, independently of their infection status and (ii)
 treatment of infected people with malarone.
+
+The definition of $f$:
+
+$$
+b(L) = \left\{
+        \begin{array}{ll}
+            1.35\times 10^{-5}L & \quad L \leq 21110 \\
+            0.27 + 7.48\times 10^{-7}L & \quad L > 21110
+        \end{array}
+    \right.
+$$
 
 If malarone is given to a proportion $\mu$ of the total population every $\Delta$ days
 (asynchronously across people) and independently of their clinical status, then the
