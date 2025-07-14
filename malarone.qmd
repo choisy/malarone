@@ -711,6 +711,24 @@ lambda_vals <- compute_lambda_val(D_val = c(seq(1, 7, .1), 8:28) * 24,
                                   g = 1 / 14)
 ```
 
+(takes ca 19'00"):
+
+```{r eval = FALSE}
+lambda_vals2 <- compute_lambda_val(D_val = c(seq(1, 7, .1), 8:28) * 24,
+                                   n_val = c(6, 10, 14),
+                                   L_val = c(1, 5, 10) * 1e4,
+                                   g = 1 / 10)
+```
+
+(takes ca 19'00"):
+
+```{r eval = FALSE}
+lambda_vals3 <- compute_lambda_val(D_val = c(seq(1, 7, .1), 8:28) * 24,
+                                   n_val = c(6, 10, 14),
+                                   L_val = c(1, 5, 10) * 1e4,
+                                   g = 1 / 7)
+```
+
 ```{r include = FALSE}
 if (file_exists("lambda_vals.rds")) {
   lambda_vals <- readRDS3("lambda_vals.rds")
@@ -720,6 +738,26 @@ if (file_exists("lambda_vals.rds")) {
                                     L_val = c(1, 5, 10) * 1e4,
                                     g = 1 / 14)
   saveRDS2(lambda_vals, "lambda_vals.rds")
+}
+
+if (file_exists("lambda_vals2.rds")) {
+  lambda_vals2 <- readRDS3("lambda_vals2.rds")
+} else {
+  lambda_vals2 <- compute_lambda_val(D_val = c(seq(1, 7, .1), 8:28) * 24,
+                                     n_val = c(6, 10, 14),
+                                     L_val = c(1, 5, 10) * 1e4,
+                                     g = 1 / 10)
+  saveRDS2(lambda_vals2, "lambda_vals2.rds")
+}
+
+if (file_exists("lambda_vals3.rds")) {
+  lambda_vals3 <- readRDS3("lambda_vals3.rds")
+} else {
+  lambda_vals3 <- compute_lambda_val(D_val = c(seq(1, 7, .1), 8:28) * 24,
+                                     n_val = c(6, 10, 14),
+                                     L_val = c(1, 5, 10) * 1e4,
+                                     g = 1 / 7)
+  saveRDS2(lambda_vals3, "lambda_vals3.rds")
 }
 ```
 
@@ -823,6 +861,14 @@ multipanels_mass <- function(lambda_vals, ylim = 0:1,
 multipanels_mass(lambda_vals)
 ```
 
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+multipanels_mass(lambda_vals2)
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+multipanels_mass(lambda_vals3)
+```
+
 
 ### Treatment of infected
 
@@ -906,19 +952,73 @@ rho_val1 <- compute_rho_val(X_val = seq(0, 1, .1),
                             nb = 1e6)
 ```
 
+(it takes 15"):
+
+```{r eval = FALSE}
+rho_val2 <- compute_rho_val(X_val = seq(0, 1, .1),
+                            tau_val = seq2(0, 1),
+                            n_val = c(6, 10, 14),
+                            L_val = c(1, 5, 10) * 1e4,
+                            D = 28 * 24,
+                            g = 1 / 10,
+                            r = 1 / (14 * 24),
+                            nb = 1e6)
+```
+
+(it takes 15"):
+
+```{r eval = FALSE}
+rho_val3 <- compute_rho_val(X_val = seq(0, 1, .1),
+                            tau_val = seq2(0, 1),
+                            n_val = c(6, 10, 14),
+                            L_val = c(1, 5, 10) * 1e4,
+                            D = 28 * 24,
+                            g = 1 / 7,
+                            r = 1 / (14 * 24),
+                            nb = 1e6)
+```
+
 ```{r include = FALSE}
 if (file_exists("rho_val1.rds")) {
   rho_val1 <- readRDS3("rho_val1.rds")
 } else {
   rho_val1 <- compute_rho_val(X_val = seq(0, 1, .1),
                               tau_val = seq2(0, 1),
-                              gn_val = c(.4, .7, 1),
-                              L_val = c(2, 6) * 1e4,
+                              n_val = c(6, 10, 14),
+                              L_val = c(1, 5, 10) * 1e4,
                               D = 28 * 24,
-                              L = 6e4,
+                              g = 1 / 14,
                               r = 1 / (14 * 24),
                               nb = 1e6)
   saveRDS2(rho_val1, "rho_val1.rds")
+}
+
+if (file_exists("rho_val2.rds")) {
+  rho_val2 <- readRDS3("rho_val2.rds")
+} else {
+  rho_val2 <- compute_rho_val(X_val = seq(0, 1, .1),
+                              tau_val = seq2(0, 1),
+                              n_val = c(6, 10, 14),
+                              L_val = c(1, 5, 10) * 1e4,
+                              D = 28 * 24,
+                              g = 1 / 10,
+                              r = 1 / (14 * 24),
+                              nb = 1e6)
+  saveRDS2(rho_val2, "rho_val2.rds")
+}
+
+if (file_exists("rho_val3.rds")) {
+  rho_val3 <- readRDS3("rho_val3.rds")
+} else {
+  rho_val3 <- compute_rho_val(X_val = seq(0, 1, .1),
+                              tau_val = seq2(0, 1),
+                              n_val = c(6, 10, 14),
+                              L_val = c(1, 5, 10) * 1e4,
+                              D = 28 * 24,
+                              g = 1 / 7,
+                              r = 1 / (14 * 24),
+                              nb = 1e6)
+  saveRDS2(rho_val3, "rho_val3.rds")
 }
 ```
 
@@ -978,6 +1078,14 @@ multipanels_infected <- function(rho_val, ylim = 0:1,
 multipanels_infected(rho_val1)
 ```
 
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+multipanels_infected(rho_val2)
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+multipanels_infected(rho_val3)
+```
+
 ### Examples with $R_0$
 
 If we want to look at a specific example of $R_0$, we need to acknowledge that,
@@ -998,11 +1106,35 @@ multipanels_mass(lambda_vals, ylim = c(0, ymax),
                  ylab = bquote(R[0]), hlines = 0:ymax, R0o = 5)
 ```
 
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+ymax <- 10
+multipanels_mass(lambda_vals2, ylim = c(0, ymax),
+                 ylab = bquote(R[0]), hlines = 0:ymax, R0o = 5)
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+ymax <- 10
+multipanels_mass(lambda_vals3, ylim = c(0, ymax),
+                 ylab = bquote(R[0]), hlines = 0:ymax, R0o = 5)
+```
+
 And the effect of the treatment of the infected would look like:
 
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 ymax <- 10
 multipanels_infected(rho_val1, ylim = c(0, ymax), ylab = bquote(R[0]),
+                     hlines1 = 0:ymax, hlines2 = seq(0, ymax, .5), R0o = 5)
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+ymax <- 10
+multipanels_infected(rho_val2, ylim = c(0, ymax), ylab = bquote(R[0]),
+                     hlines1 = 0:ymax, hlines2 = seq(0, ymax, .5), R0o = 5)
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+ymax <- 10
+multipanels_infected(rho_val3, ylim = c(0, ymax), ylab = bquote(R[0]),
                      hlines1 = 0:ymax, hlines2 = seq(0, ymax, .5), R0o = 5)
 ```
 
