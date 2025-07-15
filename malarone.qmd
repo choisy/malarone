@@ -11,6 +11,12 @@ bibliography: references.bib
 csl: the-american-naturalist.csl
 ---
 
+```{r include = FALSE, eval = FALSE}
+knitr::purl("malarone.qmd", "tmp.R", documentation = FALSE)
+source("tmp.R")
+file.remove("tmp.R")
+```
+
 ```{r include = FALSE}
 par2 <- function(...) par(..., mgp = c(1.5, .5, 0), bty = "n")
 
@@ -1193,3 +1199,95 @@ mtext4("b", at = at_val + xmax)
 
 par(opar)
 ```
+
+#### PDF output
+
+Au format *Nature Medicine*:
+
+```{r}
+PDF <- TRUE
+
+abline4pdf <- function(...) abline(..., col = "lightgrey")
+abline3pdf <- function(...) abline4pdf(..., lwd = .5)
+
+plot_treatment_infected_pdf <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
+                                        xlab = bquote("proportion" ~ tau ~ "of new cases that are treated"),
+                                        ylab = ylab_rho,
+                                        hlines1 = seq(0, 1, .1),
+                                        hlines2 = seq(0, 1, .05),
+                                        transform = 1) {
+  plot(NA, xlim = 0:1, ylim = ylim, type = "n", xaxs = "i", yaxs = "i", axes = FALSE,
+       ann = FALSE, xlab = xlab, ylab = ylab)
+  ats <- seq(0, 1, .2)
+  axis(1, ats, 100 * ats)
+  axis(2, mgp = c(1, .75, 0))
+  mtext(bquote("Proportion" ~ tau ~ "of new cases that are treated (%)"), 1, 1.5)
+  mtext(ylab_rho, 2, 2, las = 0)
+  abline3pdf(v = seq(0, 1, .05))
+  abline4pdf(v = seq(0, 1, .1))
+  abline4pdf(h = hlines1)
+  abline3pdf(h = hlines2)
+  walk2(y, YlOrRd11, ~ lines(x, .x * transform, col = .y))
+  box(bty = "o")
+}
+
+legend4pdf <- function(...) {
+  legend(lty = 1, lwd = 1, adj = c(1, .5), x.intersp = 4, ...)
+}
+
+plot_mass_treatment_pdf <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
+                                xlab = "intake frequency (every D days)",
+                                ylab = ylab_pi,
+                                hlines = seq(0, 1, .1), transform = 1) {
+  plot(rev(x), y, xlim = c(xmax, 0), ylim = ylim, type = "n",
+       xlab = xlab, ylab = ylab, xaxs = "i", yaxs = "i", axes = FALSE, ann = FALSE)
+  axis(1)
+  axis(2, mgp = c(1, .75, 0))
+  mtext("Intake frequency (every D days)", 1, 1.5)
+  mtext(ylab_pi, 2, 2, las = 0)
+  abline(v = seq(0, xmax, 5), col = "grey")
+  abline(h = hlines, col = "grey")
+  walk2(seq(0, 1, .1), YlOrRd11,
+        ~ lines(rev(x), rev((1 - (1 - min_of_following(y)) * .x) * transform),
+                col = .y))
+  box(bty = "o")
+}
+
+#######################################################################################
+
+if (PDF) {
+  pdf("figure6.pdf",
+      width = 121 / 25.4, height = 60.5 / 25.4,
+      family = "Helvetica", pointsize = 6)
+}
+  
+mtext4pdf <- function(...) mtext(..., line = -.5, cex = 1.5, font = 2)
+at_val <- 4.7
+xmax <- 30
+
+leg <- paste(seq(0, 100, 10), "%")
+nb_mid <- 3
+
+opar <- par(mfrow = 1:2, mgp = c(1.5, .5, 0), plt = c(.15, .95, .13, .93), las = 1)
+
+plot_treatment_infected_pdf(attr(rho_val1, "params")$tau, rho_val1[[5]])
+legend4pdf("bottomleft", title = expression(paste("Prevalence ", bar(X))), text.width = 0,
+        col = YlOrRd11,
+        legend = leg,
+        bg = "white")
+
+mtext4pdf("a", at = - at_val / xmax)
+
+plot_mass_treatment_pdf(attr(lambda_vals, "params")$D_val / 24, lambda_vals[[5]])
+legend4pdf("bottomleft", title = expression(paste("Proportion ", mu, " treated")), text.width = .5,
+        col = c(YlOrRd11[1:5], rep("#FFFFFF", nb_mid), YlOrRd11[10:11]), 
+        legend = c(leg[1:5], rep(".         .     ", nb_mid), leg[10:11]),
+        bg = "white")
+
+mtext4pdf("b", at = at_val + xmax)
+
+par(opar)
+
+if (PDF) dev.off()
+```
+
