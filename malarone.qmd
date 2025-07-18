@@ -172,6 +172,16 @@ min_of_following <- function(x) {
 }
 ```
 
+A function that replace the `NA` values of a vector by `0`:
+
+```{r}
+NAto0 <- function(x) {
+  x[is.na(x)] <- 0
+  x
+}
+```
+
+
 ## Theoretical results
 
 In this section we pull out the most relevant theoretical results from
@@ -302,7 +312,8 @@ and create a function `alpha()` of the percentage $\alpha(t)$ inhibition on spor
 infection rate as a function of time $t$ post drug administration:
 
 ```{r}
-alpha <- data2function(alpha_data)
+alpha0 <- data2function(alpha_data)
+alpha <- function(x) NAto0(alpha0(x))
 ```
 
 Let's now visualize this function. For that we first need a function that plots
@@ -355,7 +366,8 @@ and create a function `beta(t)` on the percentage $\beta(t)$ inhibition on sporo
 load as a function of time $t$ post drug administration:
 
 ```{r}
-beta <- data2function(beta_data)
+beta0 <- data2function(beta_data)
+beta <- function(x) NAto0(beta0(x))
 ```
 
 And let's visualize this function $\beta(t)$ together with the experimental data:
@@ -473,7 +485,8 @@ and create a function `gamma()` on the percentage $\gamma(t)$ decrease in oocyst
 size at 7 dpi as a function of time $t$ post drug administration:
 
 ```{r}
-gamma <- data2function(gamma_data)
+gamma0 <- data2function(gamma_data)
+gamma <- function(x) NAto0(gamma0(x))
 ```
 
 And let's visualize this function $\gamma(t)$ together with the experimental data:
@@ -789,6 +802,24 @@ plot_mass_treatment <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
 }
 ```
 
+```{r}
+plot_mass_treatment2 <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
+                                xlab = "intake frequency (every D days)",
+                                ylab = ylab_pi, hlines = seq(0, 1, .1), transform = 1,
+                                xmin = 21, xmax = 56, xby = 7) {
+  plot(rev(x), y, xlim = c(xmax, xmin), ylim = ylim, type = "n",
+       xlab = xlab, ylab = ylab, xaxs = "i", yaxs = "i", axes = FALSE)
+  box(bty = "o")
+  if (x_axis) axis(1, seq(xmin, xmax, xby))
+  if (y_axis) axis(2)
+  abline(v = seq(xmin, xmax, xby), col = "grey")
+  abline(h = hlines, col = "grey")
+  walk2(seq(0, 1, .1), YlOrRd11,
+        ~ lines(rev(x), rev((1 - (1 - min_of_following(y)) * .x) * transform),
+                col = .y, lwd = lwd_val))
+}
+```
+
 Some `mtext()` tuning for the multipanel figures:
 
 ```{r}
@@ -858,6 +889,54 @@ multipanels_mass <- function(lambda_vals, ylim = 0:1,
   plot_mass_treatment2(lambda_vals[[1]], transf = trnsfrm[1])
   plot_mass_treatment4(lambda_vals[[2]], transf = trnsfrm[2])
   plot_mass_treatment4(lambda_vals[[3]], transf = trnsfrm[3])
+  mtext3(params$L_val[1])
+  par(opar)
+}
+```
+
+```{r}
+multipanels_mass2 <- function(lambda_vals, ylim = 0:1,
+                              ylab = ylab_pi,
+                              hlines = seq(0, 1, .1), R0o = NULL) {
+  params <- attr(lambda_vals, "params")
+  
+  if (is.null(R0o)) {
+    trnsfrm <- rep(1, 3)
+  } else {
+    trnsfrm <- with(params, R0o * exp(1 - g * n_val))
+  }
+  
+  plot_mass_treatment2b <- function(y, ylob = ylab, ...) {
+    plot_mass_treatment2(params$D_val / 24, y, ylim = ylim, ylab = ylob,
+                        hlines = hlines, ...)
+  }
+  plot_mass_treatment3b <- function(y, ...) {
+    plot_mass_treatment2b(y, xlab = NA, x_axis = FALSE, ...)
+  }
+  plot_mass_treatment4b <- function(y, ...) {
+    plot_mass_treatment2b(y, ylob = NA, y_axis = FALSE, ...)
+  }
+  plot_mass_treatment5b <- function(y, ...) {
+    plot_mass_treatment4b(y, xlab = NA, x_axis = FALSE, ...)
+  }
+  
+  opar <- parmfrow33()
+  plot_mass_treatment3b(lambda_vals[[7]], transf = trnsfrm[1])
+  mtext2(params$n_val[1])
+  plot_mass_treatment5b(lambda_vals[[8]], transf = trnsfrm[2])
+  mtext2(params$n_val[2])
+  legend5("bottomleft", title = "proportion treated", text.width = .5, 
+          legend = paste(seq(0, 100, 10), "%"))
+  plot_mass_treatment5b(lambda_vals[[9]], transf = trnsfrm[3])
+  mtext2(params$n_val[3])
+  mtext3(params$L_val[3])
+  plot_mass_treatment3b(lambda_vals[[4]], transf = trnsfrm[1])
+  plot_mass_treatment5b(lambda_vals[[5]], transf = trnsfrm[2])
+  plot_mass_treatment5b(lambda_vals[[6]], transf = trnsfrm[3])
+  mtext3(params$L_val[2])
+  plot_mass_treatment2b(lambda_vals[[1]], transf = trnsfrm[1])
+  plot_mass_treatment4b(lambda_vals[[2]], transf = trnsfrm[2])
+  plot_mass_treatment4b(lambda_vals[[3]], transf = trnsfrm[3])
   mtext3(params$L_val[1])
   par(opar)
 }
@@ -1291,3 +1370,221 @@ par(opar)
 if (PDF) dev.off()
 ```
 
+### New frequencies
+
+#### Supplementary figures
+
+Let's now compute $\lambda$ values (takes ca 8'00"):
+
+```{r eval = FALSE}
+lambda_vals1b <- compute_lambda_val(D_val = (3 * 7):(8 * 7) * 24,
+                                    n_val = c(6, 10, 14),
+                                    L_val = c(1, 5, 10) * 1e4,
+                                    g = 1 / 14)
+```
+
+(takes ca 8'00"):
+
+```{r eval = FALSE}
+lambda_vals2b <- compute_lambda_val(D_val = (3 * 7):(8 * 7) * 24,
+                                    n_val = c(6, 10, 14),
+                                    L_val = c(1, 5, 10) * 1e4,
+                                    g = 1 / 10)
+```
+
+(takes ca 8'00"):
+
+```{r eval = FALSE}
+lambda_vals3b <- compute_lambda_val(D_val = (3 * 7):(8 * 7) * 24,
+                                    n_val = c(6, 10, 14),
+                                    L_val = c(1, 5, 10) * 1e4,
+                                    g = 1 / 7)
+```
+
+```{r include = FALSE}
+if (file_exists("lambda_vals1b.rds")) {
+  lambda_vals1b <- readRDS3("lambda_vals1b.rds")
+} else {
+  lambda_vals1b <- compute_lambda_val(D_val = (3 * 7):(8 * 7) * 24,
+                                      n_val = c(6, 10, 14),
+                                      L_val = c(1, 5, 10) * 1e4,
+                                      g = 1 / 14)
+  saveRDS2(lambda_vals1b, "lambda_vals1b.rds")
+}
+
+if (file_exists("lambda_vals2b.rds")) {
+  lambda_vals2b <- readRDS3("lambda_vals2b.rds")
+} else {
+  lambda_vals2b <- compute_lambda_val(D_val = (3 * 7):(8 * 7) * 24,
+                                      n_val = c(6, 10, 14),
+                                      L_val = c(1, 5, 10) * 1e4,
+                                      g = 1 / 10)
+  saveRDS2(lambda_vals2b, "lambda_vals2b.rds")
+}
+
+if (file_exists("lambda_vals3b.rds")) {
+  lambda_vals3b <- readRDS3("lambda_vals3b.rds")
+} else {
+  lambda_vals3b <- compute_lambda_val(D_val = (3 * 7):(8 * 7) * 24,
+                                      n_val = c(6, 10, 14),
+                                      L_val = c(1, 5, 10) * 1e4,
+                                      g = 1 / 7)
+  saveRDS2(lambda_vals3b, "lambda_vals3b.rds")
+}
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+multipanels_mass2(lambda_vals1b)
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+multipanels_mass2(lambda_vals2b)
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+multipanels_mass2(lambda_vals3b)
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+ymax <- 10
+multipanels_mass2(lambda_vals1b, ylim = c(0, ymax),
+                  ylab = bquote(R[0]), hlines = 0:ymax, R0o = 5)
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+ymax <- 10
+multipanels_mass2(lambda_vals2b, ylim = c(0, ymax),
+                  ylab = bquote(R[0]), hlines = 0:ymax, R0o = 5)
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+ymax <- 10
+multipanels_mass2(lambda_vals3b, ylim = c(0, ymax),
+                  ylab = bquote(R[0]), hlines = 0:ymax, R0o = 5)
+```
+
+
+#### Main text figure
+
+```{r fig.width = 8, margin1 = FALSE, margin5 = TRUE}
+mtext4 <- function(...) mtext(..., line = -.5, cex = 2, font = 2)
+at_val <- 4.7
+xmax <- 30
+
+leg <- paste(seq(0, 100, 10), "%")
+nb_mid <- 3
+
+opar <- par(mfrow = 1:2)
+
+plot_treatment_infected(attr(rho_val1, "params")$tau, rho_val1[[5]])
+legend4("bottomleft", title = expression(paste("prevalence ", bar(X))),
+        col = YlOrRd11, text.width = 0, legend = leg)
+
+mtext4("a", at = - at_val / xmax)
+
+plot_mass_treatment2(attr(lambda_vals1b, "params")$D_val / 24, lambda_vals1b[[5]])
+legend4("bottomleft", title = "proportion treated", text.width = .5,
+        col = c(YlOrRd11[1:3], rep("#FFFFFF", nb_mid), YlOrRd11[10:11]), 
+        legend = c(leg[1:3], rep(".", nb_mid), leg[10:11]))
+
+mtext4("b", at = at_val + xmax)
+
+par(opar)
+```
+
+##### PDF output
+
+Au format *Nature Medicine*:
+
+```{r}
+PDF <- TRUE
+
+abline4pdf <- function(...) abline(..., col = "lightgrey")
+abline3pdf <- function(...) abline4pdf(..., lwd = .5)
+
+plot_treatment_infected_pdf <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
+                                        xlab = bquote("proportion" ~ tau ~ "of new cases that are treated"),
+                                        ylab = ylab_rho,
+                                        hlines1 = seq(0, 1, .1),
+                                        hlines2 = seq(0, 1, .05),
+                                        transform = 1) {
+  plot(NA, xlim = 0:1, ylim = ylim, type = "n", xaxs = "i", yaxs = "i", axes = FALSE,
+       ann = FALSE, xlab = xlab, ylab = ylab)
+  ats <- seq(0, 1, .2)
+  axis(1, ats, 100 * ats)
+  axis(2, mgp = c(1, .75, 0))
+  mtext(bquote("Proportion" ~ tau ~ "of new cases that are treated (%)"), 1, 1.5)
+  mtext(ylab_rho, 2, 2, las = 0)
+  abline3pdf(v = seq(0, 1, .05))
+  abline4pdf(v = seq(0, 1, .1))
+  abline4pdf(h = hlines1)
+  abline3pdf(h = hlines2)
+  walk2(y, YlOrRd11, ~ lines(x, .x * transform, col = .y))
+  box(bty = "o")
+}
+
+legend4pdf <- function(...) {
+  legend(lty = 1, lwd = 1, adj = c(1, .5), x.intersp = 4, ...)
+}
+
+plot_mass_treatment2_pdf <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
+                                xlab = "intake frequency (every D days)",
+                                ylab = ylab_pi, hlines = seq(0, 1, .1), transform = 1,
+                                xmin = 21, xmax = 56, xby = 7) {
+  plot(rev(x), y, xlim = c(xmax, xmin), ylim = ylim, type = "n", ann = FALSE,
+       xaxs = "i", yaxs = "i", axes = FALSE)
+  
+  axis(1, seq(xmin, xmax, xby))
+  axis(2, mgp = c(1, .75, 0))
+  mtext("Intake frequency (every D days)", 1, 1.5)
+  mtext(ylab_pi, 2, 2, las = 0)
+  
+  abline(v = seq(xmin, xmax, xby), col = "grey")
+  abline(h = hlines, col = "grey")
+  walk2(seq(0, 1, .1), YlOrRd11,
+        ~ lines(rev(x), rev((1 - (1 - min_of_following(y)) * .x) * transform),
+                col = .y))
+  box(bty = "o")
+}
+
+#######################################################################################
+
+if (PDF) {
+  pdf("figure6_new.pdf",
+      width = 121 / 25.4, height = 60.5 / 25.4,
+      family = "Helvetica", pointsize = 6)
+}
+  
+mtext4pdf <- function(...) mtext(..., line = -.5, cex = 1.5, font = 2)
+at_val <- 4.7
+xmax <- 8 * 7
+xmin <- 3 * 7
+
+leg <- paste(seq(0, 100, 10), "%")
+nb_mid <- 3
+
+opar <- par(mfrow = 1:2, mgp = c(1.5, .5, 0), plt = c(.15, .95, .13, .93), las = 1)
+
+plot_treatment_infected_pdf(attr(rho_val1, "params")$tau, rho_val1[[5]])
+legend4pdf("bottomleft", title = expression(paste("Prevalence ", bar(X))), text.width = 0,
+        col = YlOrRd11,
+        legend = leg,
+        bg = "white")
+
+mtext4pdf("a", at = - at_val / (xmax - xmin))
+
+#plot_mass_treatment_pdf(attr(lambda_vals, "params")$D_val / 24, lambda_vals[[5]])
+plot_mass_treatment2_pdf(attr(lambda_vals1b, "params")$D_val / 24, lambda_vals1b[[5]])
+legend4pdf("bottomleft", title = expression(paste("Proportion ", mu, " treated")), text.width = .5,
+           col = YlOrRd11,
+           legend = leg,
+#        col = c(YlOrRd11[1:5], rep("#FFFFFF", nb_mid), YlOrRd11[10:11]), 
+#        legend = c(leg[1:5], rep(".         .     ", nb_mid), leg[10:11]),
+        bg = "white")
+
+mtext4pdf("b", at = at_val + xmax)
+
+par(opar)
+
+if (PDF) dev.off()
+```
