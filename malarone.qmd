@@ -4,6 +4,7 @@ number-sections: true
 format:
   html:
     toc: true
+    toc-depth: 4
 editor: source
 editor_options: 
   chunk_output_type: console
@@ -1159,15 +1160,15 @@ multipanels_infected <- function(rho_val, ylim = 0:1,
 }
 ```
 
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+```{r supfig_infc1, fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 multipanels_infected(rho_val1)
 ```
 
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+```{r supfig_infc2, fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 multipanels_infected(rho_val2)
 ```
 
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+```{r supfig_infc3, fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 multipanels_infected(rho_val3)
 ```
 
@@ -1433,15 +1434,15 @@ if (file_exists("lambda_vals3b.rds")) {
 }
 ```
 
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+```{r supfig_mass1, fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 multipanels_mass2(lambda_vals1b)
 ```
 
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+```{r supfig_mass2, fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 multipanels_mass2(lambda_vals2b)
 ```
 
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+```{r supfig_mass3, fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 multipanels_mass2(lambda_vals3b)
 ```
 
