@@ -236,9 +236,9 @@ $$
 \bar{X} = \frac{R_0 - 1}{R_0 + c S}
 $$
 
-Note the main assumption of this framework:
+Note that, in this framework, the mosquito death rate $g$ is assumed to be independent
+of the mosquito's age, which is generally supported by data.
 
-**Assumption 1:** the mosquito death rate is independent of the mosquito's age.
 
 ## Experimental data
 
