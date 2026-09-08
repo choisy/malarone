@@ -253,8 +253,8 @@ the $y$ axis of Figure 4B);
 3. decreases by the multiplicative factor $1 - \gamma$ ($0 \leq \gamma \leq 1$) the
 size of oocysts at 7 days post infection (with $\gamma$ shown on the $y$ axis of Figure
 5A);
-4. has no effect on the mosquito biting rate $a$ (Figure 7A);
-5. has no effect on the mosquito death rate $g$ (Figure 7B).
+4. has no significant effect on the mosquito biting rate $a$ (Figure 7A);
+5. has no significant effect on the mosquito death rate $g$ (Figure 7B).
 
 Let's see below how we can integrate these 3 effects $\alpha$, $\beta$ and $\gamma$
 into the theoretical equations of the previous section.
