@@ -108,7 +108,7 @@ Plots parameters sets:
 
 ```{r}
 mcx <- 3 / 2
-parmfrow33 <- function() {
+parmfrow3x3 <- function() {
   par(mfrow = c(3, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
 }
 ```
@@ -873,7 +873,7 @@ multipanels_mass <- function(lambda_vals, ylim = 0:1,
     plot_mass_treatment4(y, xlab = NA, x_axis = FALSE, ...)
   }
   
-  opar <- parmfrow33()
+  opar <- parmfrow3x3()
   plot_mass_treatment3(lambda_vals[[7]], transf = trnsfrm[1])
   mtext2(params$n_val[1])
   plot_mass_treatment5(lambda_vals[[8]], transf = trnsfrm[2])
@@ -921,7 +921,7 @@ multipanels_mass2 <- function(lambda_vals, ylim = 0:1,
     plot_mass_treatment4b(y, xlab = NA, x_axis = FALSE, ...)
   }
   
-  opar <- parmfrow33()
+  opar <- parmfrow3x3()
   plot_mass_treatment3b(lambda_vals[[7]], transf = trnsfrm[1])
   mtext2(params$n_val[1])
   plot_mass_treatment5b(lambda_vals[[8]], transf = trnsfrm[2])
@@ -1008,7 +1008,7 @@ abline3 <- function(...) abline(..., col = "lightgrey")
 abline4 <- function(...) abline3(..., lwd = lwd_val)
 
 plot_treatment_infected <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
-                                    xlab = bquote("proportion" ~ tau ~ "treated"),
+                                    xlab = bquote("Proportion" ~ tau ~ "of new cases that are treated (%)"),
                                     ylab = ylab_rho,
                                     hlines1 = seq(0, 1, .1), hlines2 = seq(0, 1, .05),
                                     transform = 1) {
@@ -1589,3 +1589,47 @@ par(opar)
 
 if (PDF) dev.off()
 ```
+
+
+#### TIFF output
+
+```{r}
+TIFF <- TRUE
+
+if (TIFF) {
+  tiff("figure6_900.tif",
+       width = 121, height = 60.5, units = "mm", pointsize = 6, res = 900,
+       family = "Helvetica")
+}
+  
+mtext4pdf <- function(...) mtext(..., line = -.5, cex = 1.5, font = 2)
+at_val <- 4.7
+xmax <- 8 * 7
+xmin <- 3 * 7
+
+leg <- paste(seq(0, 100, 10), "%")
+nb_mid <- 3
+
+opar <- par(mfrow = 1:2, mgp = c(1.5, .5, 0), plt = c(.15, .95, .13, .93), las = 1)
+
+plot_treatment_infected_pdf(attr(rho_val1, "params")$tau, rho_val1[[5]])
+legend4pdf("bottomleft", title = expression(paste("Prevalence ", bar(X))), text.width = 0,
+        col = YlOrRd11,
+        legend = leg,
+        bg = "white")
+
+mtext4pdf("a", at = - at_val / (xmax - xmin))
+
+plot_mass_treatment2_pdf(attr(lambda_vals1b, "params")$D_val / 24, lambda_vals1b[[5]])
+legend4pdf("bottomleft", title = expression(paste("Proportion ", mu, " treated")), text.width = .5,
+           col = YlOrRd11,
+           legend = leg,
+        bg = "white")
+
+mtext4pdf("b", at = at_val + xmax)
+
+par(opar)
+
+if (TIFF) dev.off()
+```
+
