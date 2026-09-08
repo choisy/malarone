@@ -245,24 +245,23 @@ of the mosquito's age, which is generally supported by data.
 The experimental results suggest that malarone
 
 1. decreases by the multiplicative factor $1 - \alpha$ ($0 \leq \alpha \leq 1$) the
-number of mosquitoes with sporozoites (with $\alpha$ shown on the $y$ axis of
-Figure 3B);
+number of mosquitoes with oocysts at 7dpi (with $\alpha$ shown on the $y$ axis of
+Figure 2a);
 2. decreases by the multiplicative factor $1 - \beta$ ($0 \leq \beta \leq 1$) the
-sporozoites load in mosquitoes still harboring sporozoites (with $\beta$ shown on
-the $y$ axis of Figure 4B);
+oocysts load in mosquitoes still harboring oocysts at 7dpi (with $\beta$ shown on
+the $y$ axis of Figure 2b);
 3. decreases by the multiplicative factor $1 - \gamma$ ($0 \leq \gamma \leq 1$) the
-size of oocysts at 7 days post infection (with $\gamma$ shown on the $y$ axis of Figure
-5A);
-4. has no significant effect on the mosquito biting rate $a$ (Figure 7A);
-5. has no significant effect on the mosquito death rate $g$ (Figure 7B).
+size of oocysts at 7dpi (with $\gamma$ shown on the $y$ axis of Figure 3a);
+4. has no significant effect on the mosquito biting rate $a$ (Supplementary Figure 10);
+5. has no significant effect on the mosquito death rate $g$ (Supplementary Figure 10).
 
-Let's see below how we can integrate these 3 effects $\alpha$, $\beta$ and $\gamma$
-into the theoretical equations of the previous section.
+Below we insert the 3 significant effects $\alpha$, $\beta$ and $\gamma$ into the
+theoretical equations of the previous section.
 
 
-### Mosquitoes with sporozoites
+### Mosquitoes with oocysts
 
-Below, we generate the function $\alpha(t)$ from the experimental data of Figure 3B.
+Below, we generate the function $\alpha(t)$ from the experimental data of Figure 2a.
 First we need a function that reads experimental data for the treatment group:
 
 ```{r}
@@ -303,10 +302,11 @@ data2function <- function(data, correction = t28_0) {
 ```
 
 where `correction = TRUE` means that the value at $t = 28$ days is forced to be equal
-to $0$. Let's now pull out the data from Figure 3B:
+to $0$. Let's now pull out the data from Figure 2a:
 
 ```{r}
-alpha_data <- reading_exp_data("percentage_inhibition9.rds")
+#alpha_data <- reading_exp_data("percentage_inhibition9.rds")
+alpha_data <- reading_exp_data("figure2a.rds")
 ```
 
 and create a function `alpha()` of the percentage $\alpha(t)$ inhibition on sporozoite
@@ -333,13 +333,13 @@ function coded in `alpha()` looks like together with the experimental data:
 ```{r}
 plot_experimental_data(alpha_data, ylim = c(-1, 1),
                        ylab = bquote("reduction" ~ alpha ~
-                                       "of mosquitoes with sporozoites"))
+                                       "of mosquitoes with oocysts"))
 pda_t <- seq2(0, 700)
 lines3(pda_t, alpha(pda_t))
 ```
 
-The reduction factor $1 - \alpha$ of the number of mosquitoes with sporozoites (Figure
-3B) converts directly into a transmission-blocking activity (TBA) of similar magnitude
+The reduction factor $1 - \alpha$ of the number of mosquitoes with oocysts (Figure
+2a) converts directly into a transmission-blocking activity (TBA) of similar magnitude
 on the mean individual vectorial capacity:
 
 $$
