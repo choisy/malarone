@@ -355,15 +355,16 @@ $$
 
 where $R_0$ is the basic reproduction ratio in absence of malarone.
 
-### Number of sporozoites
+### Number of oocysts
 
-Let's pull out the data from Figure 4B:
+Let's pull out the data from Figure 2c:
 
 ```{r}
-beta_data <- reading_exp_data("newTRA.rds")
+#beta_data <- reading_exp_data("newTRA.rds")
+beta_data <- reading_exp_data("figure2c.rds")
 ```
 
-and create a function `beta(t)` on the percentage $\beta(t)$ inhibition on sporozoite
+and create a function `beta(t)` on the percentage $\beta(t)$ inhibition on oocysts
 load as a function of time $t$ post drug administration:
 
 ```{r}
@@ -379,17 +380,18 @@ And let's visualize this function $\beta(t)$ together with the experimental data
 
 plot_experimental_data(beta_data, ylim = c(-1, 1),
                        ylab = bquote("reduction" ~ beta ~
-                                       "of the number L of sporozoites"))
+                                       "of the number L of oocysts"))
 betas <- beta(pda_t)
 lines3(pda_t, betas)
 ```
 
-The integration of the $\beta$ effect into @eq-R0 is less direct and straight-forward
-than for $\alpha$. To do so, we need to understand how a reduction in the sporozoite
-load $L$ translates into a reduction of $b$ in @eq-R0. Figure 2B from
-@aleshnick_experimental_2020 suggests a non-linear relationship between the sporozoite
-load $L$ and the transmission efficiency $b$ from mosquito to human. The effect of
-$\beta$ on $b$ can thus be modelled as so:
+The insertion of the $\beta$ effect into @eq-R0 is less direct and straightforward
+than for $\alpha$. To do so, we need to understand how a reduction in the oocysts
+load $L$ translates into a reduction of $b$ in @eq-R0.
+
+Figure 2B from @aleshnick_experimental_2020 suggests a non-linear relationship between
+the sporozoite load $L$ and the transmission efficiency $b$ from mosquito to human. The
+effect of $\beta$ on $b$ can thus be modelled as so:
 
 $$
 \frac{f((1 - \beta(t))L)}{f(L)}b
