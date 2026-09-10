@@ -18,7 +18,7 @@ source("tmp.R")
 file.remove("tmp.R")
 ```
 
-```{r include = FALSE}
+```{r include = FALSE, purl = FALSE}
 par2 <- function(...) par(..., mgp = c(1.5, .5, 0), bty = "n")
 
 knitr::knit_hooks$set(
@@ -408,17 +408,81 @@ mosquito-to-human transmission efficiency $b$ derived from Figures 2B of
 @aleshnick_experimental_2020 and 1 of @miura_strong_2019 and that we reproduce here:
 
 ```{r}
-make_f <- function(x1, x2, y1, y2) {
-  function(x) {
-    purrr::map_dbl(x, function(x) {
-                        if(is.na(x)) return(NA)
-                        if (x < x1) return(x * y1 / x1)
-                        y1 + (x - x1) * (y2 - y1) / (x2 - x1)
-                      })
-  }
-}
+all_data <- read.table(paste0(path2data, "ASAAP4b_oocyst2.txt"), header = TRUE)
 
-f <- make_f(x1 = 21.111, x2 = 1e5, y1 = .285, y2 = .344)
+oocysts_control <- all_data |> 
+  filter(day_of_dissection == "7dpi",
+         time_points %in% c("Control", "Unfed"),
+         total_oocysts > 0) |> 
+  select(total_oocysts) |> 
+  na.exclude()
+
+oocysts_control |> 
+  pull(total_oocysts) |> 
+  hist(main = NA, xlab = "oocyst load L in the controls", ylab = "frequency")
+
+oocysts_control |> 
+  group_by(total_oocysts) |> 
+  tally() |> 
+  mutate(cum_n = cumsum(n) / sum(n)) |> 
+  with(plot(total_oocysts, cum_n, type = "s", ylim = 0:1,
+            xlab = "oocyst load L", ylab = "cumulative proportion of samples"))
+```
+
+```{r}
+library(mgcv)
+
+aleshnick2020 <- path2data |> 
+  paste0("ppat.1008181.s006.xlsx") |> 
+  readxl::read_excel() |> 
+  rename(infection = `Malaria Infection`, load = `Salivary Gland Load`) |> 
+  select(load, infection)
+
+mod <- gam(infection ~ s(load), binomial, aleshnick2020, method = "REML")
+x <- seq(1, max(oocysts_control$total_oocysts) * 1000, le = 512)
+x_ooc <- x / 1000
+predictions <- predict(mod, list(load = x), se.fit = .95, type = "response")
+
+plot(x_ooc, predictions$fit, ylim = c(0, max(predictions$ul)), , type = "n",
+     xlab = "oocyst load L", ylab = "infection probability f")
+polygon(c(x_ooc, rev(x_ooc)), c(predictions$ul, rev(predictions$ll)), border = NA, col = adjustcolor(4, .2))
+lines(x_ooc, predictions$fit, lwd = 3, col = 4)
+```
+
+```{r}
+aleshnick2020 |> 
+  arrange(load) |> 
+  mutate(across(load, ~ .x / 1000),
+         group = c(rep(1:10, each = 41), 10, 10)) |> 
+  group_by(group) |> 
+  summarise(min_load   = min(load),
+            max_load   = max(load),
+            mean_load  = mean(load),
+            proportion = list(binom.test(sum(infection), length(infection)))) |> 
+  mutate(estimate = map_dbl(proportion, "estimate"),
+         confint = proportion |>
+                     map("conf.int") |>
+                     map(~ setNames(.x, c("ll", "ul")))) |> 
+  tidyr::unnest_wider(confint) |> 
+  with({
+    arrows(mean_load, ll, mean_load, ul, .1, 90, 3)
+    abline(v = min_load, lty = 2)
+  })
+```
+
+```{r}
+aleshnick2020 |> 
+  filter(load > 25000) |> 
+  with(sum(infection) / length(infection))
+```
+
+```{r}
+f <- function(x) {
+  map_dbl(x, function(x) {
+    if (x < 25) return(.014 * x)
+    .35
+  })
+}
 ```
 
 And this is what this function $f$ function coded in `f()` looks like:
@@ -428,6 +492,26 @@ L_val <- seq2(0, 100)
 plotl(L_val, f(L_val),
       xlab = "oocysts load L", ylab = "infection probability f")
 ```
+
+```{r}
+L_val <- seq2(0, max(oocysts_control$total_oocysts))
+plotl(L_val, f(L_val),
+      xlab = "oocysts load L", ylab = "infection probability f")
+```
+
+```{r}
+beta_val <- .5
+load_val <- 30
+f((1 - beta_val) * load_val) / f(load_val)
+```
+
+```{r}
+install.packages("fitdistrplus")
+library(fitdistr)
+```
+
+
+
 
 A tuning of `legend2()`:
 
