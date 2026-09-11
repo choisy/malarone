@@ -360,7 +360,6 @@ where $R_0$ is the basic reproduction ratio in absence of malarone.
 Let's pull out the data from Figure 2c:
 
 ```{r}
-#beta_data <- reading_exp_data("newTRA.rds")
 beta_data <- reading_exp_data("figure2c.rds")
 ```
 
@@ -405,51 +404,74 @@ $$ {#eq-TRA}
 where $b$ is the mosquito-to-human transmission efficiency in absence of malarone and 
 $f$ is the functional relationship between the oocsyts load $L$ and the
 mosquito-to-human transmission efficiency $b$ derived from Figures 2B of
-@aleshnick_experimental_2020 and 1 of @miura_strong_2019 and that we reproduce here:
+@aleshnick_experimental_2020 and 1 of @miura_strong_2019. Let's first look at the
+distribution of the oocyst loads from the control data:
 
 ```{r}
-all_data <- read.table(paste0(path2data, "ASAAP4b_oocyst2.txt"), header = TRUE)
-
-oocysts_control <- all_data |> 
+oocysts_control <- path2data |>
+  paste0("ASAAP4b_oocyst2.txt") |>
+  readr::read_table() |> 
   filter(day_of_dissection == "7dpi",
          time_points %in% c("Control", "Unfed"),
          total_oocysts > 0) |> 
-  select(total_oocysts) |> 
+  dplyr::select(total_oocysts) |> 
   na.exclude()
 
-oocysts_control |> 
-  pull(total_oocysts) |> 
-  hist(main = NA, xlab = "oocyst load L in the controls", ylab = "frequency")
+total_oocysts <- oocysts_control$total_oocysts
+  
+hist(total_oocysts, main = NA,
+     xlab = "oocyst load L in the controls", ylab = "frequency")
+```
 
+An alternative histogram:
+
+```{r}
+max_load <- max(total_oocysts)
+
+hist(total_oocysts, 0:max_load + .5, main = NA,
+     xlab = "oocyst load L in the controls", ylab = "frequency")
+```
+
+The cumulative distribution together with a fitted geometric distribion:
+
+```{r}
 oocysts_control |> 
   group_by(total_oocysts) |> 
   tally() |> 
   mutate(cum_n = cumsum(n) / sum(n)) |> 
   with(plot(total_oocysts, cum_n, type = "s", ylim = 0:1,
             xlab = "oocyst load L", ylab = "cumulative proportion of samples"))
+
+p_par <- 1 / mean(total_oocysts)
+x <- 1:max_load
+lines(x, cumsum(dgeom(x, p_par)), type = "s", col = 2)
 ```
+
+Let's now look at the data from @aleshnick_experimental_2020 converted to oocyst load
+using the 1,000 factor of @miura_strong_2019:
 
 ```{r}
 library(mgcv)
+
+miura_factor <- 1000
 
 aleshnick2020 <- path2data |> 
   paste0("ppat.1008181.s006.xlsx") |> 
   readxl::read_excel() |> 
   rename(infection = `Malaria Infection`, load = `Salivary Gland Load`) |> 
-  select(load, infection)
+  dplyr::select(load, infection)
 
-mod <- gam(infection ~ s(load), binomial, aleshnick2020, method = "REML")
-x <- seq(1, max(oocysts_control$total_oocysts) * 1000, le = 512)
-x_ooc <- x / 1000
+mod <- gam(infection ~ s(load, k = 50), binomial, aleshnick2020, method = "REML")
+x <- seq2(1, max(oocysts_control$total_oocysts) * miura_factor)
+x_ooc <- x / miura_factor
 predictions <- predict(mod, list(load = x), se.fit = .95, type = "response")
 
 plot(x_ooc, predictions$fit, ylim = c(0, max(predictions$ul)), , type = "n",
      xlab = "oocyst load L", ylab = "infection probability f")
-polygon(c(x_ooc, rev(x_ooc)), c(predictions$ul, rev(predictions$ll)), border = NA, col = adjustcolor(4, .2))
+polygon(c(x_ooc, rev(x_ooc)), c(predictions$ul, rev(predictions$ll)),
+        border = NA, col = adjustcolor(4, .2))
 lines(x_ooc, predictions$fit, lwd = 3, col = 4)
-```
 
-```{r}
 aleshnick2020 |> 
   arrange(load) |> 
   mutate(across(load, ~ .x / 1000),
@@ -466,21 +488,31 @@ aleshnick2020 |>
   tidyr::unnest_wider(confint) |> 
   with({
     arrows(mean_load, ll, mean_load, ul, .1, 90, 3)
-    abline(v = min_load, lty = 2)
+    points(mean_load, estimate, pch = 19)
+    abline(v = min_load, col = "grey")
   })
-```
 
-```{r}
 aleshnick2020 |> 
-  filter(load > 25000) |> 
-  with(sum(infection) / length(infection))
+  mutate(across(infection, ~ .x * .9)) |> 
+  with(points(load / miura_factor, infection, pch = "|"))
 ```
 
+Let's make a simplified version of it:
+
 ```{r}
+x_threshold <- 25000
+x_threshold2 <- x_threshold / miura_factor
+
+plateau_val <- aleshnick2020 |> 
+  filter(load > x_threshold) |> 
+  with(sum(infection) / length(infection))
+
+slope_val <- miura_factor * plateau_val / x_threshold
+
 f <- function(x) {
   map_dbl(x, function(x) {
-    if (x < 25) return(.014 * x)
-    .35
+    if (x < x_threshold2) return(slope_val * x)
+    plateau_val
   })
 }
 ```
@@ -493,65 +525,46 @@ plotl(L_val, f(L_val),
       xlab = "oocysts load L", ylab = "infection probability f")
 ```
 
+The same on the whole range of oocyst load:
+
 ```{r}
-L_val <- seq2(0, max(oocysts_control$total_oocysts))
+L_val <- seq2(0, max_load)
 plotl(L_val, f(L_val),
       xlab = "oocysts load L", ylab = "infection probability f")
 ```
 
-```{r}
-beta_val <- .5
-load_val <- 30
-f((1 - beta_val) * load_val) / f(load_val)
-```
+Combining `f()` with the observed distribution of oocyst loads in order to convert a
+value of $\beta$ into a reduction factor of $b$ or $R_0$:
 
 ```{r}
-install.packages("fitdistrplus")
-library(fitdistr)
-```
-
-
-
-
-A tuning of `legend2()`:
-
-```{r}
-legend3 <- function(...) {
-  legend2(title = "sporozoite load L", col = rev(YlOrRd10),
-         legend = c(bquote(1 ~ "x" ~ 10^5),
-                    sapply(9:1, function(a) bquote(.(a) ~ "x" ~ 10^4))), ...)
+f2 <- function(beta, prob = p_par, loads = 1:max_load) {
+  densities <- dgeom(loads, prob)
+  densities <- densities / sum(densities)
+  map_dbl(beta, function(x) sum(densities * map_dbl(loads, ~ f((1 - x) * .x) / f(.x))))
 }
 ```
 
-From here, let's compute the TRA as a function of the (unknown) sporozoite load $L$
-using @eq-TRA:
+And here is the TRA as a function of $\beta$:
 
 ```{r fig.height = eps * 6, fig.width = eps * 8, margin1 = FALSE, margin4 = TRUE}
 #| label: fig-b_reduction
-#| fig-cap: the conversion of a reduction on the sporozoite load $L$ into a reduction of the mosquito-to-human probability of transmission $b$ and $R_0$ for various (unknown) values of sporozoite load $L$ before ingestion of malarone.
+#| fig-cap: the conversion of a reduction on the sporozoite load $L$ into a reduction
+#| of the mosquito-to-human probability of transmission $b$ and $R_0$.
 
-beta_val <- seq2(0, 1)
+beta_vals <- seq2(0, 1)
+y_vals <- f2(beta_vals)
 opar <- par(pty = "s", xpd = TRUE)
-
-plot(0:1, 0:1, type = "l", xaxs = "i", yaxs = "i", ylab = ylab_b,
-     xlab = bquote("reducing factor 1 -" ~ beta ~ "on sporozoite load L"))
-walk2(1:10 * 1e4, YlOrRd10,
-      ~ lines2(beta_val, f(beta_val * .x) / f(.x), col = .y))
-legend3("topright", inset = c(-.5, 0))
-
-box(bty = "o")
+plot(1 - beta_vals, y_vals, type = "l", xaxs = "i", yaxs = "i", ylab = ylab_b,
+     xlab = bquote("reducing factor 1 -" ~ beta ~ "on oocyst load L"))
 par(opar)
 ```
 
 By combining @fig-beta_data and @fig-b_reduction we obtain the reduction factor of $b$
-and $R_0$ as a function of time $t$ post drug administration and (unknown) sporozoite
-load $L$ before malarone ingestion:
+and $R_0$ as a function of time $t$ post drug administration:
 
 ```{r}
 plot(NA, xlim = c(0, 700), ylim = 0:1, xlab = xlab_pda, ylab = ylab_b)
-walk2(1:10 * 1e4, YlOrRd10,
-      ~ lines(pda_t, f((1 - betas) * .x) / f(.x), col = .y, lwd = lwd_val))
-legend3("right")
+lines(pda_t, f2(betas))
 ```
 
 
@@ -763,7 +776,7 @@ walk2(1:10 * 1e4, YlOrRd10,
       ~ lines(pda_t, delta(t = pda_t, L = .x, g = 1 / (14 * 24), n = 7 * 24),
               col = .y, lwd = lwd_val))
 
-legend3("right")
+#legend3("right")
 ```
 
 
