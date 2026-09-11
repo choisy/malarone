@@ -605,6 +605,7 @@ lines3(pda_t, gamma(pda_t))
 
 **Assumption 2:** the EIP corresponds to a given size of the oocysts.
 
+
 ### Combining the 3 effects
 
 In this section we combine the 3 effects reviewed above into a reduction effect of the
@@ -614,13 +615,11 @@ received malarone $t$ time units ago, the reduction factor $\delta(t)$ of $R_0$ 
 $$
 \delta(t, g, n, L) = (1 - \alpha(t))\frac{f((1 - \beta(t))L)}{f(L)}e^{-gn\gamma(t)/(1-\gamma(t))}
 $$
-where $L$ is the mean sporozoite load in absence of malarone. The corresponding R code:
+where $L$ is the mean oocyst load in absence of malarone. The corresponding R code:
 
 ```{r}
 delta <- function(t, L, g, n) {
-  (1 - alpha(t)) *
-    exp(- g * n * gamma(t) / (1 - gamma(t))) *
-    f((1 - beta(t)) * L) / f(L)
+  (1 - alpha(t)) * f2(beta(t)) * exp(- g * n * gamma(t) / (1 - gamma(t)))
 }
 ```
 
