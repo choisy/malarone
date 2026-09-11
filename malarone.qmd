@@ -580,7 +580,7 @@ $$
 \frac{1}{1 - \gamma(t)}n
 $$
 
-With this established, let's now pull out the data from Figure 5A:
+With this established, let's now pull out the data from Figure 3a:
 
 ```{r}
 gamma_data <- reading_exp_data("percentage_inhibition_size2.rds")
