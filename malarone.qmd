@@ -674,7 +674,7 @@ between people (*i.e.* the times at which each individual takes its treatment ar
 random). The corresponding R codes:
 
 ```{r}
-pi1 <- function(D, L, g, n, mu) mu * (1 - lambda(D, L, g, n))
+pi1 <- function(D, g, n, mu) mu * (1 - lambda(D, g, n))
 ```
 
 and
@@ -705,8 +705,8 @@ $$ {#eq-rho}
 The corresponding R codes:
 
 ```{r}
-rho1 <- function(D, L, g, n, X, tau, r) {
-  1 - (1 - exp(- tau * X * r * D)) * (1 - lambda(D, L, g, n))
+rho1 <- function(D, g, n, X, tau, r) {
+  1 - (1 - exp(- tau * X * r * D)) * (1 - lambda(D, g, n))
 }
 ```
 
