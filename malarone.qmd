@@ -618,7 +618,7 @@ $$
 where $L$ is the mean oocyst load in absence of malarone. The corresponding R code:
 
 ```{r}
-delta <- function(t, L, g, n) {
+delta <- function(t, g, n) {
   (1 - alpha(t)) * f2(beta(t)) * exp(- g * n * gamma(t) / (1 - gamma(t)))
 }
 ```
@@ -637,8 +637,8 @@ Ideally, we'd like $D$ to be large enough so that $\delta(t = D, g, n, L)\simeq 
 corresponding R code is:
 
 ```{r}
-lambda <- function(D, L, g, n, nb = 1e6) {
-  trapezoid(function(x) delta(x, L, g, n), 0, D, nb) / D
+lambda <- function(D, g, n, nb = 1e6) {
+  trapezoid(function(x) delta(x, g, n), 0, D, nb) / D
 }
 ```
 
@@ -734,7 +734,6 @@ their values and units:
 | $g$       | mosquito death rate               | 1 / 14        |  /day.      |
 | $n$       | extrinsic incubation period (EIP) | 6, 10 or 14   | days        |
 | $r$       | human recovery rate               | 1 / 14        | /day        |
-| $L$       | sporozoite load                   |10,000-100,000 | sporozoites |
 | $1/D$     | frequency of treatment intake     | 1/28 - 1      | /day        |
 | $\mu$     | mass treatment coverage           | 0-100         | %           |
 | $\tau$    | infected treatment coverage       | 0-100         | %           |
