@@ -549,7 +549,8 @@ value of $\beta$ into a reduction factor of $b$ or $R_0$:
 f <- function(beta, prob = p_par, loads = 1:max_load) {
   densities <- dgeom(loads, prob)
   densities <- densities / sum(densities)
-  map_dbl(beta, \(x) sum(densities * map_dbl(loads, ~ h((1 - x) * .x) / h(.x))))
+  denominator <- h(loads)
+  map_dbl(beta, ~ sum(densities * h((1 - .x) * loads) / denominator))
 }
 ```
 
@@ -621,7 +622,7 @@ basic reproduction ratio $R_0$. If we assume that all the mosquitoes feed on peo
 received malarone $t$ time units ago, the reduction factor $\delta(t)$ of $R_0$ reads:
 
 $$
-\delta(t, g, n, L) = (1 - \alpha(t))\frac{f((1 - \beta(t))L)}{f(L)}e^{-gn\gamma(t)/(1-\gamma(t))}
+\delta(t, g, n, L) = (1 - \alpha(t))f(\beta(t))e^{-gn\gamma(t)/(1-\gamma(t))}
 $$
 where $L$ is the mean oocyst load in absence of malarone. The corresponding R code:
 
@@ -783,7 +784,7 @@ that all the mosquitoes feed of people who received treatment in the past 28 day
 $R_0$ reducing factor $\lambda$ is:
 
 ```{r eval = FALSE}
-(mean_effect_over28days <- lambda(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7))
+(mean_effect_over28days <- lambda(D = 28 * 24, g = 1 / 14, n = 7))
 ```
 
 ```{r include = FALSE}
@@ -791,7 +792,7 @@ if (file_exists("mean_effect_over28days.rds")) {
   mean_effect_over28days <- readRDS3("mean_effect_over28days.rds")
   print(mean_effect_over28days)
 } else {
-  (mean_effect_over28days <- lambda(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7))
+  (mean_effect_over28days <- lambda(D = 28 * 24, g = 1 / 14, n = 7))
   saveRDS2(mean_effect_over28days, "mean_effect_over28days.rds")
 }
 ```
