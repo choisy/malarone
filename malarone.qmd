@@ -399,7 +399,7 @@ mosquitoes with about 1,000 sporozoites per oocyst (966, 95\% CI: 893–1038)). 
 effect $\rho$ of $\beta$ on $b$ can thus be modelled as so:
 
 $$
-\rho(\beta, L) = \frac{h((1 - \beta)L)}{h(L)}
+\xi(\beta, L) = \frac{h((1 - \beta)L)}{h(L)}
 $$ {#eq-TRA}
 
 where $h$ is the functional relationship between the oocsyts load $L$ and the
@@ -409,7 +409,7 @@ mean value of this reduction using the distribution of the oocyst load in the
 population as so
 
 $$
-f(\beta) = \sum_{L = 1}^{+\infty}\rho(\beta, L) \omega(L)
+f(\beta) = \sum_{L = 1}^{+\infty}\xi(\beta, L) \omega(L)
 $$ {#eq-TRA_mean}
 
 where $\omega(L)$ is the frequency of load $L$ in the population. Let's thus first look
@@ -752,12 +752,11 @@ their values and units:
 
 The $R_0$ reducing factor $\rho(t)$ is computed by assuming that all the mosquitoes 
 feed on people $t$ hours after drug administration. For a mosquito life expectancy
-$1/g$ of 14 days, an EPI $n$ of 7 days, a sporozoite load of 60,000, if the all the
-mosquitoes feed on people 100 hours after drug administration, the $R_0$ reducing
-factor $\delta$ is:
+$1/g$ of 14 days and an EPI $n$ of 7 days, if the all the mosquitoes feed on people 100
+hours after drug administration, the $R_0$ reducing factor $\delta$ is:
 
 ```{r}
-(effect_at_t100 <- delta(t = 100, L = 6e4, g = 1 / 14, n = 7))
+(effect_at_t100 <- delta(t = 100, g = 1 / 14, n = 7))
 ```
 
 More generally, if all the mosquitoes feed on people $t$ hours after drug 
@@ -765,7 +764,7 @@ administration, the $R_0$ reducing factor looks like:
 
 ```{r}
 pda_t2 <- seq(0, 24 * 28, le = 2^10)
-ys <- delta(t = pda_t2, L = 6e4, g = 1 / (14 * 24), n = 7 * 24)
+ys <- delta(t = pda_t2, g = 1 / (14 * 24), n = 7 * 24)
 plotl(pda_t2, ys, ylim = 0:1, xlab = xlab_pda, ylab = ylab_delta)
 abline(v = 100, col = 4)
 abline(h = effect_at_t100, col = 4)
@@ -773,18 +772,7 @@ points(100, effect_at_t100, col = 4)
 ```
 
 where the blue point and lines show the case where all the mosquitoes feed on people
-100 hours after drug administration. Let's now look at the effect of the value of $L$
-on this curve:
-
-```{r}
-plot(NA, xlim = c(0, 700), ylim = 0:1, xlab = xlab_pda, ylab = ylab_delta)
-
-walk2(1:10 * 1e4, YlOrRd10,
-      ~ lines(pda_t, delta(t = pda_t, L = .x, g = 1 / (14 * 24), n = 7 * 24),
-              col = .y, lwd = lwd_val))
-
-#legend3("right")
-```
+100 hours after drug administration.
 
 
 ### Mass treatment
