@@ -627,7 +627,7 @@ where $L$ is the mean oocyst load in absence of malarone. The corresponding R co
 
 ```{r}
 delta <- function(t, g, n) {
-  (1 - alpha(t)) * f2(beta(t)) * exp(- g * n * gamma(t) / (1 - gamma(t)))
+  (1 - alpha(t)) * f(beta(t)) * exp(- g * n * gamma(t) / (1 - gamma(t)))
 }
 ```
 
