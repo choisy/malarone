@@ -154,16 +154,6 @@ readRDS2 <- function(f, ...) tibble::as_tibble(readRDS(paste0(path2data, f), ...
 legend2 <- function(...) legend(bty = "n", lty = 1, lwd = lwd_val, ...)
 ```
 
-A function that performs numerical integration using the trapezoid method:
-
-```{r}
-trapezoid <- function(f, lower, upper, nb = 1e4) {
-  step <- (upper - lower) / nb
-  y <- f(seq(lower, upper, le = nb + 1))
-  step * (y[1] + 2 * sum(y[-1])) / 2
-}
-```
-
 A function that replaces the value at index `i` in a vector `v` by the minimum of the
 values of `v` with an index equal or higher than `i`:
 
@@ -646,13 +636,17 @@ Ideally, we'd like $D$ to be large enough so that $\delta(t = D, g, n, L)\simeq 
 corresponding R code is:
 
 ```{r}
-lambda <- function(D, g, n, nb = 1e6) {
-  trapezoid(function(x) delta(x, g, n), 0, D, nb) / D
+lambda <- function(D, g, n, ...) {
+  integrate(function(x) delta(x, g, n), 0, D, ...)$value / D
 }
 ```
 
 **Note 1:** $g$ and $n$ should be expressed in the same time units.  
 **Note 2:** $D$ should be expressed in hours.
+
+```{r}
+#system.time(tmp <- lambda(D = 28 * 24, g = 1 / 14, n = 7))
+```
 
 
 ## Epidemiological effects of malarone
@@ -814,10 +808,9 @@ box(bty = "o")
 A function that computes the values for $\lambda$:
 
 ```{r}
-compute_lambda_val <- function(D_val, n_val, L_val, g) {
-  out <- with(expand.grid(n_val, L_val),
-              map2(Var1, Var2, ~ map_dbl(D_val, lambda, L = .y, g = g, n = .x)))
-  attr(out, "params") <- list(D_val = D_val, n_val = n_val, L_val = L_val, g = g)
+compute_lambda_val <- function(D_val, n_val, g) {
+  out <- with(expand.grid(n_val, D_val), map2(Var1, Var2, ~ lambda(.y, g, .x)))
+  attr(out, "params") <- list(D_val = D_val, n_val = n_val, g = g)
   out
 }
 ```
@@ -827,9 +820,26 @@ Let's now compute $\lambda$ values (takes ca 7'00"):
 ```{r eval = FALSE}
 lambda_vals <- compute_lambda_val(D_val = c(seq(1, 7, .1), 8:28) * 24,
                                   n_val = c(6, 10, 14),
-                                  L_val = c(1, 5, 10) * 1e4,
                                   g = 1 / 14)
 ```
+
+```{r}
+system.time(lambda(D = 3 * 24, g = 1 / 14, n = 10))
+```
+
+```{r}
+#lambda(D = 3 * 24, g = 1 / 14, n = 10)
+```
+
+
+```{r}
+system.time(
+compute_lambda_val(D_val = (3:4) * 24,
+                                  n_val = c(6, 10, 14),
+                                  g = 1 / 14)
+)
+```
+
 
 (takes ca 19'00"):
 
