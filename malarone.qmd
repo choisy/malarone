@@ -405,8 +405,16 @@ $$ {#eq-TRA}
 where $b$ is the mosquito-to-human transmission efficiency in absence of malarone and 
 $f$ is the functional relationship between the oocsyts load $L$ and the
 mosquito-to-human transmission efficiency $b$ derived from Figures 2B of
-@aleshnick_experimental_2020 and 1 of @miura_strong_2019. Let's first look at the
-distribution of the oocyst loads from the control data:
+@aleshnick_experimental_2020 and 1 of @miura_strong_2019. We can compute a population
+mean value of this reduction using the distribution of the oocyst load in the
+population as so
+
+$$
+\sum_N\frac{f((1 - \beta(t))L)}{f(L)}b \omega(L)
+$$ {#eq-TRA_mean}
+
+where $\omega(L)$ is the frequency of load $L$ in the population. Let's thus first look
+at the distribution of the oocyst loads $L$ from the control data:
 
 ```{r}
 oocysts_control <- path2data |>
@@ -433,7 +441,7 @@ hist(total_oocysts, 0:max_load + .5, main = NA,
      xlab = "oocyst load L in the controls", ylab = "frequency")
 ```
 
-The cumulative distribution together with a fitted geometric distribion:
+The cumulative distribution together with a fitted geometric distribution:
 
 ```{r}
 oocysts_control |> 
@@ -448,8 +456,9 @@ x <- 1:max_load
 lines(x, cumsum(dgeom(x, p_par)), type = "s", col = 2)
 ```
 
-Let's now look at the data from @aleshnick_experimental_2020 converted to oocyst load
-using the 1,000 factor of @miura_strong_2019:
+Now that we have a calibrated parametric distribution of the oocyst loads $L$, let's
+look at the data from @aleshnick_experimental_2020 converted to oocyst load using the
+1,000 factor of @miura_strong_2019:
 
 ```{r}
 library(mgcv)
