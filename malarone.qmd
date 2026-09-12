@@ -389,28 +389,27 @@ The insertion of the $\beta$ effect into @eq-R0 is less direct and straightforwa
 than for $\alpha$. To do so, we need to understand how a reduction in the oocysts
 load $L$ translates into a reduction of $b$ in @eq-R0.
 
-Figure 2B from @aleshnick_experimental_2020 suggests a non-linear relationship
+Figure 2B from @aleshnick_experimental_2020 suggests a non-linear relationship $h$
 between the sporozoite load and the transmission efficiency $b$ of *P. yoelii* from
 *An. stephensi* mosquito to mice with 10,000 salivary gland sporozoites being
 significantly more likely to initiate a malaria infection. Furthermore, Figure 1 from
 @miura_strong_2019 documents a strong linear relationship between the numbers of
 *P. falciparum* oocysts at 8 dpi and sporozoites at 16 dpi in *An. stephensi*
 mosquitoes with about 1,000 sporozoites per oocyst (966, 95\% CI: 893–1038)). The
-effect of $\beta$ on $b$ can thus be modelled as so:
+effect $\rho$ of $\beta$ on $b$ can thus be modelled as so:
 
 $$
-\frac{f((1 - \beta(t))L)}{f(L)}b
+\rho(\beta, L) = \frac{h((1 - \beta)L)}{h(L)}
 $$ {#eq-TRA}
 
-where $b$ is the mosquito-to-human transmission efficiency in absence of malarone and 
-$f$ is the functional relationship between the oocsyts load $L$ and the
+where $h$ is the functional relationship between the oocsyts load $L$ and the
 mosquito-to-human transmission efficiency $b$ derived from Figures 2B of
 @aleshnick_experimental_2020 and 1 of @miura_strong_2019. We can compute a population
 mean value of this reduction using the distribution of the oocyst load in the
 population as so
 
 $$
-\sum_N\frac{f((1 - \beta(t))L)}{f(L)}b \omega(L)
+f(\beta) = \sum_{L = 1}^{+\infty}\rho(\beta, L) \omega(L)
 $$ {#eq-TRA_mean}
 
 where $\omega(L)$ is the frequency of load $L$ in the population. Let's thus first look
@@ -519,7 +518,7 @@ plateau_val <- aleshnick2020 |>
 
 slope_val <- miura_factor * plateau_val / x_threshold
 
-f0 <- function(x) {
+h <- function(x) {
   map_dbl(x, function(x) {
     if (x < x_threshold2) return(slope_val * x)
     plateau_val
@@ -527,30 +526,30 @@ f0 <- function(x) {
 }
 ```
 
-And this is what this function $f_0$ function coded in `f0()` looks like:
+And this is what this function $h$ function coded in `h()` looks like:
 
 ```{r}
 L_val <- seq2(0, 100)
-plotl(L_val, f0(L_val),
-      xlab = "oocysts load L", ylab = "infection probability f0")
+plotl(L_val, h(L_val),
+      xlab = "oocysts load L", ylab = "infection probability h")
 ```
 
 The same on the whole range of oocyst load:
 
 ```{r}
 L_val <- seq2(0, max_load)
-plotl(L_val, f0(L_val),
-      xlab = "oocysts load L", ylab = "infection probability f0")
+plotl(L_val, h(L_val),
+      xlab = "oocysts load L", ylab = "infection probability h")
 ```
 
-Combining `f0()` with the observed distribution of oocyst loads in order to convert a
+Combining `h()` with the observed distribution of oocyst loads in order to convert a
 value of $\beta$ into a reduction factor of $b$ or $R_0$:
 
 ```{r}
 f <- function(beta, prob = p_par, loads = 1:max_load) {
   densities <- dgeom(loads, prob)
   densities <- densities / sum(densities)
-  map_dbl(beta, \(x) sum(densities * map_dbl(loads, ~ f0((1 - x) * .x) / f0(.x))))
+  map_dbl(beta, \(x) sum(densities * map_dbl(loads, ~ h((1 - x) * .x) / h(.x))))
 }
 ```
 
