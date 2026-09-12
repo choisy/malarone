@@ -519,7 +519,7 @@ plateau_val <- aleshnick2020 |>
 
 slope_val <- miura_factor * plateau_val / x_threshold
 
-f <- function(x) {
+f0 <- function(x) {
   map_dbl(x, function(x) {
     if (x < x_threshold2) return(slope_val * x)
     plateau_val
@@ -527,30 +527,30 @@ f <- function(x) {
 }
 ```
 
-And this is what this function $f$ function coded in `f()` looks like:
+And this is what this function $f_0$ function coded in `f0()` looks like:
 
 ```{r}
 L_val <- seq2(0, 100)
-plotl(L_val, f(L_val),
-      xlab = "oocysts load L", ylab = "infection probability f")
+plotl(L_val, f0(L_val),
+      xlab = "oocysts load L", ylab = "infection probability f0")
 ```
 
 The same on the whole range of oocyst load:
 
 ```{r}
 L_val <- seq2(0, max_load)
-plotl(L_val, f(L_val),
-      xlab = "oocysts load L", ylab = "infection probability f")
+plotl(L_val, f0(L_val),
+      xlab = "oocysts load L", ylab = "infection probability f0")
 ```
 
-Combining `f()` with the observed distribution of oocyst loads in order to convert a
+Combining `f0()` with the observed distribution of oocyst loads in order to convert a
 value of $\beta$ into a reduction factor of $b$ or $R_0$:
 
 ```{r}
-f2 <- function(beta, prob = p_par, loads = 1:max_load) {
+f <- function(beta, prob = p_par, loads = 1:max_load) {
   densities <- dgeom(loads, prob)
   densities <- densities / sum(densities)
-  map_dbl(beta, function(x) sum(densities * map_dbl(loads, ~ f((1 - x) * .x) / f(.x))))
+  map_dbl(beta, \(x) sum(densities * map_dbl(loads, ~ f0((1 - x) * .x) / f0(.x))))
 }
 ```
 
@@ -562,7 +562,7 @@ And here is the TRA as a function of $\beta$:
 #| of the mosquito-to-human probability of transmission $b$ and $R_0$.
 
 beta_vals <- seq2(0, 1)
-y_vals <- f2(beta_vals)
+y_vals <- f(beta_vals)
 opar <- par(pty = "s", xpd = TRUE)
 plot(1 - beta_vals, y_vals, type = "l", xaxs = "i", yaxs = "i", ylab = ylab_b,
      xlab = bquote("reducing factor 1 -" ~ beta ~ "on oocyst load L"))
@@ -574,7 +574,7 @@ and $R_0$ as a function of time $t$ post drug administration:
 
 ```{r}
 plot(NA, xlim = c(0, 700), ylim = 0:1, xlab = xlab_pda, ylab = ylab_b)
-lines(pda_t, f2(betas))
+lines(pda_t, f(betas))
 ```
 
 
