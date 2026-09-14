@@ -673,13 +673,13 @@ between people (*i.e.* the times at which each individual takes its treatment ar
 random). The corresponding R codes:
 
 ```{r}
-pi1 <- function(D, g, n, mu) mu * (1 - lambda(D, g, n))
+#pi1 <- function(D, g, n, mu) mu * (1 - lambda(D, g, n))
 ```
 
 and
 
 ```{r}
-pi2 <- function(lmbd, mu) mu * (1 - lmbd)
+#pi2 <- function(lmbd, mu) mu * (1 - lmbd)
 ```
 
 Given that $\lambda(g, n, L, D)$ is what takes time to compute, it might sometimes be
@@ -698,12 +698,13 @@ sometimes during the past $D$ time units is $1 - e^{-\tau\bar{X}rD}$ and that th
 mean reduction factor $\rho$ of $R_0$ reads:
 
 $$
-\rho(g, n, L, \tau, \bar{X}, r, D) = 1 - \left(1 - e^{-\tau\bar{X}rD}\right)(1 - \lambda(g, n, L, D))
+\rho(g, n, L, \tau, \bar{X}, r, D) = 1 - (1 - \lambda(g, n, L, D))\left(1 - e^{-\tau\bar{X}rD}\right)
 $$ {#eq-rho}
 
 The corresponding R codes:
 
 ```{r}
+# we don't need this
 rho1 <- function(D, g, n, X, tau, r) {
   1 - (1 - exp(- tau * X * r * D)) * (1 - lambda(D, g, n))
 }
@@ -712,6 +713,7 @@ rho1 <- function(D, g, n, X, tau, r) {
 and 
 
 ```{r}
+# we don't need this
 rho2 <- function(lmbd, D, X, tau, r) {
   1 - (1 - exp(- tau * X * r * D)) * (1 - lmbd)
 }
@@ -890,19 +892,56 @@ par(opar)
 
 ### Treatment of infected
 
+```{r}
+r <- 1 / (14 * 24)
+
+tmp <- lambda_vals |>
+  filter(D > 27 * 24) |> 
+  tidyr::expand_grid(X = prev, tau = seq2(0, 1)) |> 
+  mutate(rho = 1 - (1 - lambda) * (1 - exp(- tau * X * r * D)))
+
+tmp |> 
+  filter(n == 6, g < .1) |> 
+  with(plot(tau, rho))
+```
+
+```{r}
+ats <- seq(30, 5, -5)
+prev <- 0:10 / 10
+
+plot_pi_D <- function(x, xlab = "intake frequency (/day)", ylab = ylab_pi) {
+  plot(NA, xlim = c(30, 0), ylim = 0:1, axes = FALSE,
+       xaxs = "i", yaxs = "i", xlab = xlab, ylab = ylab)
+  abline(v = ats, col = "grey")
+  abline(h = prev, col = "grey")
+  walk2(prev, YlOrRd11,
+        ~ with(x, lines(D / 24, (1 - (1 - min_of_following(lambda)) * .x),
+                        col = .y, lwd = lwd_val)))
+}
+
+plot_pi_D2 <- function(...) plot_pi_D(..., xlab = NA)
+plot_pi_D3 <- function(...) plot_pi_D(..., ylab = NA)
+plot_pi_D4 <- function(...) plot_pi_D2(..., ylab = NA)
+```
+
+
+
+
+
+
 If we take the example of the previous section and put it into an epidemiological
 context of a prevalence of 10% and assuming that 90% of the people infected are given
 a treatment, the $R_0$ reducing factor $\rho$ is:
 
 ```{r eval = FALSE}
-rho1(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7, X = .1, tau = .9, r = 1 / (14 * 24))
+rho1(D = 28 * 24, g = 1 / 14, n = 7, X = .1, tau = .9, r = 1 / (14 * 24))
 ```
 
 ```{r include = FALSE}
 if (file_exists("rho1_val.rds")) {
   rho1_val <- readRDS3("rho1_val.rds")
 } else {
-  (rho1_val <- rho1(D = 28 * 24, L = 6e4, g = 1 / 14, n = 7, X = .1, tau = .9,
+  (rho1_val <- rho1(D = 28 * 24, g = 1 / 14, n = 7, X = .1, tau = .9,
                     r = 1 / (14 * 24)))
   saveRDS2(rho1_val, "rho1_val.rds")
 }
@@ -915,6 +954,48 @@ rho2(mean_effect_over28days, D = 28 * 24, X = .1, tau = .9, r = 1 / (14 * 24))
 ```
 
 A function that computes the values for $\rho$:
+
+```{r}
+future::plan(multisession, workers = parallel::detectCores())
+
+compute_lambda_val <- function(n, g, D) {
+  tidyr::expand_grid(n, g, D) |> 
+    mutate(lambda = furrr::future_pmap_dbl(list(D, g, n), ~ lambda(..1, ..2, ..3)))
+}
+```
+
+```{r}
+compute_rho_val <- function(n, g, X, tau, D, r) {
+  tidyr::expand_grid(n, g, X, tau) |> 
+    mutate(rho = pmap_dbl(list(g, n, X, tau), ~ rho1(D, ..1, ..2, ..3, ..4, r)))
+}
+```
+
+```{r}
+#compute_rho_val(n = c(6, 10, 14), g = 1 / c(7, 10, 14), X = prev, tau = prev, D = 28 * 24, r = 1 / (14 * 24))
+system.time(
+out <- compute_rho_val(n = c(6, 10, 14), g = 1 / c(7, 10, 14), X = prev, tau = c(.3, .6), D = 28 * 24, r = 1 / (14 * 24))
+)
+```
+
+
+```{r}
+rho_vals <- compute_rho_val(X_val = seq(0, 1, .1),
+                            tau_val = seq2(0, 1),
+                            n_val = c(6, 10, 14),
+                            D = 28 * 24,
+                            g = 1 / 14,
+                            r = 1 / (14 * 24))
+```
+
+
+
+
+
+
+
+
+
 
 ```{r}
 compute_rho_val <- function(X_val, tau_val, n_val, L_val, D, g, r, nb) {
