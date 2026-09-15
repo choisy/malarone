@@ -834,6 +834,7 @@ plot_pi_D <- function(x, xlab = "intake frequency (/day)", ylab = ylab_pi) {
        xaxs = "i", yaxs = "i", xlab = xlab, ylab = ylab)
   abline(v = ats, col = "grey")
   abline(h = prev, col = "grey")
+  box(bty = "o")
   walk2(prev, YlOrRd11,
         ~ with(x, lines(D / 24, (1 - (1 - min_of_following(lambda)) * .x),
                         col = .y, lwd = lwd_val)))
@@ -893,297 +894,69 @@ par(opar)
 ### Treatment of infected
 
 ```{r}
-r <- 1 / (14 * 24)
-
-tmp <- lambda_vals |>
-  filter(D > 27 * 24) |> 
-  tidyr::expand_grid(X = prev, tau = seq2(0, 1)) |> 
-  mutate(rho = 1 - (1 - lambda) * (1 - exp(- tau * X * r * D)))
-
-tmp |> 
-  filter(n == 6, g < .1) |> 
-  with(plot(tau, rho))
-```
-
-```{r}
-ats <- seq(30, 5, -5)
-prev <- 0:10 / 10
-
-plot_pi_D <- function(x, xlab = "intake frequency (/day)", ylab = ylab_pi) {
-  plot(NA, xlim = c(30, 0), ylim = 0:1, axes = FALSE,
-       xaxs = "i", yaxs = "i", xlab = xlab, ylab = ylab)
-  abline(v = ats, col = "grey")
-  abline(h = prev, col = "grey")
-  walk2(prev, YlOrRd11,
-        ~ with(x, lines(D / 24, (1 - (1 - min_of_following(lambda)) * .x),
-                        col = .y, lwd = lwd_val)))
-}
-
-plot_pi_D2 <- function(...) plot_pi_D(..., xlab = NA)
-plot_pi_D3 <- function(...) plot_pi_D(..., ylab = NA)
-plot_pi_D4 <- function(...) plot_pi_D2(..., ylab = NA)
-```
-
-
-
-
-
-
-If we take the example of the previous section and put it into an epidemiological
-context of a prevalence of 10% and assuming that 90% of the people infected are given
-a treatment, the $R_0$ reducing factor $\rho$ is:
-
-```{r eval = FALSE}
-rho1(D = 28 * 24, g = 1 / 14, n = 7, X = .1, tau = .9, r = 1 / (14 * 24))
-```
-
-```{r include = FALSE}
-if (file_exists("rho1_val.rds")) {
-  rho1_val <- readRDS3("rho1_val.rds")
-} else {
-  (rho1_val <- rho1(D = 28 * 24, g = 1 / 14, n = 7, X = .1, tau = .9,
-                    r = 1 / (14 * 24)))
-  saveRDS2(rho1_val, "rho1_val.rds")
-}
-```
-
-(which takes 1.5"). Alternatively (and faster):
-
-```{r}
-rho2(mean_effect_over28days, D = 28 * 24, X = .1, tau = .9, r = 1 / (14 * 24))
-```
-
-A function that computes the values for $\rho$:
-
-```{r}
-future::plan(multisession, workers = parallel::detectCores())
-
-compute_lambda_val <- function(n, g, D) {
-  tidyr::expand_grid(n, g, D) |> 
-    mutate(lambda = furrr::future_pmap_dbl(list(D, g, n), ~ lambda(..1, ..2, ..3)))
+rho <- function(lambda, X, tau, r = 1 / (14 * 24)) {
+  lambda |>
+    filter(D > 27 * 24) |> 
+    tidyr::expand_grid(X, tau) |> 
+    mutate(rho = 1 - (1 - lambda) * (1 - exp(- tau * X * r * D)))
 }
 ```
 
 ```{r}
-compute_rho_val <- function(n, g, X, tau, D, r) {
-  tidyr::expand_grid(n, g, X, tau) |> 
-    mutate(rho = pmap_dbl(list(g, n, X, tau), ~ rho1(D, ..1, ..2, ..3, ..4, r)))
-}
+rho_vals <- rho(lambda_vals, prev, seq2(0, 1))
 ```
 
-```{r}
-#compute_rho_val(n = c(6, 10, 14), g = 1 / c(7, 10, 14), X = prev, tau = prev, D = 28 * 24, r = 1 / (14 * 24))
-system.time(
-out <- compute_rho_val(n = c(6, 10, 14), g = 1 / c(7, 10, 14), X = prev, tau = c(.3, .6), D = 28 * 24, r = 1 / (14 * 24))
-)
-```
-
-
-```{r}
-rho_vals <- compute_rho_val(X_val = seq(0, 1, .1),
-                            tau_val = seq2(0, 1),
-                            n_val = c(6, 10, 14),
-                            D = 28 * 24,
-                            g = 1 / 14,
-                            r = 1 / (14 * 24))
-```
-
-
-
-
-
-
-
-
-
-
-```{r}
-compute_rho_val <- function(X_val, tau_val, n_val, L_val, D, g, r, nb) {
-  one_subplot <- function(n, L) { # i.e. for given values of n and L
-    lambda_val <- lambda(D, L, g, n, nb)
-    expand.grid(X_val, tau_val) |> 
-      with(map2_dbl(Var1, Var2, rho2, lmbd = lambda_val, D = D, r = r)) |> 
-      matrix(length(X_val)) |> t() |> as.data.frame()
-  }
-  out <- with(expand.grid(n_val, L_val), map2(Var1, Var2, one_subplot))
-  attr(out, "params") <- list(X_val = X_val, tau_val = tau_val, n_val = n_val,
-                              L_val = L_val, D = D, g = g, r = r, nb = nb)
-  out
-}
-```
-
-A function that plots the computed $\rho$ values as a function of the proportion $\tau$
-of infected people that are treated (i.e. one slot of the output of
-`compute_rho_val()`:
+A function that plots one panel:
 
 ```{r}
 abline3 <- function(...) abline(..., col = "lightgrey")
 abline4 <- function(...) abline3(..., lwd = lwd_val)
 
-plot_treatment_infected <- function(x, y, x_axis = TRUE, y_axis = TRUE, ylim = 0:1,
-                                    xlab = bquote("Proportion" ~ tau ~ "of new cases that are treated (%)"),
-                                    ylab = ylab_rho,
-                                    hlines1 = seq(0, 1, .1), hlines2 = seq(0, 1, .05),
-                                    transform = 1) {
-  plot(NA, xlim = 0:1, ylim = ylim, type = "n", xaxs = "i", yaxs = "i", axes = FALSE,
-       xlab = xlab, ylab = ylab)
-  if (x_axis) axis(1)
-  if (y_axis) axis(2)
+plot_tau_rho <- function(x, ylab = ylab_rho,
+                         xlab = bquote(atop("Proportion" ~ tau ~ "of new cases",
+                                            "that are treated (%)"))) {
+  plot(NA, xlim = 0:1, ylim = 0:1, xlab = xlab, ylab = ylab, axes = FALSE)
   abline3(v = seq(0, 1, .05))
   abline4(v = seq(0, 1, .1))
-  abline4(h = hlines1)
-  abline3(h = hlines2)
+  abline4(h = seq(0, 1, .1))
+  abline3(h = seq(0, 1, .05))
   box(bty = "o")
-  walk2(y, YlOrRd11, ~ lines(x, .x * transform, col = .y, lwd = lwd_val))
-}
-```
-
-Let's compute some $\rho$ values (it takes 15"):
-
-```{r eval = FALSE}
-rho_val1 <- compute_rho_val(X_val = seq(0, 1, .1),
-                            tau_val = seq2(0, 1),
-                            n_val = c(6, 10, 14),
-                            L_val = c(1, 5, 10) * 1e4,
-                            D = 28 * 24,
-                            g = 1 / 14,
-                            r = 1 / (14 * 24),
-                            nb = 1e6)
-```
-
-(it takes 15"):
-
-```{r eval = FALSE}
-rho_val2 <- compute_rho_val(X_val = seq(0, 1, .1),
-                            tau_val = seq2(0, 1),
-                            n_val = c(6, 10, 14),
-                            L_val = c(1, 5, 10) * 1e4,
-                            D = 28 * 24,
-                            g = 1 / 10,
-                            r = 1 / (14 * 24),
-                            nb = 1e6)
-```
-
-(it takes 15"):
-
-```{r eval = FALSE}
-rho_val3 <- compute_rho_val(X_val = seq(0, 1, .1),
-                            tau_val = seq2(0, 1),
-                            n_val = c(6, 10, 14),
-                            L_val = c(1, 5, 10) * 1e4,
-                            D = 28 * 24,
-                            g = 1 / 7,
-                            r = 1 / (14 * 24),
-                            nb = 1e6)
-```
-
-```{r include = FALSE}
-if (file_exists("rho_val1.rds")) {
-  rho_val1 <- readRDS3("rho_val1.rds")
-} else {
-  rho_val1 <- compute_rho_val(X_val = seq(0, 1, .1),
-                              tau_val = seq2(0, 1),
-                              n_val = c(6, 10, 14),
-                              L_val = c(1, 5, 10) * 1e4,
-                              D = 28 * 24,
-                              g = 1 / 14,
-                              r = 1 / (14 * 24),
-                              nb = 1e6)
-  saveRDS2(rho_val1, "rho_val1.rds")
+  x |> 
+    group_split(X) |> 
+    walk2(YlOrRd11, ~ with(.x, lines(tau, rho, col = .y)))
 }
 
-if (file_exists("rho_val2.rds")) {
-  rho_val2 <- readRDS3("rho_val2.rds")
-} else {
-  rho_val2 <- compute_rho_val(X_val = seq(0, 1, .1),
-                              tau_val = seq2(0, 1),
-                              n_val = c(6, 10, 14),
-                              L_val = c(1, 5, 10) * 1e4,
-                              D = 28 * 24,
-                              g = 1 / 10,
-                              r = 1 / (14 * 24),
-                              nb = 1e6)
-  saveRDS2(rho_val2, "rho_val2.rds")
-}
-
-if (file_exists("rho_val3.rds")) {
-  rho_val3 <- readRDS3("rho_val3.rds")
-} else {
-  rho_val3 <- compute_rho_val(X_val = seq(0, 1, .1),
-                              tau_val = seq2(0, 1),
-                              n_val = c(6, 10, 14),
-                              L_val = c(1, 5, 10) * 1e4,
-                              D = 28 * 24,
-                              g = 1 / 7,
-                              r = 1 / (14 * 24),
-                              nb = 1e6)
-  saveRDS2(rho_val3, "rho_val3.rds")
-}
+plot_tau_rho2 <- function(...) plot_tau_rho(..., xlab = NA)
+plot_tau_rho3 <- function(...) plot_tau_rho(..., ylab = NA)
+plot_tau_rho4 <- function(...) plot_tau_rho2(..., ylab = NA)
 ```
 
-The function that uses `plot_treatment_infected()` to make a multipanel figure using
-the output of `compute_rho_val()`:
+The figure:
 
-```{r}
-multipanels_infected <- function(rho_val, ylim = 0:1,
-                                 ylab = ylab_rho,
-                                 hlines1 = seq(0, 1, .1), hlines2 = seq(0, 1, .05),
-                                 R0o = NULL) {
-  params <- attr(rho_val, "params")
-  
-  if (is.null(R0o)) {
-    trnsfrm <- rep(1, 3)
-  } else {
-    trnsfrm <- with(params, R0o * exp(1 - g * n_val))
-  }
-  
-  plot_treatment_infected2 <- function(y, ylob = ylab, ...) {
-    plot_treatment_infected(params$tau_val, y, ylim = ylim, ylab = ylob,
-                            hlines1 = hlines1, hlines2 = hlines2, ...)
-  }
-  plot_treatment_infected3 <- function(y, ...) {
-    plot_treatment_infected2(y, xlab = NA, x_axis = FALSE, ...)
-  }
-  plot_treatment_infected4 <- function(y, ...) {
-    plot_treatment_infected2(y, ylob = NA, y_axis = FALSE, ...)
-  }
-  plot_treatment_infected5 <- function(y, ...) {
-    plot_treatment_infected4(y, xlab = NA, x_axis = FALSE, ...)
-  }
-  
-  op <- par(mfrow = c(3, 3), mex = mcx, cex.axis = mcx, cex.lab = mcx, cex.main = mcx)
-  plot_treatment_infected3(rho_val[[7]], transf = trnsfrm[1])
-  mtext2(params$n_val[1])
-  plot_treatment_infected5(rho_val[[8]], transf = trnsfrm[2])
-  mtext2(params$n_val[2])
-  legend5("bottomleft", title = "prevalence", text.width = 0, 
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+opar <- par(mfrow = c(3, 3))
+plot_tau_rho2(filter(rho_vals, n ==  6, g <  .1))
+mtext2(6); axis(2)
+plot_tau_rho4(filter(rho_vals, n ==  6, g == .1))
+mtext2(10)
+legend5("bottomleft", title = "prevalence", text.width = 0, 
           legend = paste(seq(0, 100, 10), "%"))
-  plot_treatment_infected5(rho_val[[9]], transf = trnsfrm[3])
-  mtext2(params$n_val[3])
-  mtext3(params$L_val[3])
-  plot_treatment_infected3(rho_val[[4]], transf = trnsfrm[1])
-  plot_treatment_infected5(rho_val[[5]], transf = trnsfrm[2])
-  plot_treatment_infected5(rho_val[[6]], transf = trnsfrm[3])
-  mtext3(params$L_val[2])
-  plot_treatment_infected2(rho_val[[1]], transf = trnsfrm[1])
-  plot_treatment_infected4(rho_val[[2]], transf = trnsfrm[2])
-  plot_treatment_infected4(rho_val[[3]], transf = trnsfrm[3])
-  mtext3(params$L_val[1])
-  par(op)
-}
+plot_tau_rho4(filter(rho_vals, n ==  6, g >  .1))
+mtext2(14); mtext3(14)
+plot_tau_rho2(filter(rho_vals, n == 10, g <  .1))
+axis(2)
+plot_tau_rho4(filter(rho_vals, n == 10, g == .1))
+plot_tau_rho4(filter(rho_vals, n == 10, g >  .1))
+mtext3(10)
+plot_tau_rho(filter(rho_vals, n == 14, g <  .1))
+axis(1); axis(2)
+plot_tau_rho3(filter(rho_vals, n == 14, g == .1))
+axis(1)
+plot_tau_rho3(filter(rho_vals, n == 14, g >  .1))
+axis(1); mtext3(7)
+par(opar)
 ```
 
-```{r supfig_infc1, fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-multipanels_infected(rho_val1)
-```
-
-```{r supfig_infc2, fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-multipanels_infected(rho_val2)
-```
-
-```{r supfig_infc3, fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-multipanels_infected(rho_val3)
-```
 
 ### Examples with $R_0$
 
