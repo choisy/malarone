@@ -763,7 +763,7 @@ box(bty = "o")
 A function that computes the values for $\lambda$:
 
 ```{r}
-future::plan(multisession, workers = parallel::detectCores())
+future::plan("multisession", workers = parallel::detectCores())
 
 compute_lambda_val <- function(n, g, D) {
   tidyr::expand_grid(n, g, D) |> 
@@ -800,7 +800,7 @@ pi <- function(lambda, prop) {
   lambda |> 
     tidyr::expand_grid(prop) |> 
     mutate(across(D, ~ .x / 24)) |> 
-    mutate(pi = 1 - (1 - min_of_following(lambda)) * prop, .by = c(n, g))  
+    mutate(value = 1 - (1 - min_of_following(lambda)) * prop, .by = c(n, g))  
 }
 ```
 
@@ -808,25 +808,30 @@ pi <- function(lambda, prop) {
 pi_vals <- pi(lambda_vals, prev)
 ```
 
-A function that plots one panel:
-
 ```{r}
 ats <- seq(30, 5, -5)
 
-plot_pi_D <- function(x, xlab = "intake frequency (/day)", ylab = ylab_pi) {
-  plot(NA, xlim = c(30, 0), ylim = 0:1, axes = FALSE,
+make_grid1 <- function(v, h) {
+  function() {
+    abline(v = v, col = "grey")
+    abline(h = h, col = "grey")
+  }
+}
+```
+
+A function that plots one panel:
+
+```{r}
+plot_pi_D <- function(x, xlab = "intake frequency (/day)", ylab = ylab_pi,
+                      ylim = 0:1, plot_grid = make_grid1(ats, prev)) {
+  plot(NA, xlim = c(30, 0), ylim = ylim, axes = FALSE,
        xaxs = "i", yaxs = "i", xlab = xlab, ylab = ylab)
-  abline(v = ats, col = "grey")
-  abline(h = prev, col = "grey")
+  plot_grid()
   box(bty = "o")
   x |> 
     group_split(prop) |> 
-    walk2(YlOrRd11, ~ with(.x, lines(D, pi, col = .y, lwd = lwd_val)))
+    walk2(YlOrRd11, ~ with(.x, lines(D, value, col = .y, lwd = lwd_val)))
 }
-
-plot_pi_D2 <- function(...) plot_pi_D(..., xlab = NA)
-plot_pi_D3 <- function(...) plot_pi_D(..., ylab = NA)
-plot_pi_D4 <- function(...) plot_pi_D2(..., ylab = NA)
 ```
 
 Some tunings:
@@ -845,33 +850,95 @@ legend5 <- function(...) {
   par(xpd = FALSE)
 }
 
+make_legend <- function(...) {
+  function(...) {
+    legend5("bottomleft", legend = paste(seq(0, 100, 10), "%"), ...)
+  }
+}
+
 axis1 <- function() axis(1, c(ats, 1), c(paste0("1/", ats), 1))
+```
+
+```{r}
+plot_mass_treatment <- function(x, ylim = 0:1,
+                                plt_grd = make_grid1(ats, prev), ylab = ylab_pi) {
+  plot_pi_D0 <- function(...) plot_pi_D(..., ylim = ylim, plot_grid = plt_grd)
+  plot_pi_D_ul <- function(...) plot_pi_D0(..., xlab = NA, ylab = ylab)
+  plot_pi_D_ur <- function(...) plot_pi_D0(..., xlab = NA, ylab = NA)
+  plot_pi_D_lr <- function(...) plot_pi_D0(..., ylab = NA)
+  
+  opar <- par(mfrow = c(3, 3))
+  plot_pi_D_ul(filter(x, n ==  6, g <  .1))
+  mtext2(6); axis(2)
+  plot_pi_D_ur(filter(x, n ==  6, g == .1))
+  mtext2(10)
+  legend5("bottomleft", title = "proportion treated", text.width = .5,
+          legend = paste(seq(0, 100, 10), "%"))
+  plot_pi_D_ur(filter(x, n ==  6, g >  .1))
+  mtext2(14); mtext3(14)
+  plot_pi_D_ul(filter(x, n == 10, g <  .1))
+  axis(2)
+  plot_pi_D_ur(filter(x, n == 10, g == .1))
+  plot_pi_D_ur(filter(x, n == 10, g >  .1))
+  mtext3(10)
+  plot_pi_D0(filter(x, n == 14, g <  .1), ylab = ylab)
+  axis1(); axis(2)
+  plot_pi_D_lr(filter(x, n == 14, g == .1))
+  axis1()
+  plot_pi_D_lr(filter(x, n == 14, g >  .1))
+  axis1(); mtext3(7)
+  par(opar)
+}
+```
+
+```{r}
+plot_treatment <- function(x, f = plot_pi_D, ylim = 0:1, axis1fct = axis1,
+                           add_lgd = make_legend(title = "proportion treated", text.width = .5),
+                           plt_grd = make_grid1(ats, prev), ylab = ylab_pi) {
+  f0 <- function(...) f(..., ylim = ylim, plot_grid = plt_grd)
+  f_ul <- function(...) f0(..., xlab = NA, ylab = ylab)
+  f_ur <- function(...) f0(..., xlab = NA, ylab = NA)
+  f_lr <- function(...) f0(..., ylab = NA)
+  
+  opar <- par(mfrow = c(3, 3))
+  f_ul(filter(x, n ==  6, g <  .1))
+  mtext2(6); axis(2)
+  f_ur(filter(x, n ==  6, g == .1))
+  mtext2(10)
+  add_lgd()
+  f_ur(filter(x, n ==  6, g >  .1))
+  mtext2(14); mtext3(14)
+  f_ul(filter(x, n == 10, g <  .1))
+  axis(2)
+  f_ur(filter(x, n == 10, g == .1))
+  f_ur(filter(x, n == 10, g >  .1))
+  mtext3(10)
+  f0(filter(x, n == 14, g <  .1), ylab = ylab)
+  axis1fct(); axis(2)
+  f_lr(filter(x, n == 14, g == .1))
+  axis1fct()
+  f_lr(filter(x, n == 14, g >  .1))
+  axis1fct(); mtext3(7)
+  par(opar)
+}
 ```
 
 The figure:
 
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-opar <- par(mfrow = c(3, 3))
-plot_pi_D2(filter(pi_vals, n ==  6, g <  .1))
-mtext2(6); axis(2)
-plot_pi_D4(filter(pi_vals, n ==  6, g == .1))
-mtext2(10)
-legend5("bottomleft", title = "proportion treated", text.width = .5,
-        legend = paste(seq(0, 100, 10), "%"))
-plot_pi_D4(filter(pi_vals, n ==  6, g >  .1))
-mtext2(14); mtext3(14)
-plot_pi_D2(filter(pi_vals, n == 10, g <  .1))
-axis(2)
-plot_pi_D4(filter(pi_vals, n == 10, g == .1))
-plot_pi_D4(filter(pi_vals, n == 10, g >  .1))
-mtext3(10)
-plot_pi_D(filter(pi_vals, n == 14, g <  .1))
-axis1(); axis(2)
-plot_pi_D3(filter(pi_vals, n == 14, g == .1))
-axis1()
-plot_pi_D3(filter(pi_vals, n == 14, g >  .1))
-axis1(); mtext3(7)
-par(opar)
+#plot_mass_treatment(pi_vals)
+plot_treatment(pi_vals)
+```
+
+```{r}
+plot_treatment(rho_vals, f = plot_tau_rho, axis1fct = function() axis(1),
+               add_lgd = make_legend(title = "prevalence", text.width = 0),
+               plt_grd = function() {
+                 abline3(v = seq(0, 1, .05))
+                 abline4(v = seq(0, 1, .1))
+                 abline4(h = seq(0, 1, .1))
+                 abline3(h = seq(0, 1, .05))
+               }, ylab = ylab_rho)
 ```
 
 
@@ -882,7 +949,7 @@ rho <- function(lambda, X, tau, r = 1 / (14 * 24)) {
   lambda |>
     filter(D > 27 * 24) |> 
     tidyr::expand_grid(X, tau) |> 
-    mutate(rho = 1 - (1 - lambda) * (1 - exp(- tau * X * r * D)))
+    mutate(value = 1 - (1 - lambda) * (1 - exp(- tau * X * r * D)))
 }
 ```
 
@@ -907,7 +974,7 @@ plot_tau_rho <- function(x, ylab = ylab_rho,
   box(bty = "o")
   x |> 
     group_split(X) |> 
-    walk2(YlOrRd11, ~ with(.x, lines(tau, rho, col = .y)))
+    walk2(YlOrRd11, ~ with(.x, lines(tau, value, col = .y)))
 }
 
 plot_tau_rho2 <- function(...) plot_tau_rho(..., xlab = NA)
@@ -954,7 +1021,64 @@ $$
 
 with this being considered, let's now consider for example a reference value of
 $R_0 = 5$ in absence of treatment and when the EPI $n$ is equal to the mosquito life
-expectancy $1/g = 14$ days. The effect of mass treatment would look like:
+expectancy $1/g = 14$ days. And this is coded is the following function:
+
+```{r}
+R0_effect <- function(x, R0ref = 5) {
+  x2 <- mutate(x, R0 = exp(-g * n))
+  
+  cst <- x2 |> 
+    filter(n == 14, g < .1) |> 
+    pull(R0) |> 
+    unique()
+  
+  x2 |> 
+    mutate(across(value, ~ .x * R0 * R0ref / cst)) |> 
+    select(-R0)
+}
+```
+
+The effect of mass treatment would look like:
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+pi_vals |>
+  R0_effect() |> 
+  plot_mass_treatment(ylim = c(0, 10), hlines = 1:9)
+```
+
+And the effect of the treatment of infected would like:
+
+```{r}
+rho_vals |> 
+  R0_effect()
+```
+
+
+
+
+
+
+
+
+
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+rho_vals
+
+
+
+pi_vals2 <- mutate(pi_vals, R0 = exp(-g * n))
+
+cst <- pi_vals2 |> 
+  filter(n == 14, g < .1) |> 
+  pull(R0) |> 
+  unique()
+
+pi_vals2 |>
+  mutate(across(pi, ~ .x * R0 * 5 / cst)) |> 
+  select(-R0) |> 
+  plot_mass_treatment(ylim = c(0, 10), hlines = 1:9)
+```
 
 
 
