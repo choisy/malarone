@@ -670,20 +670,7 @@ $$
 where $\mu$ is the proportion of the population that receive the treatment and $1/D$ is
 the frequency of treatment, assuming an absence of synchrony of treatment intake
 between people (*i.e.* the times at which each individual takes its treatment are
-random). The corresponding R codes:
-
-```{r}
-#pi1 <- function(D, g, n, mu) mu * (1 - lambda(D, g, n))
-```
-
-and
-
-```{r}
-#pi2 <- function(lmbd, mu) mu * (1 - lmbd)
-```
-
-Given that $\lambda(g, n, L, D)$ is what takes time to compute, it might sometimes be
-advantageous to use `pi2()` instead of `pi1()` (see below).
+random).
 
 **Note:** $g$ and $n$ should be expressed in the same time units.
 
@@ -700,27 +687,6 @@ mean reduction factor $\rho$ of $R_0$ reads:
 $$
 \rho(g, n, L, \tau, \bar{X}, r, D) = 1 - (1 - \lambda(g, n, L, D))\left(1 - e^{-\tau\bar{X}rD}\right)
 $$ {#eq-rho}
-
-The corresponding R codes:
-
-```{r}
-# we don't need this
-rho1 <- function(D, g, n, X, tau, r) {
-  1 - (1 - exp(- tau * X * r * D)) * (1 - lambda(D, g, n))
-}
-```
-
-and 
-
-```{r}
-# we don't need this
-rho2 <- function(lmbd, D, X, tau, r) {
-  1 - (1 - exp(- tau * X * r * D)) * (1 - lmbd)
-}
-```
-
-Given that $\lambda(g, n, L, D)$ is what takes time to compute, it might sometimes be
-advantageous to use `rho2()` instead of `rho1()` (see below).
 
 **Note 1:** $g$ and $n$ should be expressed in the same time units.  
 **Note 2:** $r$ and $D$ should be both expressed in hours.
