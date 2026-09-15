@@ -691,6 +691,7 @@ $$ {#eq-rho}
 **Note 1:** $g$ and $n$ should be expressed in the same time units.  
 **Note 2:** $r$ and $D$ should be both expressed in hours.
 
+
 ## Numerical analysis
 
 The table below lists the parameters of the models, together with their definitions and
@@ -734,7 +735,7 @@ where the blue point and lines show the case where all the mosquitoes feed on pe
 100 hours after drug administration.
 
 
-### Mass treatment
+### Reducing factor $\lambda(D)$
 
 The $R_0$ reducing factor $\lambda(t)$ is computed by assuming that all the mosquitoes
 feed on people that were treated sometimes during the past $D$ time units. Considering
@@ -788,6 +789,9 @@ if (file_exists("lambda_vals.rds")) {
   saveRDS2(lambda_vals, "lambda_vals.rds")
 }
 ```
+
+
+### Mass treatment
 
 A function that plots one panel:
 
