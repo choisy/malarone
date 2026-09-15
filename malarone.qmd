@@ -793,11 +793,25 @@ if (file_exists("lambda_vals.rds")) {
 
 ### Mass treatment
 
+```{r}
+prev <- 0:10 / 10
+
+pi <- function(lambda, prop) {
+  lambda |> 
+    tidyr::expand_grid(prop) |> 
+    mutate(across(D, ~ .x / 24)) |> 
+    mutate(pi = 1 - (1 - min_of_following(lambda)) * prop, .by = c(n, g))  
+}
+```
+
+```{r}
+pi_vals <- pi(lambda_vals, prev)
+```
+
 A function that plots one panel:
 
 ```{r}
 ats <- seq(30, 5, -5)
-prev <- 0:10 / 10
 
 plot_pi_D <- function(x, xlab = "intake frequency (/day)", ylab = ylab_pi) {
   plot(NA, xlim = c(30, 0), ylim = 0:1, axes = FALSE,
@@ -805,9 +819,9 @@ plot_pi_D <- function(x, xlab = "intake frequency (/day)", ylab = ylab_pi) {
   abline(v = ats, col = "grey")
   abline(h = prev, col = "grey")
   box(bty = "o")
-  walk2(prev, YlOrRd11,
-        ~ with(x, lines(D / 24, (1 - (1 - min_of_following(lambda)) * .x),
-                        col = .y, lwd = lwd_val)))
+  x |> 
+    group_split(prop) |> 
+    walk2(YlOrRd11, ~ with(.x, lines(D, pi, col = .y, lwd = lwd_val)))
 }
 
 plot_pi_D2 <- function(...) plot_pi_D(..., xlab = NA)
@@ -838,24 +852,24 @@ The figure:
 
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 opar <- par(mfrow = c(3, 3))
-plot_pi_D2(filter(lambda_vals, n ==  6, g <  .1))
+plot_pi_D2(filter(pi_vals, n ==  6, g <  .1))
 mtext2(6); axis(2)
-plot_pi_D4(filter(lambda_vals, n ==  6, g == .1))
+plot_pi_D4(filter(pi_vals, n ==  6, g == .1))
 mtext2(10)
 legend5("bottomleft", title = "proportion treated", text.width = .5,
         legend = paste(seq(0, 100, 10), "%"))
-plot_pi_D4(filter(lambda_vals, n ==  6, g >  .1))
+plot_pi_D4(filter(pi_vals, n ==  6, g >  .1))
 mtext2(14); mtext3(14)
-plot_pi_D2(filter(lambda_vals, n == 10, g <  .1))
+plot_pi_D2(filter(pi_vals, n == 10, g <  .1))
 axis(2)
-plot_pi_D4(filter(lambda_vals, n == 10, g == .1))
-plot_pi_D4(filter(lambda_vals, n == 10, g >  .1))
+plot_pi_D4(filter(pi_vals, n == 10, g == .1))
+plot_pi_D4(filter(pi_vals, n == 10, g >  .1))
 mtext3(10)
-plot_pi_D(filter(lambda_vals, n == 14, g <  .1))
+plot_pi_D(filter(pi_vals, n == 14, g <  .1))
 axis1(); axis(2)
-plot_pi_D3(filter(lambda_vals, n == 14, g == .1))
+plot_pi_D3(filter(pi_vals, n == 14, g == .1))
 axis1()
-plot_pi_D3(filter(lambda_vals, n == 14, g >  .1))
+plot_pi_D3(filter(pi_vals, n == 14, g >  .1))
 axis1(); mtext3(7)
 par(opar)
 ```
@@ -941,6 +955,19 @@ $$
 with this being considered, let's now consider for example a reference value of
 $R_0 = 5$ in absence of treatment and when the EPI $n$ is equal to the mosquito life
 expectancy $1/g = 14$ days. The effect of mass treatment would look like:
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 ymax <- 10
