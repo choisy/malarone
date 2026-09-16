@@ -952,29 +952,6 @@ rho_vals <- rho(lambda_vals, prev, seq2(0, 1))
 
 A function that plots one panel:
 
-```{r include=FALSE, eval=FALSE}
-abline3 <- function(...) abline(..., col = "lightgrey")
-abline4 <- function(...) abline3(..., lwd = lwd_val)
-
-plot_tau_rho <- function(x, ylab = ylab_rho,
-                         xlab = bquote(atop("Proportion" ~ tau ~ "of new cases",
-                                            "that are treated (%)"))) {
-  plot(NA, xlim = 0:1, ylim = 0:1, xlab = xlab, ylab = ylab, axes = FALSE)
-  abline3(v = seq(0, 1, .05))
-  abline4(v = seq(0, 1, .1))
-  abline4(h = seq(0, 1, .1))
-  abline3(h = seq(0, 1, .05))
-  box(bty = "o")
-  x |> 
-    group_split(X) |> 
-    walk2(YlOrRd11, ~ with(.x, lines(tau, value, col = .y)))
-}
-
-plot_tau_rho2 <- function(...) plot_tau_rho(..., xlab = NA)
-plot_tau_rho3 <- function(...) plot_tau_rho(..., ylab = NA)
-plot_tau_rho4 <- function(...) plot_tau_rho2(..., ylab = NA)
-```
-
 ```{r}
 abline3 <- function(...) abline(..., col = "lightgrey")
 abline4 <- function(...) abline3(..., lwd = lwd_val)
@@ -982,8 +959,8 @@ abline4 <- function(...) abline3(..., lwd = lwd_val)
 plot_tau_rho <- function(x, ylab = ylab_rho,
                          xlab = bquote(atop("Proportion" ~ tau ~ "of new cases",
                                             "that are treated (%)")),
-                         ylim = 0:1, ablinev, ablineh) {
-  plot(NA, xlim = 0:1, ylim = ylim, xlab = xlab, ylab = ylab, axes = FALSE)
+                         xlim = 0:1, ylim = 0:1, ablinev, ablineh) {
+  plot(NA, xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab, axes = FALSE)
   ablinev()
   ablineh()
   box(bty = "o")
@@ -991,15 +968,11 @@ plot_tau_rho <- function(x, ylab = ylab_rho,
     group_split(X) |> 
     walk2(YlOrRd11, ~ with(.x, lines(tau, value, col = .y)))
 }
-
-#plot_tau_rho2 <- function(...) plot_tau_rho(..., xlab = NA)
-#plot_tau_rho3 <- function(...) plot_tau_rho(..., ylab = NA)
-#plot_tau_rho4 <- function(...) plot_tau_rho2(..., ylab = NA)
 ```
 
 ```{r}
 plot_treatment_infected <- function(x, ...) {
-  plot_treatment(x,
+  plot_treatment(x, xlim = 0:1,
                  f = plot_tau_rho,
                  axis1fct = function() axis(1),
                  add_lgd = function() legend6(title = "prevalence", text.width = 0),
@@ -1018,30 +991,6 @@ plot_treatment_infected(rho_vals, ylim = 0:1, ylab = ylab_rho,
                                   abline4(h = seq(0, 1, .1))
                                   abline3(h = seq(0, 1, .05))
                                 })
-```
-
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE, include=FALSE, eval=FALSE}
-opar <- par(mfrow = c(3, 3))
-plot_tau_rho2(filter(rho_vals, n ==  6, g <  .1))
-mtext2(6); axis(2)
-plot_tau_rho4(filter(rho_vals, n ==  6, g == .1))
-mtext2(10)
-legend5("bottomleft", title = "prevalence", text.width = 0, 
-          legend = paste(seq(0, 100, 10), "%"))
-plot_tau_rho4(filter(rho_vals, n ==  6, g >  .1))
-mtext2(14); mtext3(14)
-plot_tau_rho2(filter(rho_vals, n == 10, g <  .1))
-axis(2)
-plot_tau_rho4(filter(rho_vals, n == 10, g == .1))
-plot_tau_rho4(filter(rho_vals, n == 10, g >  .1))
-mtext3(10)
-plot_tau_rho(filter(rho_vals, n == 14, g <  .1))
-axis(1); axis(2)
-plot_tau_rho3(filter(rho_vals, n == 14, g == .1))
-axis(1)
-plot_tau_rho3(filter(rho_vals, n == 14, g >  .1))
-axis(1); mtext3(7)
-par(opar)
 ```
 
 
