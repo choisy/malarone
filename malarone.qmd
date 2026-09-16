@@ -771,12 +771,12 @@ compute_lambda_val <- function(n, g, D) {
 }
 ```
 
-Let's now compute $\lambda$ values (takes ca 25" on the laptop):
+Let's now compute $\lambda$ values (takes ca 47" on the laptop):
 
 ```{r eval = FALSE}
 lambda_vals <- compute_lambda_val(n = c(6, 10, 14),
                                   g = 1 / c(14, 10, 7),
-                                  D = c(seq(1, 7, .1), 8:28) * 24)
+                                  D = seq2(1, 28) * 24)
 ```
 
 ```{r include = FALSE}
@@ -785,7 +785,7 @@ if (file_exists("lambda_vals.rds")) {
 } else {
   lambda_vals <- compute_lambda_val(n = c(6, 10, 14),
                                     g = 1 / c(14, 10, 7),
-                                    D = c(seq(1, 7, .1), 8:28) * 24)
+                                    D = seq2(1, 28) * 24)
   saveRDS2(lambda_vals, "lambda_vals.rds")
 }
 ```
@@ -794,8 +794,6 @@ if (file_exists("lambda_vals.rds")) {
 ### Mass treatment
 
 ```{r}
-prev <- 0:10 / 10
-
 pi <- function(lambda, prop) {
   lambda |> 
     tidyr::expand_grid(prop) |> 
@@ -805,28 +803,41 @@ pi <- function(lambda, prop) {
 ```
 
 ```{r}
+prev <- 0:10 / 10
 pi_vals <- pi(lambda_vals, prev)
 ```
 
 ```{r}
-ats <- seq(30, 5, -5)
-
-make_grid1 <- function(v, h) {
-  function() {
-    abline(v = v, col = "grey")
-    abline(h = h, col = "grey")
-  }
-}
+#make_grid1 <- function(v, h) {
+#  function() {
+#    abline(v = v, col = "grey")
+#    abline(h = h, col = "grey")
+#  }
+#}
 ```
 
 A function that plots one panel:
 
-```{r}
+```{r include=FALSE, eval=FALSE}
 plot_pi_D <- function(x, xlab = "intake frequency (/day)", ylab = ylab_pi,
                       ylim = 0:1, plot_grid = make_grid1(ats, prev)) {
   plot(NA, xlim = c(30, 0), ylim = ylim, axes = FALSE,
        xaxs = "i", yaxs = "i", xlab = xlab, ylab = ylab)
   plot_grid()
+  box(bty = "o")
+  x |> 
+    group_split(prop) |> 
+    walk2(YlOrRd11, ~ with(.x, lines(D, value, col = .y, lwd = lwd_val)))
+}
+```
+
+```{r}
+plot_pi_D <- function(x, xlab = "intake frequency (/day)", ylab = ylab_pi,
+                      ylim = 0:1, ablinev, ablineh) {
+  plot(NA, xlim = c(30, 0), ylim = ylim, axes = FALSE,
+       xaxs = "i", yaxs = "i", xlab = xlab, ylab = ylab)
+  ablinev()
+  ablineh()
   box(bty = "o")
   x |> 
     group_split(prop) |> 
@@ -850,16 +861,20 @@ legend5 <- function(...) {
   par(xpd = FALSE)
 }
 
-make_legend <- function(...) {
-  function(...) {
-    legend5("bottomleft", legend = paste(seq(0, 100, 10), "%"), ...)
-  }
+legend6 <- function(...) {
+  legend5("bottomleft", legend = paste(seq(0, 100, 10), "%"), ...)
 }
 
-axis1 <- function() axis(1, c(ats, 1), c(paste0("1/", ats), 1))
+#make_legend <- function(...) {
+#  function(...) {
+#    legend5("bottomleft", legend = paste(seq(0, 100, 10), "%"), ...)
+#  }
+#}
+
+#axis1 <- function() axis(1, c(ats, 1), c(paste0("1/", ats), 1))
 ```
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 plot_mass_treatment <- function(x, ylim = 0:1,
                                 plt_grd = make_grid1(ats, prev), ylab = ylab_pi) {
   plot_pi_D0 <- function(...) plot_pi_D(..., ylim = ylim, plot_grid = plt_grd)
@@ -893,9 +908,11 @@ plot_mass_treatment <- function(x, ylim = 0:1,
 
 ```{r}
 plot_treatment <- function(x, f = plot_pi_D, ylim = 0:1, axis1fct = axis1,
-                           add_lgd = make_legend(title = "proportion treated", text.width = .5),
+                           add_lgd = make_legend(title = "proportion treated",
+                                                 text.width = .5),
+                           ablnv, ablnh,
                            plt_grd = make_grid1(ats, prev), ylab = ylab_pi) {
-  f0 <- function(...) f(..., ylim = ylim, plot_grid = plt_grd)
+  f0 <- function(...) f(..., ylim = ylim, ablinev = ablnv, ablineh =  ablnh)
   f_ul <- function(...) f0(..., xlab = NA, ylab = ylab)
   f_ur <- function(...) f0(..., xlab = NA, ylab = NA)
   f_lr <- function(...) f0(..., ylab = NA)
@@ -923,22 +940,34 @@ plot_treatment <- function(x, f = plot_pi_D, ylim = 0:1, axis1fct = axis1,
 }
 ```
 
-The figure:
-
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-#plot_mass_treatment(pi_vals)
-plot_treatment(pi_vals)
+```{r include=FALSE, eval=FALSE}
+plot_mass_treatment <- function(x, ...) {
+  plot_treatment(x,
+                 f = plot_pi_D,
+                 axis1fct = axis1,
+                 add_lgd = make_legend(title = "proportion treated", text.width = .5),
+                 plt_grd = make_grid1(ats, prev), ...)
+}
 ```
 
 ```{r}
-plot_treatment(rho_vals, f = plot_tau_rho, axis1fct = function() axis(1),
-               add_lgd = make_legend(title = "prevalence", text.width = 0),
-               plt_grd = function() {
-                 abline3(v = seq(0, 1, .05))
-                 abline4(v = seq(0, 1, .1))
-                 abline4(h = seq(0, 1, .1))
-                 abline3(h = seq(0, 1, .05))
-               }, ylab = ylab_rho)
+ats <- seq(30, 5, -5)
+
+plot_mass_treatment <- function(x, ...) {
+  plot_treatment(x,
+                 f = plot_pi_D,
+                 axis1fct = function() axis(1, c(ats, 1), c(paste0("1/", ats), 1)),
+                 add_lgd = function() legend6(title = "proportion treated",
+                                              text.width = .5),
+                 ablnv = function() abline(v = ats, col = "grey"), ...)
+}
+```
+
+The figure:
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+plot_mass_treatment(pi_vals, ylim = 0:1, ylab = ylab_pi,
+                    ablnh = function() abline(h = prev, col = "grey"))
 ```
 
 
@@ -949,7 +978,8 @@ rho <- function(lambda, X, tau, r = 1 / (14 * 24)) {
   lambda |>
     filter(D > 27 * 24) |> 
     tidyr::expand_grid(X, tau) |> 
-    mutate(value = 1 - (1 - lambda) * (1 - exp(- tau * X * r * D)))
+    mutate(value = 1 - (1 - lambda) * (1 - exp(- tau * X * r * D))) |> 
+    arrange(tau)
 }
 ```
 
@@ -959,7 +989,7 @@ rho_vals <- rho(lambda_vals, prev, seq2(0, 1))
 
 A function that plots one panel:
 
-```{r}
+```{r include=FALSE, eval=FALSE}
 abline3 <- function(...) abline(..., col = "lightgrey")
 abline4 <- function(...) abline3(..., lwd = lwd_val)
 
@@ -982,9 +1012,52 @@ plot_tau_rho3 <- function(...) plot_tau_rho(..., ylab = NA)
 plot_tau_rho4 <- function(...) plot_tau_rho2(..., ylab = NA)
 ```
 
+```{r}
+abline3 <- function(...) abline(..., col = "lightgrey")
+abline4 <- function(...) abline3(..., lwd = lwd_val)
+
+plot_tau_rho <- function(x, ylab = ylab_rho,
+                         xlab = bquote(atop("Proportion" ~ tau ~ "of new cases",
+                                            "that are treated (%)")),
+                         ylim = 0:1, ablinev, ablineh) {
+  plot(NA, xlim = 0:1, ylim = ylim, xlab = xlab, ylab = ylab, axes = FALSE)
+  ablinev()
+  ablineh()
+  box(bty = "o")
+  x |> 
+    group_split(X) |> 
+    walk2(YlOrRd11, ~ with(.x, lines(tau, value, col = .y)))
+}
+
+#plot_tau_rho2 <- function(...) plot_tau_rho(..., xlab = NA)
+#plot_tau_rho3 <- function(...) plot_tau_rho(..., ylab = NA)
+#plot_tau_rho4 <- function(...) plot_tau_rho2(..., ylab = NA)
+```
+
+```{r}
+plot_treatment_infected <- function(x, ...) {
+  plot_treatment(x,
+                 f = plot_tau_rho,
+                 axis1fct = function() axis(1),
+                 add_lgd = function() legend6(title = "prevalence", text.width = 0),
+                 ablnv = function() {
+                           abline3(v = seq(0, 1, .05))
+                           abline4(v = seq(0, 1, .1))
+                         }, ...)
+}
+```
+
 The figure:
 
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+plot_treatment_infected(rho_vals, ylim = 0:1, ylab = ylab_rho,
+                        ablnh = function() {
+                                  abline4(h = seq(0, 1, .1))
+                                  abline3(h = seq(0, 1, .05))
+                                })
+```
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE, include=FALSE, eval=FALSE}
 opar <- par(mfrow = c(3, 3))
 plot_tau_rho2(filter(rho_vals, n ==  6, g <  .1))
 mtext2(6); axis(2)
@@ -1034,7 +1107,7 @@ R0_effect <- function(x, R0ref = 5) {
   
   x2 |> 
     mutate(across(value, ~ .x * R0 * R0ref / cst)) |> 
-    select(-R0)
+    dplyr::select(-R0)
 }
 ```
 
@@ -1043,93 +1116,22 @@ The effect of mass treatment would look like:
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 pi_vals |>
   R0_effect() |> 
-  plot_mass_treatment(ylim = c(0, 10), hlines = 1:9)
+  plot_mass_treatment(ylim = c(0, 10), ylab = bquote(R[0]),
+                      ablnh = function() abline(h = 1:9, col = "grey"))
 ```
 
 And the effect of the treatment of infected would like:
 
-```{r}
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 rho_vals |> 
-  R0_effect()
+  R0_effect() |> 
+  plot_treatment_infected(ylim = c(0, 10), ylab = bquote(R[0]),
+                          ablnh = function() {
+                                    abline4(h = 0:10)
+                                    abline3(h = .5:9.5)
+                                  })
 ```
 
-
-
-
-
-
-
-
-
-
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-rho_vals
-
-
-
-pi_vals2 <- mutate(pi_vals, R0 = exp(-g * n))
-
-cst <- pi_vals2 |> 
-  filter(n == 14, g < .1) |> 
-  pull(R0) |> 
-  unique()
-
-pi_vals2 |>
-  mutate(across(pi, ~ .x * R0 * 5 / cst)) |> 
-  select(-R0) |> 
-  plot_mass_treatment(ylim = c(0, 10), hlines = 1:9)
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-ymax <- 10
-multipanels_mass(lambda_vals, ylim = c(0, ymax),
-                 ylab = bquote(R[0]), hlines = 0:ymax, R0o = 5)
-```
-
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-ymax <- 10
-multipanels_mass(lambda_vals2, ylim = c(0, ymax),
-                 ylab = bquote(R[0]), hlines = 0:ymax, R0o = 5)
-```
-
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-ymax <- 10
-multipanels_mass(lambda_vals3, ylim = c(0, ymax),
-                 ylab = bquote(R[0]), hlines = 0:ymax, R0o = 5)
-```
-
-And the effect of the treatment of the infected would look like:
-
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-ymax <- 10
-multipanels_infected(rho_val1, ylim = c(0, ymax), ylab = bquote(R[0]),
-                     hlines1 = 0:ymax, hlines2 = seq(0, ymax, .5), R0o = 5)
-```
-
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-ymax <- 10
-multipanels_infected(rho_val2, ylim = c(0, ymax), ylab = bquote(R[0]),
-                     hlines1 = 0:ymax, hlines2 = seq(0, ymax, .5), R0o = 5)
-```
-
-```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-ymax <- 10
-multipanels_infected(rho_val3, ylim = c(0, ymax), ylab = bquote(R[0]),
-                     hlines1 = 0:ymax, hlines2 = seq(0, ymax, .5), R0o = 5)
-```
 
 ### Main text figure
 
