@@ -1026,13 +1026,37 @@ R0_effect <- function(x, R0ref = 5) {
 The effect of mass treatment would look like:
 
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-pi_vals |>
+pi_vals1 |>
   R0_effect() |> 
   plot_mass_treatment(ylim = c(0, 10), ylab = bquote(R[0]),
                       ablnh = function() abline(h = 1:9, col = "grey"))
 ```
 
-And the effect of the treatment of infected would like:
+The figure on the first range of treatment frequency:
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+pi_vals1 |> 
+  R0_effect() |> 
+  plot_mass_treatment(xlim = c(30, 0), ylim = c(0, 10), ylab = bquote(R[0]),
+                    axis1fct = function()
+                                 axis(1, c(ats1, 1), c(paste0("1/", ats1), 1)),
+                    ablnh = function() abline(h = 1:9, col = "grey"),
+                    ablnv = function() abline(v = ats1, col = "grey"))
+```
+
+The figure on the second range of treatment frequency:
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+pi_vals2 |> 
+  R0_effect() |> 
+  plot_mass_treatment(xlim = c(8, 3) * 7, ylim = c(0, 10), ylab = bquote(R[0]),
+                    axis1fct = function()
+                                 axis(1, c(ats2, 1), c(paste0("1/", ats2), 1)),
+                    ablnh = function() abline(h = 1:9, col = "grey"),
+                    ablnv = function() abline(v = ats2, col = "grey"))
+```
+
+And the effect of the treatment of infected would look like:
 
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
 rho_vals |> 
