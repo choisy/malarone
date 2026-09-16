@@ -774,19 +774,41 @@ compute_lambda_val <- function(n, g, D) {
 Let's now compute $\lambda$ values (takes ca 47" on the laptop):
 
 ```{r eval = FALSE}
-lambda_vals <- compute_lambda_val(n = c(6, 10, 14),
-                                  g = 1 / c(14, 10, 7),
-                                  D = seq2(1, 28) * 24)
+lambda_vals1 <- compute_lambda_val(n = c(6, 10, 14),
+                                   g = 1 / c(14, 10, 7),
+                                   D = seq2(1, 28) * 24)
 ```
 
 ```{r include = FALSE}
 if (file_exists("lambda_vals.rds")) {
-  lambda_vals <- readRDS3("lambda_vals.rds")
+  lambda_vals1 <- readRDS3("lambda_vals1.rds")
 } else {
-  lambda_vals <- compute_lambda_val(n = c(6, 10, 14),
-                                    g = 1 / c(14, 10, 7),
-                                    D = seq2(1, 28) * 24)
-  saveRDS2(lambda_vals, "lambda_vals.rds")
+  lambda_vals1 <- compute_lambda_val(n = c(6, 10, 14),
+                                     g = 1 / c(14, 10, 7),
+                                     D = seq2(1, 28) * 24)
+  saveRDS2(lambda_vals1, "lambda_vals1.rds")
+}
+```
+
+Second set of $\lambda$ values for a second range of treatment frequency (takes ca 49"
+on the laptop):
+
+```{r eval = FALSE}
+system.time(
+lambda_vals2 <- compute_lambda_val(n = c(6, 10, 14),
+                                   g = 1 / c(14, 10, 7),
+                                   D = seq2(3, 8) * 7 * 24)
+)
+```
+
+```{r include = FALSE}
+if (file_exists("lambda_vals2.rds")) {
+  lambda_vals2 <- readRDS3("lambda_vals2.rds")
+} else {
+  lambda_vals2 <- compute_lambda_val(n = c(6, 10, 14),
+                                     g = 1 / c(14, 10, 7),
+                                     D = seq2(1, 28) * 24)
+  saveRDS2(lambda_vals2, "lambda_vals2.rds")
 }
 ```
 
@@ -804,37 +826,16 @@ pi <- function(lambda, prop) {
 
 ```{r}
 prev <- 0:10 / 10
-pi_vals <- pi(lambda_vals, prev)
-```
-
-```{r}
-#make_grid1 <- function(v, h) {
-#  function() {
-#    abline(v = v, col = "grey")
-#    abline(h = h, col = "grey")
-#  }
-#}
+pi_vals1 <- pi(lambda_vals1, prev)
+pi_vals2 <- pi(lambda_vals2, prev)
 ```
 
 A function that plots one panel:
 
-```{r include=FALSE, eval=FALSE}
-plot_pi_D <- function(x, xlab = "intake frequency (/day)", ylab = ylab_pi,
-                      ylim = 0:1, plot_grid = make_grid1(ats, prev)) {
-  plot(NA, xlim = c(30, 0), ylim = ylim, axes = FALSE,
-       xaxs = "i", yaxs = "i", xlab = xlab, ylab = ylab)
-  plot_grid()
-  box(bty = "o")
-  x |> 
-    group_split(prop) |> 
-    walk2(YlOrRd11, ~ with(.x, lines(D, value, col = .y, lwd = lwd_val)))
-}
-```
-
 ```{r}
 plot_pi_D <- function(x, xlab = "intake frequency (/day)", ylab = ylab_pi,
-                      ylim = 0:1, ablinev, ablineh) {
-  plot(NA, xlim = c(30, 0), ylim = ylim, axes = FALSE,
+                      ylim = 0:1, xlim = c(30, 0), ablinev, ablineh) {
+  plot(NA, xlim = xlim, ylim = ylim, axes = FALSE,
        xaxs = "i", yaxs = "i", xlab = xlab, ylab = ylab)
   ablinev()
   ablineh()
@@ -864,55 +865,17 @@ legend5 <- function(...) {
 legend6 <- function(...) {
   legend5("bottomleft", legend = paste(seq(0, 100, 10), "%"), ...)
 }
-
-#make_legend <- function(...) {
-#  function(...) {
-#    legend5("bottomleft", legend = paste(seq(0, 100, 10), "%"), ...)
-#  }
-#}
-
-#axis1 <- function() axis(1, c(ats, 1), c(paste0("1/", ats), 1))
-```
-
-```{r eval=FALSE, include=FALSE}
-plot_mass_treatment <- function(x, ylim = 0:1,
-                                plt_grd = make_grid1(ats, prev), ylab = ylab_pi) {
-  plot_pi_D0 <- function(...) plot_pi_D(..., ylim = ylim, plot_grid = plt_grd)
-  plot_pi_D_ul <- function(...) plot_pi_D0(..., xlab = NA, ylab = ylab)
-  plot_pi_D_ur <- function(...) plot_pi_D0(..., xlab = NA, ylab = NA)
-  plot_pi_D_lr <- function(...) plot_pi_D0(..., ylab = NA)
-  
-  opar <- par(mfrow = c(3, 3))
-  plot_pi_D_ul(filter(x, n ==  6, g <  .1))
-  mtext2(6); axis(2)
-  plot_pi_D_ur(filter(x, n ==  6, g == .1))
-  mtext2(10)
-  legend5("bottomleft", title = "proportion treated", text.width = .5,
-          legend = paste(seq(0, 100, 10), "%"))
-  plot_pi_D_ur(filter(x, n ==  6, g >  .1))
-  mtext2(14); mtext3(14)
-  plot_pi_D_ul(filter(x, n == 10, g <  .1))
-  axis(2)
-  plot_pi_D_ur(filter(x, n == 10, g == .1))
-  plot_pi_D_ur(filter(x, n == 10, g >  .1))
-  mtext3(10)
-  plot_pi_D0(filter(x, n == 14, g <  .1), ylab = ylab)
-  axis1(); axis(2)
-  plot_pi_D_lr(filter(x, n == 14, g == .1))
-  axis1()
-  plot_pi_D_lr(filter(x, n == 14, g >  .1))
-  axis1(); mtext3(7)
-  par(opar)
-}
 ```
 
 ```{r}
-plot_treatment <- function(x, f = plot_pi_D, ylim = 0:1, axis1fct = axis1,
+plot_treatment <- function(x, f = plot_pi_D, xlim = c(30, 0), ylim = 0:1,
+                           axis1fct = axis1,
                            add_lgd = make_legend(title = "proportion treated",
                                                  text.width = .5),
                            ablnv, ablnh,
                            plt_grd = make_grid1(ats, prev), ylab = ylab_pi) {
-  f0 <- function(...) f(..., ylim = ylim, ablinev = ablnv, ablineh =  ablnh)
+  f0 <- function(...)
+    f(..., xlim = xlim, ylim = ylim, ablinev = ablnv, ablineh =  ablnh)
   f_ul <- function(...) f0(..., xlab = NA, ylab = ylab)
   f_ur <- function(...) f0(..., xlab = NA, ylab = NA)
   f_lr <- function(...) f0(..., ylab = NA)
@@ -940,34 +903,34 @@ plot_treatment <- function(x, f = plot_pi_D, ylim = 0:1, axis1fct = axis1,
 }
 ```
 
-```{r include=FALSE, eval=FALSE}
-plot_mass_treatment <- function(x, ...) {
-  plot_treatment(x,
-                 f = plot_pi_D,
-                 axis1fct = axis1,
-                 add_lgd = make_legend(title = "proportion treated", text.width = .5),
-                 plt_grd = make_grid1(ats, prev), ...)
-}
-```
-
 ```{r}
-ats <- seq(30, 5, -5)
-
 plot_mass_treatment <- function(x, ...) {
-  plot_treatment(x,
-                 f = plot_pi_D,
-                 axis1fct = function() axis(1, c(ats, 1), c(paste0("1/", ats), 1)),
+  plot_treatment(x, f = plot_pi_D,
                  add_lgd = function() legend6(title = "proportion treated",
-                                              text.width = .5),
-                 ablnv = function() abline(v = ats, col = "grey"), ...)
+                                              text.width = .5), ...)
 }
 ```
 
-The figure:
+The figure on the first range of treatment frequency:
 
 ```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
-plot_mass_treatment(pi_vals, ylim = 0:1, ylab = ylab_pi,
-                    ablnh = function() abline(h = prev, col = "grey"))
+ats1 <- seq(25, 5, -5)
+plot_mass_treatment(pi_vals1, xlim = c(30, 0), ylim = 0:1, ylab = ylab_pi,
+                    axis1fct = function()
+                                 axis(1, c(ats1, 1), c(paste0("1/", ats1), 1)),
+                    ablnh = function() abline(h = prev, col = "grey"),
+                    ablnv = function() abline(v = ats1, col = "grey"))
+```
+
+The figure on the second range of treatment frequency:
+
+```{r fig.width = 8, fig.height = 7.875, margin1 = FALSE, margin3c = TRUE}
+ats2 <- seq(56, 21, -7)
+plot_mass_treatment(pi_vals2, xlim = c(8, 3) * 7, ylim = 0:1, ylab = ylab_pi,
+                    axis1fct = function()
+                                 axis(1, c(ats2, 1), c(paste0("1/", ats2), 1)),
+                    ablnh = function() abline(h = prev, col = "grey"),
+                    ablnv = function() abline(v = ats2, col = "grey"))
 ```
 
 
