@@ -820,7 +820,8 @@ pi <- function(lambda, prop) {
   lambda |> 
     tidyr::expand_grid(prop) |> 
     mutate(across(D, ~ .x / 24)) |> 
-    mutate(value = 1 - (1 - min_of_following(lambda)) * prop, .by = c(n, g))  
+    mutate(value = 1 - (1 - min_of_following(lambda)) * prop, .by = c(n, g)) |> 
+    arrange(D)
 }
 ```
 
@@ -1066,6 +1067,37 @@ rho_vals |>
                                     abline4(h = 0:10)
                                     abline3(h = .5:9.5)
                                   })
+```
+
+
+### Main text figure
+
+```{r}
+pi_vals2 |> 
+  filter(n == 10, g == .1) |> 
+  plot_pi_D(xlab = "intake frequency (/day)", ylab = ylab_pi,
+            xlim = c(8, 3) * 7, ylim = 0:1,
+            ablinev = function() abline(v = ats2, col = "grey"),
+            ablineh = function() abline(h = prev, col = "grey"))
+axis(1, c(ats2, 1), c(paste0("1/", ats2), 1))
+axis(2)
+```
+
+```{r}
+rho_vals |> 
+  filter(n == 10, g == .1) |> 
+  plot_tau_rho(xlab = bquote(atop("Proportion" ~ tau ~ "of new cases",
+                                  "that are treated (%)")), ylab = ylab_rho,
+               xlim = 0:1, ylim = 0:1,
+               ablinev = function() {
+                           abline3(v = seq(0, 1, .05))
+                           abline4(v = seq(0, 1, .1))
+                         },
+               ablineh = function() {
+                           abline3(h = seq(0, 1, .05))
+                           abline4(h = seq(0, 1, .1))
+                         })
+axis(1); axis(2)
 ```
 
 
