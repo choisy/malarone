@@ -330,20 +330,92 @@ lines3(pda_t, alpha(pda_t))
 
 The reduction factor $1 - \alpha$ of the number of mosquitoes with oocysts (Figure
 2a) converts directly into a transmission-blocking activity (TBA) of similar magnitude
-on the mean individual vectorial capacity:
-
-$$
-(1 - \alpha(t))\cdot C
-$$
-
-where $C$ is the vectorial capacity in absence of malarone and $t$ is the time post
-drug administration. Similarly, @eq-R0 shows that the reduction of $R_0$ is
+on $R_0$:
 
 $$
 (1 - \alpha(t))\cdot R_0
 $$
 
-where $R_0$ is the basic reproduction ratio in absence of malarone.
+where $R_0$ is the basic reproduction ratio in absence of malarone. The above equation
+assumes that (i) each mosquito has only 1 bite during its lifetime and (ii) this bite
+occurs at 4 dpi. Let's now generalize this effect for multiple bites during the
+mosquito lifetime. For that, we need to know (i) the times of the bites, (ii) the TBA
+effect $\alpha$ at these times and (iii) the proportion $\zeta$ of the mosquito
+population at each of these times. The times of the bites is determined by the mosquito
+biting rate $a$ and the generalized TBA effect on $R_O$ thus reads:
+
+$$
+\left(1 - \sum_{i = 1}^{+\infty}\alpha\left(\frac{i}{a}\right)\zeta\left(\frac{i}{a}\right)\right) R_0
+$$
+
+For example, for a mosquito population with a biting frequency every 3 days
+(i.e. $a = 1/3$) and a life expectancy of 14 days, here is the distribution of ages of
+feeding mosquitoes in the population:
+
+```{r}
+a <- 1 / 3
+g <- 1 / 14
+infinity <- 40
+x_val <- seq2(0, infinity)
+plot(x_val, dexp(x_val, g), type = "l", xlab = "age of mosquito", ylab = "frequency")
+feedings <- seq(1 / a, infinity, 1 / a) 
+abline(v = feedings)
+points(feedings, dexp(feedings, g), type = "h", lwd = 10)
+```
+
+We can thus compute the $\zeta$ probability distribution by sampling from an
+exponential distribution:
+
+```{r}
+zeta <- function(a, g, infinity = 60) {
+  a <- 1 / a
+  tmp <- dexp(seq(a, infinity, a), g)
+  tmp / sum(tmp)
+}
+
+zeta(1 / 3, 1 / 14)
+```
+
+Let's now compute the $\alpha$ function at ages other than 4 dpi. For that we assume
+that the effect of malarone exponentially decreases with time post infection and a
+conservative assumption is that its effect at 0 dpi is 1. Let's make this function and
+look at what it looks like:
+
+```{r}
+make_alpha_dpi <- function(alpha_effect4dpi, alpha_effect0dpi = 1) {
+  r <- log(alpha_effect0dpi / alpha_effect4dpi) / 4
+  function(x) alpha_effect0dpi * exp(- r * x)
+}
+
+alpha_dpi <- make_alpha_dpi(.5)
+
+plot(x_val, alpha_dpi(x_val), type = "l", xlab = "day post infection", ylab = "alpha")
+abline(v = 4); abline(h = .5)
+```
+
+Now that we have both the $\alpha$ and $\zeta$ functions, we can compute the TBA
+epidemiological effect:
+
+```{r}
+alpha_general <- function(t, a, g, infinity = 60) {
+  feeding_time <- seq(1 / a, infinity, 1 / a)
+  prop_pop <- zeta(a, g, infinity)
+  
+  alpha(t) |> 
+    map(make_alpha_dpi) |> 
+    map_dbl(~ sum(.x(feeding_time) * prop_pop))
+}
+```
+
+```{r}
+plot_experimental_data(alpha_data, ylim = c(-1, 1),
+                       ylab = bquote("reduction" ~ alpha ~
+                                       "of mosquitoes with oocysts"))
+pda_t <- seq2(0, 700)
+lines3(pda_t, alpha(pda_t))
+lines2(pda_t, alpha_general(pda_t, 1 / 3, 1 / 14), col = 3)
+```
+
 
 ### Number of oocysts
 
