@@ -416,6 +416,25 @@ lines3(pda_t, alpha(pda_t))
 lines2(pda_t, alpha_general(pda_t, 1 / 3, 1 / 14), col = 3)
 ```
 
+#### Revision
+
+$\tau$ is the probability that a person is treated and $\alpha(i, j)$ is the
+probability of TBA for a mosquito at $i$ dpi feeding on a person treated $j$ hours ago.
+A mosquito of age $k$ feeding at the biting rate $a$ thus 
+
+$$
+1 - \prod_{i = 1}^{i \leq k}\left(1 - \tau\alpha\left(\frac{i}{a}, j\right)\right)
+$$
+
+Across the population:
+
+$$
+\sum_{k = 1 / a}^{+\infty}\left[1 - \prod_{i = 1}^{i \leq k}\left(1 - \tau\alpha\left(\frac{i}{a}, j\right)\right)\right]\zeta(k)
+$$
+
+$$
+\int_0^\Delta\sum_{k = 1 / a}^{+\infty}\left[1 - \prod_{i = 1}^{i \leq k}\left(1 - \tau\alpha\left(\frac{i}{a}, t\right)\right)\right]\zeta(k)dt
+$$
 
 ### Number of oocysts
 
@@ -476,7 +495,7 @@ $$ {#eq-TRA_mean}
 where $\omega(L)$ is the frequency of load $L$ in the population. Let's thus first look
 at the distribution of the oocyst loads $L$ from the control data:
 
-```{r}
+```{r message = FALSE}
 oocysts_control <- path2data |>
   paste0("ASAAP4b_oocyst2.txt") |>
   readr::read_table() |> 
@@ -520,7 +539,7 @@ Now that we have a calibrated parametric distribution of the oocyst loads $L$, l
 look at the data from @aleshnick_experimental_2020 converted to oocyst load using the
 1,000 factor of @miura_strong_2019:
 
-```{r}
+```{r message = FALSE}
 library(mgcv)
 
 miura_factor <- 1000
@@ -638,7 +657,7 @@ lines(pda_t, f(betas))
 ```
 
 
-### Sizes of oocysts at 7dpi
+### Sizes of oocysts at 7 dpi
 
 Malarone decreases by the multiplicative factor $1 - \gamma$ ($0 \leq \gamma \leq 1$)
 the size of oocysts at 7 dpi. Furthermore, figure 5B from @werling_steroid_2019
