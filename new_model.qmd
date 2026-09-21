@@ -1,0 +1,70 @@
+---
+title: "Mosquito-mediated epidemiological effects of malarone treatment"
+number-sections: true
+format:
+  html:
+    toc: true
+    toc-depth: 4
+editor: source
+editor_options: 
+  chunk_output_type: console
+bibliography: references.bib
+csl: the-american-naturalist.csl
+---
+
+```{r include = FALSE, eval = FALSE}
+knitr::purl("malarone.qmd", "tmp.R", documentation = FALSE)
+source("tmp.R")
+file.remove("tmp.R")
+```
+
+With $t$ being the time post drug administration and $\tau$ the time post mosquito,
+infection, $\alpha(t, \tau)$ and $\beta(t, \tau)$ are respectively the transmission
+blocking (TBA) and reducing (TRA) activities as characterized on oocysts. Figures 2a
+and 2c show data of $\alpha(t, \tau = 4\,\mbox{dpi})$ and
+$\beta(t, \tau = 4\,\mbox{dpi})$ respectively.
+
+The average reduction of parasite load in mosquitoes infected $\tau$ days ago and
+biting people treated $t$ days ago can be expressed as
+
+$$
+(1 - \alpha(t, \tau))(1 - \beta(t, \tau))
+$$
+
+If $h(t)$ is the distribution of times post drug administration in the population of
+treated humans, the average reduction $q(\tau)$ of parasite load in mosquitoes infected
+$\tau$ days ago due to 1 bite on treated people then reads
+
+$$
+q(\tau) = \int_0^{+\infty}(1 - \alpha(t, \tau))(1 - \beta(t, \tau))h(t)dt
+$$
+
+Among mosquitoes infected $\tau$ days ago, if $\lambda(\tau)$ is the ratio of the
+parasite average load expressed relative to what we would get in total absence of
+treatment in the human population then
+
+$$
+\frac{d\lambda}{d\tau} = -(1 - q(\tau)) a p \lambda(\tau)
+$$
+
+with
+
+$$
+\lambda(0) = 1
+$$
+
+leading to 
+
+$$
+\lambda(\tau) = \exp\left[-ap\int_0^\tau(1 - q(u))du\right]
+$$
+
+where $p$ is the proportion of humans who received treatment and $a$ is the mosquito
+biting rate. If $f$ is the relationship between the parasite load and the mosquito
+infectiousness, then the reduction of infectiousness due to TBA and TRA reads:
+
+$$
+\int_0^{+\infty}e^{-g\tau}f(\lambda(\tau))d\tau
+$$
+
+where $g$ is the mosquito death rate.
