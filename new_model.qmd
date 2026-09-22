@@ -18,7 +18,9 @@ source("tmp.R")
 file.remove("tmp.R")
 ```
 
-With $t$ being the time post drug administration and $\tau$ the time post mosquito,
+## Parasite load and infectiousness
+
+With $t$ being the time post drug administration and $\tau$ the time post mosquito
 infection, $\alpha(t, \tau)$ and $\beta(t, \tau)$ are respectively the transmission
 blocking (TBA) and reducing (TRA) activities as characterized on oocysts. Figures 2a
 and 2c show data of $\alpha(t, \tau = 4\,\mbox{dpi})$ and
@@ -32,11 +34,11 @@ $$
 $$
 
 If $h(t)$ is the distribution of times post drug administration in the population of
-treated humans, the average reduction $q(\tau)$ of parasite load in mosquitoes infected
+treated humans, the average reduction $l(\tau)$ of parasite load in mosquitoes infected
 $\tau$ days ago due to 1 bite on treated people then reads
 
 $$
-q(\tau) = \int_0^{+\infty}(1 - \alpha(t, \tau))(1 - \beta(t, \tau))h(t)dt
+l(\tau) = \int_0^{+\infty}(1 - \alpha(t, \tau))(1 - \beta(t, \tau))h(t)dt
 $$
 
 Among mosquitoes infected $\tau$ days ago, if $\lambda(\tau)$ is the ratio of the
@@ -44,7 +46,7 @@ parasite average load expressed relative to what we would get in total absence o
 treatment in the human population then
 
 $$
-\frac{d\lambda}{d\tau} = -(1 - q(\tau)) a p \lambda(\tau)
+\frac{d\lambda}{d\tau} = -(1 - l(\tau)) a p \lambda(\tau)
 $$
 
 with
@@ -56,15 +58,90 @@ $$
 leading to 
 
 $$
-\lambda(\tau) = \exp\left[-ap\int_0^\tau(1 - q(u))du\right]
+\lambda(\tau) = \exp\left[-ap\int_0^\tau(1 - l(u))du\right]
 $$
 
 where $p$ is the proportion of humans who received treatment and $a$ is the mosquito
 biting rate. If $f$ is the relationship between the parasite load and the mosquito
-infectiousness, then the reduction of infectiousness due to TBA and TRA reads:
+infectiousness, then the reduction factor of infectiousness due to TBA and TRA reads:
 
 $$
-\int_0^{+\infty}e^{-g\tau}f(\lambda(\tau))d\tau
+\rho = \int_0^{+\infty}e^{-g\tau}f(\lambda(\tau))d\tau
 $$
 
 where $g$ is the mosquito death rate.
+
+## Parasite development and EIP
+
+Let's now work out the extension of the EIP. The EIP is the time at which the parasite
+reaches maturity and a good proxy of maturity is the oocyst size. Oocyst size increases
+as a function of time post infection $\tau$ at a rate $\nu$ that is independent of the
+oocyst size itself (REF). Let's define the instrumental variable $z$ that captures the
+level of maturity with
+
+$$
+z(\tau = 0) = 0
+$$
+$$
+z(\tau = \mbox{EPI}) = 1
+$$
+
+and 
+
+$$
+\frac{dz}{d\tau} = \nu(\tau)
+$$
+where the rate of maturation, if independent of the state of maturation, can still
+depend on the time post infection $\tau$. Let's now introduce $\delta(t, \tau)$ the
+reduction factor of the rate of parasite development for a mosquito getting 1 blood
+meal at time $\tau$ post infection on a human host who is at time $t$ post treatment.
+The average reduction $q(\tau)$ of the parasite development rate in mosquitoes at time
+$\tau$ post infection due to 1 bite on treated people then reads
+
+$$
+q(\tau) = \int_0^{+\infty} \delta(t, \tau) h(t) dt
+$$
+
+Taking into account the proportion $p$ of humans taking treatment and the mosquito
+biting rate $a$, the dependency of $\nu$ on $\tau$ is governed by
+
+$$
+\frac{d\nu}{d\tau} = (q(\tau) - 1)ap\nu
+$$
+with 
+
+$$
+\nu(0) = \frac{1}{n}
+$$
+
+leading to
+
+$$
+\nu(\tau) = \frac{1}{n} \exp\left[ap\int_0^{\tau}(q(u) - 1)du\right]
+$$
+
+where $n$ is the value of the EIP in absence of treatment in the human population. Now
+that we have this, we can implicitly express the average EIP $T$ in presence of the
+treatment in the human population as the solution of
+
+$$
+\int_0^{T}\nu(\tau)d\tau = 1
+$$
+
+<!--
+Oocyst size grows linearly as a function
+of time $\tau$ post mosquito infection. If EIP is defined as the time post infection at
+which the oocysts reach a given size, then a percentage reduction $\gamma(t, \tau)$ of
+the oocyst size at a given point in time translates into a percentage reduction
+$\delta(t, \tau)$ of the oocsyt growth rate that is proportional to $\gamma(t, \tau)$.
+-->
+
+## $R_0$ reduction effect
+
+Putting previous results together, if $R_0$ is the value of the basic reproduction
+number in absence of treatment, then, in the presence of treatment in the population,
+its expression becomes
+
+$$
+\rho e^{(n - T)g} R_0
+$$
