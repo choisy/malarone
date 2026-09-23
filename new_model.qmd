@@ -1,5 +1,5 @@
 ---
-title: "Mosquito-mediated epidemiological effects of malarone treatment"
+title: "Mosquito-mediated epidemiological effects of treatment"
 number-sections: true
 format:
   html:
@@ -18,9 +18,11 @@ source("tmp.R")
 file.remove("tmp.R")
 ```
 
-## Parasite load and infectiousness
+## Theoretical model
 
-### 1 bite, all human treated
+### Parasite load and infectiousness
+
+#### 1 bite, all human treated
 
 Call $t$ the **time post drug administration** in treated humans and $\tau$ the
 **time post mosquito infection**. Call $\alpha(t, \tau)$ the
@@ -46,7 +48,7 @@ $$
 l(\tau) = \int_0^{+\infty}(1 - \alpha(t, \tau))(1 - \beta(t, \tau))h(t)dt.
 $$
 
-### Multiple bites, $p\%$ human treated
+#### Multiple bites, $p\%$ human treated
 
 Call $a$ the **mosquito bite rate**, $p$ the
 **proportion of the human population that receives treatment** and $\lambda(\tau)$ the
@@ -71,7 +73,7 @@ $$
 \lambda(\tau) = \exp\left[-ap\int_0^\tau(1 - l(u))du\right]
 $$
 
-### Mean infectiousness reduction
+#### Mean infectiousness reduction
 
 Call $\mu(\lambda)$ the function that converts a **reduction factor of parasite load**
 $\lambda$ into a **reduction factor of mosquito infectiousness** and $g$ the
@@ -83,7 +85,7 @@ $$
 \theta = \int_0^{+\infty}e^{-g\tau}\mu(\lambda(\tau))d\tau.
 $$
 
-## Parasite development and EIP
+### Parasite maturation and EIP
 
 The EIP is the time at which the parasite reaches maturity for transmission. Call
 $z(\tau)$ the dimensionless **level of parasite maturity** at time $\tau$ post
@@ -110,7 +112,7 @@ $$
 Note that the values 0 and 1 are just convenient choices here and that their exact
 values do not matter for the analysis.
 
-### 1 bite, all human treated
+#### 1 bite, all human treated
 
 Call $\gamma(t, \tau)$ the **reduction factor of the maturation rate** consecutively to
 1 blood meal at times $t$ and $\tau$. The mean reduction factor $q(\tau)$ of the
@@ -121,7 +123,7 @@ $$
 q(\tau) = \int_0^{+\infty} \gamma(t, \tau) h(t) dt
 $$
 
-### Multiple bites, $p\%$ human treated
+#### Multiple bites, $p\%$ human treated
 
 In a similar way as done above for the parasite load, we can express the fact that each
 bite on treated human reduces the maturation rate by $1 - q(\tau)$ by the following
@@ -137,37 +139,28 @@ $$
 \nu(0) = \frac{1}{n}
 $$
 
-where $n$ is the 
 leading to
 
 $$
 \nu(\tau) = \frac{1}{n} \exp\left[-ap\int_0^{\tau}(1 - q(u))du\right]
 $$
 
-where $n$ is the value of the EIP in absence of treatment in the human population. Now
-that we have this, we can implicitly express the average EIP in presence of the
+where $n$ is the value of the **EIP in absence of treatment** in the human population.
+Now that we have this, we can implicitly express the average EIP in presence of the
 treatment in the human population as the value $T$ satisfying 
 
 $$
 \int_0^{T}\nu(\tau)d\tau = 1
 $$
 
-<!--
-Oocyst size grows linearly as a function
-of time $\tau$ post mosquito infection. If EIP is defined as the time post infection at
-which the oocysts reach a given size, then a percentage reduction $\gamma(t, \tau)$ of
-the oocyst size at a given point in time translates into a percentage reduction
-$\delta(t, \tau)$ of the oocsyt growth rate that is proportional to $\gamma(t, \tau)$.
--->
-
-## $R_0$ reduction effect
+### $R_0$ reduction effect
 
 Putting previous results together, if $R_0$ is the value of the basic reproduction
 number in absence of treatment, then, in the presence of treatment in the population,
 its expression becomes
 
 $$
-\theta e^{(n - T)g} R_0
+\theta e^{-(T - n)g} R_0
 $$
 
 ## Experimental data
