@@ -20,109 +20,133 @@ file.remove("tmp.R")
 
 ## Parasite load and infectiousness
 
-With $t$ being the time post drug administration and $\tau$ the time post mosquito
-infection, $\alpha(t, \tau)$ and $\beta(t, \tau)$ are respectively the transmission
-blocking (TBA) and reducing (TRA) activities as characterized on oocysts. Figures 2a
-and 2c show data of $\alpha(t, \tau = 4\,\mbox{dpi})$ and
-$\beta(t, \tau = 4\,\mbox{dpi})$ respectively.
+### 1 bite, all human treated
 
-The average reduction of parasite load in mosquitoes infected $\tau$ days ago and
-biting people treated $t$ days ago can be expressed as
-
-$$
-(1 - \alpha(t, \tau))(1 - \beta(t, \tau))
-$$
-
-If $h(t)$ is the distribution of times post drug administration in the population of
-treated humans, the average reduction $l(\tau)$ of parasite load in mosquitoes infected
-$\tau$ days ago due to 1 bite on treated people then reads
+Call $t$ the **time post drug administration** in treated humans and $\tau$ the
+**time post mosquito infection**. Call $\alpha(t, \tau)$ the
+**transmission blocking activity** (TBA) defined as the percentage reduction of the
+number of mosquitoes infected consecutively to 1 blood meal at times $t$ and $\tau$.
+Call $\beta(t, \tau)$ the **transmission reducing activity** (TRA) defined as the
+percentage reduction of the parasite load in infected mosquitoes consecutively to 1
+blood meal at times $t$ and $\tau$. The mean reduction factor of the parasite load due
+to TBA and TRA and across the population of infected mosquitoes at times $t$ and $\tau$
+then reads
 
 $$
-l(\tau) = \int_0^{+\infty}(1 - \alpha(t, \tau))(1 - \beta(t, \tau))h(t)dt
+(1 - \alpha(t, \tau))(1 - \beta(t, \tau)).
 $$
 
-Among mosquitoes infected $\tau$ days ago, if $\lambda(\tau)$ is the ratio of the
-parasite average load expressed relative to what we would get in total absence of
-treatment in the human population then
+Call $h(t)$ is the density of probability of the
+**distribution of times post drug administration** in the population of treated humans.
+The mean reduction factor $l(\tau)$ of parasite load acroos the population of infected
+mosquitoes due to
+**1 bite on treated people at time $\tau$** then reads
 
 $$
-\frac{d\lambda}{d\tau} = -(1 - l(\tau)) a p \lambda(\tau)
+l(\tau) = \int_0^{+\infty}(1 - \alpha(t, \tau))(1 - \beta(t, \tau))h(t)dt.
 $$
 
-with
+### Multiple bites, $p\%$ human treated
+
+Call $a$ the **mosquito bite rate**, $p$ the
+**proportion of the human population that receives treatment** and $\lambda(\tau)$ the
+**mean cumulative reduction factor of the parasite load due to all the bites that have occurred until time $\tau$**.
+The fact that each bite on a treated human reduces the parasite load of
+$(1 - l(\tau)) \%$ is then conveyed by the following differential equation
 
 $$
-\lambda(0) = 1
+\frac{d\lambda}{d\tau} = -(1 - l(\tau)) a p \lambda(\tau).
 $$
 
-leading to 
+If we now assume that mosquitoes get infected by bites on untreated humans only then
+
+$$
+\lambda(0) = 1,
+$$
+
+which leads to the following expression of the mean cumulative reduction factor of the
+parasite load at time $\tau$
 
 $$
 \lambda(\tau) = \exp\left[-ap\int_0^\tau(1 - l(u))du\right]
 $$
 
-where $p$ is the proportion of humans who received treatment and $a$ is the mosquito
-biting rate. If $f$ is the relationship between the parasite load and the mosquito
-infectiousness, then the reduction factor of infectiousness due to TBA and TRA reads:
+### Mean infectiousness reduction
+
+Call $\mu(\lambda)$ the function that converts a **reduction factor of parasite load**
+$\lambda$ into a **reduction factor of mosquito infectiousness** and $g$ the
+**mosquito death rate** assumed to be independent of the mosquito's age. The mean
+reduction factor of mosquito infectiousness in the total mosquito population due to TBA
+and TRA can then be expressed as
 
 $$
-\rho = \int_0^{+\infty}e^{-g\tau}f(\lambda(\tau))d\tau
+\theta = \int_0^{+\infty}e^{-g\tau}\mu(\lambda(\tau))d\tau.
 $$
-
-where $g$ is the mosquito death rate.
 
 ## Parasite development and EIP
 
-Let's now work out the extension of the EIP. The EIP is the time at which the parasite
-reaches maturity and a good proxy of maturity is the oocyst size. Oocyst size increases
-as a function of time post infection $\tau$ at a rate $\nu$ that is independent of the
-oocyst size itself (REF). Let's define the instrumental variable $z$ that captures the
-level of maturity with
+The EIP is the time at which the parasite reaches maturity for transmission. Call
+$z(\tau)$ the dimensionless **level of parasite maturity** at time $\tau$ post
+infection and assume it increases from some arbitrary value 0 right after infection:
 
 $$
-z(\tau = 0) = 0
-$$
-$$
-z(\tau = \mbox{EPI}) = 1
+z(0) = 0
 $$
 
-and 
+to some arbitrary value 1 once maturity for transmission is reached:
 
 $$
-\frac{dz}{d\tau} = \nu(\tau)
-$$
-where the rate of maturation, if independent of the state of maturation, can still
-depend on the time post infection $\tau$. Let's now introduce $\delta(t, \tau)$ the
-reduction factor of the rate of parasite development for a mosquito getting 1 blood
-meal at time $\tau$ post infection on a human host who is at time $t$ post treatment.
-The average reduction $q(\tau)$ of the parasite development rate in mosquitoes at time
-$\tau$ post infection due to 1 bite on treated people then reads
-
-$$
-q(\tau) = \int_0^{+\infty} \delta(t, \tau) h(t) dt
+z(\mbox{EIP}) = 1
 $$
 
-Taking into account the proportion $p$ of humans taking treatment and the mosquito
-biting rate $a$, the dependency of $\nu$ on $\tau$ is governed by
+at a **maturation rate** $\nu$ that is independent of the level of maturity (but that
+can depend of the time $\tau$ post infection due in particular to bites on treated
+humans):
 
 $$
-\frac{d\nu}{d\tau} = (q(\tau) - 1)ap\nu
+\frac{dz}{d\tau} = \nu(\tau).
 $$
-with 
+
+Note that the values 0 and 1 are just convenient choices here and that their exact
+values do not matter for the analysis.
+
+### 1 bite, all human treated
+
+Call $\gamma(t, \tau)$ the **reduction factor of the maturation rate** consecutively to
+1 blood meal at times $t$ and $\tau$. The mean reduction factor $q(\tau)$ of the
+maturation rate across the population of infected mosquitoes due to
+**1 bite on treated people at time $\tau$** then reads
+
+$$
+q(\tau) = \int_0^{+\infty} \gamma(t, \tau) h(t) dt
+$$
+
+### Multiple bites, $p\%$ human treated
+
+In a similar way as done above for the parasite load, we can express the fact that each
+bite on treated human reduces the maturation rate by $1 - q(\tau)$ by the following
+differential equation
+
+$$
+\frac{d\nu}{d\tau} = -(1 - q(\tau))ap\nu(\tau)
+$$
+Under the same assumption as above that mosquitoes get infected by bites on untreated
+humans only then
 
 $$
 \nu(0) = \frac{1}{n}
 $$
 
+where $n$ is the 
 leading to
 
 $$
-\nu(\tau) = \frac{1}{n} \exp\left[ap\int_0^{\tau}(q(u) - 1)du\right]
+\nu(\tau) = \frac{1}{n} \exp\left[-ap\int_0^{\tau}(1 - q(u))du\right]
 $$
 
 where $n$ is the value of the EIP in absence of treatment in the human population. Now
-that we have this, we can implicitly express the average EIP $T$ in presence of the
-treatment in the human population as the solution of
+that we have this, we can implicitly express the average EIP in presence of the
+treatment in the human population as the value $T$ satisfying 
 
 $$
 \int_0^{T}\nu(\tau)d\tau = 1
@@ -143,5 +167,14 @@ number in absence of treatment, then, in the presence of treatment in the popula
 its expression becomes
 
 $$
-\rho e^{(n - T)g} R_0
+\theta e^{(n - T)g} R_0
 $$
+
+## Experimental data
+
+Figures 2a and 2c show data of $\alpha(t, \tau = 4\,\mbox{dpi})$ and
+$\beta(t, \tau = 4\,\mbox{dpi})$ respectively.
+
+and a good proxy of the level of maturity is the oocyst size. 
+
+For *Plasmodium* parasites a good proxy of the level of maturity is the oocyst size.
