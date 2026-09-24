@@ -18,6 +18,29 @@ source("tmp.R")
 file.remove("tmp.R")
 ```
 
+
+## Parameters
+
+The path to the data:
+
+```{r}
+if (Sys.getenv("USER") == "MarcChoisy" | Sys.getenv("USER") == "marc") {
+  path2data <- paste0(Sys.getenv("HOME"), "/Library/CloudStorage/",
+                      "OneDrive-OxfordUniversityClinicalResearchUnit/",
+                      "GitHub/choisy/malarone/")
+}
+```
+
+```{r include  = FALSE}
+path2cache <- paste0(path2data, "cache/")
+if (! dir.exists(path2cache)) dir.create(path2cache)
+
+#make_path <- function(x) paste0(path2data, "cache/", x)
+#file_exists <- function(x) file.exists(make_path(x))
+#readRDS3 <- function(x) readRDS(make_path(x))
+#saveRDS2 <- function(object, file) saveRDS(object, make_path(file))
+```
+
 ```{r include = FALSE, purl = FALSE}
 par2 <- function(...) par(..., mgp = c(1.5, .5, 0), bty = "n")
 
@@ -27,36 +50,12 @@ knitr::knit_hooks$set(
   })
 
 eps <- .8
-knitr::opts_chunk$set(margin1    = TRUE,
+knitr::opts_chunk$set(cache.path = path2cache,
+                      margin1    = TRUE,
                       fig.retina = 2,
                       fig.align  = "center",
                       fig.height = eps * 5, # default is 5
                       fig.width = eps * 7) # default is 7
-```
-
-
-## Parameters
-
-The path to the data:
-
-```{r}
-path2data <- paste0(Sys.getenv("HOME"), "/Library/CloudStorage/",
-                    "OneDrive-OxfordUniversityClinicalResearchUnit/",
-                    "GitHub/choisy/malarone/")
-```
-
-```{r include = FALSE}
-make_path <- function(x) paste0(path2data, "cache/", x)
-file_exists <- function(x) file.exists(make_path(x))
-readRDS3 <- function(x) readRDS(make_path(x))
-saveRDS2 <- function(object, file) saveRDS(object, make_path(file))
-```
-
-Whether or not to force the effects to be equal to $0$ at $t = 28$ days (in practice it
-does not change things much anyway):
-
-```{r}
-t28_0 <- TRUE
 ```
 
 Colors:
@@ -369,7 +368,7 @@ lines3(x, with(as.list(parms), f4dpi(x, A, k, d)))
 abline(h = 0)
 ```
 
-Stratisfied bootstrapping:
+Stratified bootstrapping:
 
 ```{r}
 stratified_bootstrap <- function(df, N = 1000) {
