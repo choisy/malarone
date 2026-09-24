@@ -13,10 +13,103 @@ csl: the-american-naturalist.csl
 ---
 
 ```{r include = FALSE, eval = FALSE}
-knitr::purl("malarone.qmd", "tmp.R", documentation = FALSE)
+knitr::purl("new_model.qmd", "tmp.R", documentation = FALSE)
 source("tmp.R")
 file.remove("tmp.R")
 ```
+
+```{r include = FALSE, purl = FALSE}
+par2 <- function(...) par(..., mgp = c(1.5, .5, 0), bty = "n")
+
+knitr::knit_hooks$set(
+  margin1 = function(before, options, envir) {
+    if (before) par2(plt = c(.105, .97, .15, .95)) else NULL
+  })
+
+eps <- .8
+knitr::opts_chunk$set(margin1    = TRUE,
+                      fig.retina = 2,
+                      fig.align  = "center",
+                      fig.height = eps * 5, # default is 5
+                      fig.width = eps * 7) # default is 7
+```
+
+
+## Parameters
+
+The path to the data:
+
+```{r}
+path2data <- paste0(Sys.getenv("HOME"), "/Library/CloudStorage/",
+                    "OneDrive-OxfordUniversityClinicalResearchUnit/",
+                    "GitHub/choisy/malarone/")
+```
+
+```{r include = FALSE}
+make_path <- function(x) paste0(path2data, "cache/", x)
+file_exists <- function(x) file.exists(make_path(x))
+readRDS3 <- function(x) readRDS(make_path(x))
+saveRDS2 <- function(object, file) saveRDS(object, make_path(file))
+```
+
+Whether or not to force the effects to be equal to $0$ at $t = 28$ days (in practice it
+does not change things much anyway):
+
+```{r}
+t28_0 <- TRUE
+```
+
+Colors:
+
+```{r}
+color1 <- 2
+color2 <- 3
+color3 <- 4
+```
+
+Line width:
+
+```{r}
+lwd_val <- 2
+```
+
+Plot labels:
+
+```{r}
+xlab_pda <- "time post drug administration (hours)"
+```
+
+
+## Packages
+
+```{r message = FALSE}
+library(dplyr)
+library(purrr)
+```
+
+## Functions
+
+Tuning some base functions:
+
+```{r}
+seq2 <- function(...) seq(..., le = 512)
+lines2 <- function(...) lines(..., lwd = lwd_val)
+lines3 <- function(...) lines2(..., col = color1)
+readRDS2 <- function(f, ...) tibble::as_tibble(readRDS(paste0(path2data, f), ...))
+plot2 <- function(...) plot(..., col = color3, pch = 3, lwd = lwd_val)
+```
+
+A function that replace the `NA` values of a vector by `0`:
+
+```{r}
+NAto0 <- function(x) {
+  x[is.na(x)] <- 0
+  x
+}
+```
+
+
+
 
 ## Theoretical model
 
@@ -165,9 +258,138 @@ $$
 
 ## Experimental data
 
-Figures 2a and 2c show data of $\alpha(t, \tau = 4\,\mbox{dpi})$ and
-$\beta(t, \tau = 4\,\mbox{dpi})$ respectively.
+Let's use the following 4-parameter functional relationship for $\alpha(t, \tau)$,
+$\beta(t, \tau)$ and $\gamma(t, \tau)$:
 
-and a good proxy of the level of maturity is the oocyst size. 
+$$
+f(t,\tau) = A \cdot (1 - e^{-kt})\cdot e^{-(dt + r\tau)}
+$$
 
-For *Plasmodium* parasites a good proxy of the level of maturity is the oocyst size.
+whereby, as function of $t$, the drug effects are characterized by an initial
+saturating increase (captured by $k$) followed by an exponential decrease (captured by
+$d$) reflecting the PK/PD of the drug and, as function of $\tau$, the effect is
+characterized by an exponential decrease (captured by $r$) simply reflecting the growth
+of the parasite (and thus the decrease of the relative concentration of the drug in
+each blood meal). Parameter $A$ account for the maximum value reached.
+
+```{r}
+f <- function(t, tau, A, k, d, r) A * (1 - exp(-k * t)) * exp(-(d * t + r * tau))
+```
+
+A version of the model at 4 dpi:
+
+```{r}
+f4dpi <- function(t, A, k, d) A * (1 - exp(-k * t)) * exp(-d * t)
+```
+
+A function that looks for initial values at 4 dpi:
+
+```{r}
+initial_values <- function(x, y) {
+  df <- tibble(x, y) |> 
+    arrange(x)
+
+  df2 <- df |> 
+    group_by(x) |> 
+    summarise(y = mean(y))
+  
+  A <- df2 |> 
+    pull(y) |> 
+    max()
+  
+  xs <- df2 |> 
+    filter(y == A) |> 
+    pull(x)
+
+  k <- df |> 
+    filter(x < first(xs)) |> 
+    lm(y ~ -1 + x, data = _) |> 
+    coef() |> 
+    last()
+  
+  d <- df |>
+    filter(x > last(xs)) |> 
+    filter(y > 0) |> 
+    mutate(across(y, log)) |> 
+    lm(y ~ x, data = _) |> 
+    coef() |> 
+    last()
+  
+  c(A = A, k = k / A, d = -d)
+}
+```
+
+A function that calibrates the model at 4 dpi with least sum of squares:
+
+```{r}
+calibrate4dpi <- function(x, y) {
+  optim(initial_values(x, y), function(p) sum((y - f4dpi(x, p[1], p[2], p[3]))^2))$par
+}
+```
+
+
+### Mosquitoes with oocysts
+
+Below, we generate the function $\alpha(t)$ from the experimental data of Figure 2a.
+First we need a function that reads experimental data for the treatment group:
+
+```{r}
+make_reading_exp_data <- function() {
+  hours <- c(0, 5, 48, 72)
+  days <- c(5, 7, 14, 28)
+  hash <- c(setNames(hours, paste0("H", hours)),
+            setNames(24 * days, paste0("D", days)))
+  function(file) {
+    file |>
+      readRDS2() |> 
+      filter(treatment == "AL+AP") |> 
+      mutate(time_hours = hash[stringr::str_remove(time_points, "0")],
+             across(Inhibition, ~ .x / 100))
+  }
+}
+
+reading_exp_data <- make_reading_exp_data()
+```
+
+```{r}
+alpha_data <- "figure2a.rds" |>
+  reading_exp_data() |> 
+  rename(t = time_hours, alpha = Inhibition) |> 
+  select(t, alpha)
+```
+
+```{r}
+x <- seq2(0, 700)
+parms <- with(alpha_data, calibrate4dpi(t, alpha))
+with(alpha_data, plot2(jitter(t), alpha, xlab = xlab_pda,
+                       ylab = bquote("reduction" ~ alpha ~
+                                       "of mosquitoes with oocysts")))
+
+lines3(x, with(as.list(parms), f4dpi(x, A, k, d)))
+abline(h = 0)
+```
+
+Stratisfied bootstrapping:
+
+```{r}
+stratified_bootstrap <- function(df, N = 1000) {
+  map(1:N, ~ df |> 
+               group_by(t) |> 
+               group_split() |> 
+               map(slice_sample, prop = 1, replace = TRUE) |> 
+               bind_rows())
+}
+```
+
+```{r}
+alpha_model <- alpha_data |> 
+  stratified_bootstrap(3) |> 
+  map(~ with(.x, calibrate4dpi(t, alpha)))
+```
+
+```{r}
+alpha_model |> 
+  map_dfc(~ with(as.list(.x), f4dpi(x, A, k, d))) |> 
+  walk(~ lines(x, .x, col = 2))
+```
+
