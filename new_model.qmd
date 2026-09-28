@@ -35,10 +35,9 @@ if (Sys.getenv("USER") == "MarcChoisy" | Sys.getenv("USER") == "marc") {
 path2cache <- paste0(path2data, "cache/")
 if (! dir.exists(path2cache)) dir.create(path2cache)
 
-#make_path <- function(x) paste0(path2data, "cache/", x)
-#file_exists <- function(x) file.exists(make_path(x))
-#readRDS3 <- function(x) readRDS(make_path(x))
-#saveRDS2 <- function(object, file) saveRDS(object, make_path(file))
+remove_cache <- function(x) {
+  file.remove(grep(x, dir(path2cache, full.names = TRUE), value = TRUE))
+}
 ```
 
 ```{r include = FALSE, purl = FALSE}
@@ -47,6 +46,9 @@ par2 <- function(...) par(..., mgp = c(1.5, .5, 0), bty = "n")
 knitr::knit_hooks$set(
   margin1 = function(before, options, envir) {
     if (before) par2(plt = c(.105, .97, .15, .95)) else NULL
+  },
+  margin2 = function(before, options, envir) {
+    if (before) par2(plt = c(.05, .92, .15, .95)) else NULL
   })
 
 eps <- .8
@@ -58,24 +60,10 @@ knitr::opts_chunk$set(cache.path = path2cache,
                       fig.width = eps * 7) # default is 7
 ```
 
-Colors:
-
-```{r}
-color1 <- 2
-color2 <- 3
-color3 <- 4
-```
-
 Line width:
 
 ```{r}
 lwd_val <- 2
-```
-
-Plot labels:
-
-```{r}
-xlab_pda <- "time post drug administration (hours)"
 ```
 
 
@@ -86,28 +74,48 @@ library(dplyr)
 library(purrr)
 ```
 
+
 ## Functions
 
-Tuning some base functions:
+Tuning `polygon()`:
 
 ```{r}
-seq2 <- function(...) seq(..., le = 512)
-lines2 <- function(...) lines(..., lwd = lwd_val)
-lines3 <- function(...) lines2(..., col = color1)
-readRDS2 <- function(f, ...) tibble::as_tibble(readRDS(paste0(path2data, f), ...))
-plot2 <- function(...) plot(..., col = color3, pch = 3, lwd = lwd_val)
-```
-
-A function that replace the `NA` values of a vector by `0`:
-
-```{r}
-NAto0 <- function(x) {
-  x[is.na(x)] <- 0
-  x
+polygon2 <- function(x, y1, y2, ...) {
+  polygon(c(x, rev(x)), c(y1, rev(y2)), border = NA, ...)
 }
 ```
 
+A function to read the experimental data:
 
+```{r}
+reading_exp_data <- function(file) {
+  hours <- c(0, 5, 48, 72)
+  days <- c(5, 7, 14, 28)
+  hash <- c(setNames(hours, paste0("H", hours)),
+            setNames(24 * days, paste0("D", days)))
+  
+  path2data |> 
+    paste0(file) |> 
+    readRDS() |> 
+    tibble::as_tibble() |> 
+    filter(treatment == "AL+AP") |> 
+    mutate(t = hash[stringr::str_remove(time_points, "0")],
+           value = Inhibition / 100) |> 
+    select(t, value)
+}
+```
+
+Stratified bootstrapping:
+
+```{r}
+stratified_bootstrap <- function(df, N) {
+  map(1:ceiling(N), ~ df |> 
+                        group_by(t) |> 
+                        group_split() |> 
+                        map(slice_sample, prop = 1, replace = TRUE) |> 
+                        bind_rows())
+}
+```
 
 
 ## Theoretical model
@@ -255,6 +263,7 @@ $$
 \theta e^{-(T - n)g} R_0
 $$
 
+
 ## Experimental data
 
 Let's use the following 4-parameter functional relationship for $\alpha(t, \tau)$,
@@ -272,7 +281,7 @@ of the parasite (and thus the decrease of the relative concentration of the drug
 each blood meal). Parameter $A$ account for the maximum value reached.
 
 ```{r}
-f <- function(t, tau, A, k, d, r) A * (1 - exp(-k * t)) * exp(-(d * t + r * tau))
+#f <- function(t, tau, A, k, d, r) A * (1 - exp(-k * t)) * exp(-(d * t + r * tau))
 ```
 
 A version of the model at 4 dpi:
@@ -332,63 +341,271 @@ calibrate4dpi <- function(x, y) {
 Below, we generate the function $\alpha(t)$ from the experimental data of Figure 2a.
 First we need a function that reads experimental data for the treatment group:
 
+
 ```{r}
-make_reading_exp_data <- function() {
-  hours <- c(0, 5, 48, 72)
-  days <- c(5, 7, 14, 28)
-  hash <- c(setNames(hours, paste0("H", hours)),
-            setNames(24 * days, paste0("D", days)))
-  function(file) {
-    file |>
-      readRDS2() |> 
-      filter(treatment == "AL+AP") |> 
-      mutate(time_hours = hash[stringr::str_remove(time_points, "0")],
-             across(Inhibition, ~ .x / 100))
-  }
+alpha_data <- reading_exp_data("figure2a.rds")
+```
+
+It takes (1'20" on the laptop):
+
+```{r}
+calibration <- function(data, N = 1e4) {
+  model <- data |> 
+    stratified_bootstrap(1.1 * N) |> 
+    map(~ with(.x, safely(calibrate4dpi)(t, value)))
+
+  model[map_lgl(model, ~ is.null(.x$error))] |>
+    map("result") |> 
+    sample(N)
 }
+```
 
-reading_exp_data <- make_reading_exp_data()
+```{r alpha_model, cache = TRUE}
+alpha_model <- calibration(alpha_data)
 ```
 
 ```{r}
-alpha_data <- "figure2a.rds" |>
-  reading_exp_data() |> 
-  rename(t = time_hours, alpha = Inhibition) |> 
-  select(t, alpha)
-```
+x_max <- 700
+x <- seq(0, 1.05 * x_max)
 
-```{r}
-x <- seq2(0, 700)
-parms <- with(alpha_data, calibrate4dpi(t, alpha))
-with(alpha_data, plot2(jitter(t), alpha, xlab = xlab_pda,
-                       ylab = bquote("reduction" ~ alpha ~
-                                       "of mosquitoes with oocysts")))
-
-lines3(x, with(as.list(parms), f4dpi(x, A, k, d)))
-abline(h = 0)
-```
-
-Stratified bootstrapping:
-
-```{r}
-stratified_bootstrap <- function(df, N = 1000) {
-  map(1:N, ~ df |> 
-               group_by(t) |> 
-               group_split() |> 
-               map(slice_sample, prop = 1, replace = TRUE) |> 
-               bind_rows())
+simulate <- function(model, xs = x) {
+  model |> 
+    set_names() |> 
+    map_dfc(~ with(as.list(.x), f4dpi(xs, A, k, d)))
 }
 ```
 
 ```{r}
-alpha_model <- alpha_data |> 
-  stratified_bootstrap(3) |> 
-  map(~ with(.x, calibrate4dpi(t, alpha)))
+alpha_simulations <- simulate(alpha_model)
 ```
 
 ```{r}
-alpha_model |> 
-  map_dfc(~ with(as.list(.x), f4dpi(x, A, k, d))) |> 
-  walk(~ lines(x, .x, col = 2))
+plot_data_model <- function(data, model, ylabel, col_data = 4, col_model = 2) {
+  with(data, plot(t, value, type = "n",
+                  xlim = c(0, x_max), ylim = c(min(data$value), 1),
+                  xlab = "time post drug administration (hours)",
+                  ylab = ylabel))
+  abline(h = 0)
+  
+  model |> 
+    t() |> 
+    as.data.frame() |> 
+    map_dfr(quantile, c(.025, .5, .975)) |> 
+    with({
+      polygon2(x, `2.5%`, `97.5%`, col = adjustcolor(col_model, .1))
+      lines(x, `50%`, lwd = lwd_val, col = col_model)
+    })
+  
+  with(data, points(jitter(t), value, col = col_data, lwd = lwd_val, pch = 3))
+}
 ```
+
+```{r}
+plot_data_model(alpha_data, alpha_simulations,
+                bquote("reduction" ~ alpha ~ "of mosquitoes with oocysts"))
+```
+
+
+### Number of oocysts
+
+```{r}
+beta_data <- reading_exp_data("figure2c.rds")
+```
+
+```{r beta_model, cache = TRUE}
+beta_model <- calibration(beta_data)
+```
+
+```{r}
+beta_simulations <- simulate(beta_model)
+```
+
+```{r}
+plot_data_model(beta_data, beta_simulations,
+                bquote("reduction" ~ beta ~ "of the number of oocysts"))
+```
+
+
+### Converting $\alpha$ and $\beta$ into reduction of infectiousness
+
+Here we are computing the function $\mu$ that converts a reduction in oocyst load into
+a reduction in infectiousness. 
+
+```{r message = FALSE}
+oocysts_control <- path2data |>
+  paste0("ASAAP4b_oocyst2.txt") |>
+  readr::read_table() |> 
+  filter(day_of_dissection == "7dpi",
+         time_points %in% c("Control", "Unfed"),
+         total_oocysts > 0) |> 
+  select(total_oocysts) |> 
+  na.exclude()
+```
+
+```{r}
+total_oocysts <- oocysts_control$total_oocysts
+  
+hist(total_oocysts, main = NA,
+     xlab = "oocyst load L in the controls", ylab = "frequency")
+```
+
+```{r}
+max_load <- max(total_oocysts)
+
+hist(total_oocysts, 0:max_load + .5, main = NA,
+     xlab = "oocyst load L in the controls", ylab = "frequency")
+```
+
+```{r}
+oocysts_control |> 
+  group_by(total_oocysts) |> 
+  tally() |> 
+  mutate(cum_n = cumsum(n) / sum(n)) |> 
+  with(plot(total_oocysts, cum_n, type = "s", ylim = 0:1,
+            xlab = "oocyst load L", ylab = "cumulative proportion of samples"))
+
+p_par <- 1 / mean(total_oocysts)
+x_s <- 1:max_load
+lines(x_s, cumsum(dgeom(x_s, p_par)), type = "s", col = 2)
+```
+
+Figure 2B from @aleshnick_experimental_2020 suggests a non-linear relationship $h$
+between the sporozoite load and the transmission efficiency $b$ of *P. yoelii* from
+*An. stephensi* mosquito to mice with 10,000 salivary gland sporozoites being
+significantly more likely to initiate a malaria infection. Furthermore, Figure 1 from
+@miura_strong_2019 documents a strong linear relationship between the numbers of
+*P. falciparum* oocysts at 8 dpi and sporozoites at 16 dpi in *An. stephensi*
+mosquitoes with about 1,000 sporozoites per oocyst (966, 95\% CI: 893–1038)).
+
+Let's load the data from Figure 2B of @aleshnick_experimental_2020 on the relationship
+between sporozoite load and the proportion of successful infections, converting it
+into a relationship with oocyst load using @miura_strong_2019's 1000 factor.
+
+```{r}
+aleshnick2020 <- path2data |> 
+  paste0("ppat.1008181.s006.xlsx") |> 
+  readxl::read_excel() |> 
+  mutate(load = `Salivary Gland Load` / 1000) |> 
+  rename(infection = `Malaria Infection`) |> 
+  select(load, infection)
+```
+
+A 2-parameter exponential saturating function of the probability of transmission as a
+function of the parasite load:
+
+$$
+g(L) = B\cdot (1 - e^{-sL})
+$$
+
+```{r}
+g <- function(L, B, s) B * (1 - exp(-s * L))
+```
+
+```{r}
+th <- 25
+
+B <- aleshnick2020 |> 
+  filter(load > th) |> 
+  pull(infection) |> 
+  mean()
+
+s <- aleshnick2020 |> 
+  filter(load < th) |> 
+  arrange(load) |> 
+  map(~ zoo::rollmean(.x, 10)) |> 
+  as_tibble() |> 
+  lm(infection ~ -1 + load, data = _) |> 
+  coef()
+
+mLL <- function(x) {
+  -sum(with(aleshnick2020, dbinom(infection, 1, g(load, exp(x[1]), exp(x[2])), TRUE)))
+}
+
+params <- exp(optim(c(B = log(B), s = log(s)), mLL)$par)
+g_calibrated <- function(x) g(x, params[1], params[2])
+```
+
+```{r}
+load_vals <- seq(0, max_load, le = 512)
+
+plot(load_vals, g_calibrated(load_vals), type = "l", lwd = lwd_val, col = 2,
+     xlim = c(0, max_load), ylim = c(0, .5),
+     xlab = "oocyst load L", ylab = "probability of transmission")
+```
+
+$$
+\mu(\lambda) = \sum_{L = 1}^{+\infty}\frac{g(\lambda L)}{g(L)}\omega(L)
+$$
+
+$$
+\mu(\lambda) = \sum_{L = 1}^{+\infty}\frac{1 - e^{-\lambda L}}{1 - e^{-L}}(1-p_o)^{L-1}p_o
+$$
+
+Approximation:
+
+$$
+\mu(\lambda) \simeq \mu_w(\lambda) = \frac{\lambda}{w + (1 - w)\lambda}
+$$
+
+with a constant $w$.
+
+```{r}
+mu1 <- function(lambda) {
+  sum(map_dbl(1:1000,
+              ~ dgeom(.x - 1, p_par) * g_calibrated(lambda * .x) / g_calibrated(.x)))
+}
+
+mu <- function(lambda) map_dbl(lambda, mu1)
+```
+
+```{r transmission_reduction, cache = TRUE}
+lambda_vals <- seq(0, 1, le = 512)
+mu_vals <- mu(lambda_vals)
+```
+
+```{r fig.height = eps * 6, fig.width = eps * 8, margin1 = FALSE, margin2 = TRUE}
+#| label: fig-b_reduction
+#| fig-cap: the conversion of a reduction on the sporozoite load $L$ into a reduction of the mosquito-to-human probability of transmission $b$ and $R_0$.
+
+opar <- par(pty = "s", xpd = TRUE)
+plot(lambda_vals, mu_vals, type = "l", lwd = lwd_val, col = 4, xaxs = "i", yaxs = "i",
+     xlab = bquote("reducing factor of oocyst load"),
+     ylab = "reducing factor of transmission")
+segments(0, 0, 1, 1)
+box(bty = "o")
+w <- .36
+lines(lambda_vals, lambda_vals / (w + (1 - w) * lambda_vals), col = 2)
+par(opar)
+```
+
+Note that although the $\mu$ function is not perfectly symmetric respective to the
+second diagonal as the approximation is, the approximation with $w = 0.36$ does a
+rather good job.
+
+### Size of oocysts at 7 dpi
+
+```{r}
+delta_data <- reading_exp_data("percentage_inhibition_size2.rds")
+```
+
+```{r delta_model, cache = TRUE}
+delta_model <- calibration(delta_data)
+```
+
+```{r}
+delta_simulations <- simulate(delta_model)
+```
+
+```{r}
+plot_data_model(delta_data, delta_simulations,
+                bquote("reduction" ~ delta ~ "of the size of oocysts"))
+```
+
+If $\gamma$ is the reduction factor of the growth rate, then a good approximation of
+the reduction factor $1 - \delta$ of the size of the oocysts at 7 dpi given blood
+meal on treated patients 3 days earlier is:
+
+$$
+1 - \delta = \frac{10 + 3\gamma}{13}
+$$
 
