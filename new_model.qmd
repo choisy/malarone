@@ -13,9 +13,32 @@ csl: the-american-naturalist.csl
 ---
 
 ```{r include = FALSE, eval = FALSE}
+# The code that adds the .nojekyll file to the GitHub repository:
+file <- ".nojekyll"
+file.create(file)
+gert::git_add(file)
+gert::git_commit("Adding the .nojekyll file")
+gert::git_push()
+rm(file)
+
 knitr::purl("new_model.qmd", "tmp.R", documentation = FALSE)
 source("tmp.R")
 file.remove("tmp.R")
+```
+
+```{r include = FALSE, eval = FALSE}
+# To run all the code except the cached chunks:
+run_all <- function() {
+  knitr::purl("new_model.qmd", "tmp.R", documentation = FALSE)
+  source("tmp.R")
+  file.remove("tmp.R")  
+}
+
+rerun_all <- function() {
+  rm(list  = grep("run_all", ls(envir = .GlobalEnv), value = TRUE, invert = TRUE),
+     envir = .GlobalEnv)
+  run_all()
+}
 ```
 
 
@@ -35,6 +58,10 @@ if (Sys.getenv("USER") == "MarcChoisy" | Sys.getenv("USER") == "marc") {
 path2cache <- paste0(path2data, "cache/")
 if (! dir.exists(path2cache)) dir.create(path2cache)
 
+make_path <- function(x) paste0(path2cache, x)
+file_exists <- function(x) file.exists(make_path(x))
+readRDScache <- function(x) readRDS(make_path(x))
+saveRDScache <- function(object, file) saveRDS(object, make_path(file))
 remove_cache <- function(x) {
   file.remove(grep(x, dir(path2cache, full.names = TRUE), value = TRUE))
 }
@@ -52,8 +79,7 @@ knitr::knit_hooks$set(
   })
 
 eps <- .8
-knitr::opts_chunk$set(cache.path = path2cache,
-                      margin1    = TRUE,
+knitr::opts_chunk$set(margin1    = TRUE,
                       fig.retina = 2,
                       fig.align  = "center",
                       fig.height = eps * 5, # default is 5
@@ -175,14 +201,14 @@ $$
 
 #### Mean infectiousness reduction
 
-Call $\mu(\lambda)$ the function that converts a **reduction factor of parasite load**
-$\lambda$ into a **reduction factor of mosquito infectiousness** and $g$ the
+Call $\zeta(\lambda)$ the function that converts a **reduction factor of parasite load**
+$\lambda$ into a **reduction factor of mosquito infectiousness** and $\mu$ the
 **mosquito death rate** assumed to be independent of the mosquito's age. The mean
 reduction factor of mosquito infectiousness in the total mosquito population due to TBA
 and TRA can then be expressed as
 
 $$
-\theta = \int_0^{+\infty}e^{-g\tau}\mu(\lambda(\tau))d\tau.
+\theta = \int_0^{+\infty}e^{-\mu\tau}\zeta(\lambda(\tau))d\tau.
 $$
 
 ### Parasite maturation and EIP
@@ -260,7 +286,7 @@ number in absence of treatment, then, in the presence of treatment in the popula
 its expression becomes
 
 $$
-\theta e^{-(T - n)g} R_0
+\theta e^{-(T - n)\mu} R_0
 $$
 
 
@@ -278,11 +304,13 @@ saturating increase (captured by $k$) followed by an exponential decrease (captu
 $d$) reflecting the PK/PD of the drug and, as function of $\tau$, the effect is
 characterized by an exponential decrease (captured by $r$) simply reflecting the growth
 of the parasite (and thus the decrease of the relative concentration of the drug in
-each blood meal). Parameter $A$ account for the maximum value reached.
+each blood meal). Parameter $A$ account for the maximum value reached. Given that the
+efficacy of a drug depends on the concentration of the drug respective to the size of
+the parasite, one can argue $r = d$, which simplifies the formula:
 
-```{r}
-#f <- function(t, tau, A, k, d, r) A * (1 - exp(-k * t)) * exp(-(d * t + r * tau))
-```
+$$
+f(t,\tau) = A \cdot (1 - e^{-kt})\cdot e^{-d\cdot(t + \tau)}
+$$
 
 A version of the model at 4 dpi:
 
@@ -341,9 +369,44 @@ calibrate4dpi <- function(x, y) {
 Below, we generate the function $\alpha(t)$ from the experimental data of Figure 2a.
 First we need a function that reads experimental data for the treatment group:
 
-
 ```{r}
 alpha_data <- reading_exp_data("figure2a.rds")
+```
+
+Fitting the model to the data:
+
+```{r}
+alpha_fit <- with(alpha_data, calibrate4dpi(t, value))
+```
+
+```{r}
+make_effect <- function(A, k, d) {
+  A <- A * exp(4 * d)
+  function(t, tau) A * (1 - exp(-k * t)) * exp(-d * (t + tau))
+}
+```
+
+```{r}
+alpha <- with(as.list(alpha_fit), make_effect(A, k, d))
+```
+
+```{r fig.width = 7}
+t <- seq(0, 350, le = 100)
+tau <- seq(0, 350, le = 10)
+alpha3d <- tidyr::expand_grid(t, tau) |> 
+  mutate(value = alpha(t, tau)) |> 
+  pull(value) |>
+  matrix(10) |> 
+  persp(tau, t, z = _, theta = 45, zlab = "TBA alpha")
+```
+
+```{r}
+x_val <- seq(0, 700)
+plot(x_val, alpha(x_val, tau = 0), type = "n",
+     xlab = "time post drug administration (hours)",
+     ylab = bquote("reduction" ~ alpha ~ "of mosquitoes with oocysts"))
+walk(seq(0, 700, 4), ~ lines(x_val, alpha(x_val, tau = .x)))
+lines(x_val, alpha(x_val, tau = 4), col = 2, lwd = lwd_val)
 ```
 
 It takes (1'20" on the laptop):
@@ -360,8 +423,17 @@ calibration <- function(data, N = 1e4) {
 }
 ```
 
-```{r alpha_model, cache = TRUE}
+```{r eval = FALSE, purl = FALSE}
 alpha_model <- calibration(alpha_data)
+```
+
+```{r include = FALSE}
+if (file_exists("alpha_model.rds")) {
+  alpha_model <- readRDScache("alpha_model.rds")
+} else {
+  alpha_model <- calibration(alpha_data)
+  saveRDScache(alpha_model, "alpha_model.rds")
+}
 ```
 
 ```{r}
@@ -380,14 +452,14 @@ alpha_simulations <- simulate(alpha_model)
 ```
 
 ```{r}
-plot_data_model <- function(data, model, ylabel, col_data = 4, col_model = 2) {
+plot_data_model <- function(data, simulations, ylabel, col_data = 4, col_model = 2) {
   with(data, plot(t, value, type = "n",
                   xlim = c(0, x_max), ylim = c(min(data$value), 1),
                   xlab = "time post drug administration (hours)",
                   ylab = ylabel))
   abline(h = 0)
   
-  model |> 
+  simulations |> 
     t() |> 
     as.data.frame() |> 
     map_dfr(quantile, c(.025, .5, .975)) |> 
@@ -403,6 +475,8 @@ plot_data_model <- function(data, model, ylabel, col_data = 4, col_model = 2) {
 ```{r}
 plot_data_model(alpha_data, alpha_simulations,
                 bquote("reduction" ~ alpha ~ "of mosquitoes with oocysts"))
+
+lines(x, with(as.list(alpha_fit), f4dpi(x, A, k, d)))
 ```
 
 
@@ -412,8 +486,23 @@ plot_data_model(alpha_data, alpha_simulations,
 beta_data <- reading_exp_data("figure2c.rds")
 ```
 
-```{r beta_model, cache = TRUE}
+Fitting the model to the data:
+
+```{r}
+beta_fit <- with(beta_data, calibrate4dpi(t, value))
+```
+
+```{r eval = FALSE, purl = FALSE}
 beta_model <- calibration(beta_data)
+```
+
+```{r include = FALSE}
+if (file_exists("beta_model.rds")) {
+  beta_model <- readRDScache("beta_model.rds")
+} else {
+  beta_model <- calibration(beta_data)
+  saveRDScache(beta_model, "beta_model.rds")
+}
 ```
 
 ```{r}
@@ -423,10 +512,14 @@ beta_simulations <- simulate(beta_model)
 ```{r}
 plot_data_model(beta_data, beta_simulations,
                 bquote("reduction" ~ beta ~ "of the number of oocysts"))
+
+lines(x, with(as.list(beta_fit), f4dpi(x, A, k, d)))
 ```
 
 
 ### Converting $\alpha$ and $\beta$ into reduction of infectiousness
+
+#### Old data
 
 Here we are computing the function $\mu$ that converts a reduction in oocyst load into
 a reduction in infectiousness. 
@@ -468,6 +561,42 @@ p_par <- 1 / mean(total_oocysts)
 x_s <- 1:max_load
 lines(x_s, cumsum(dgeom(x_s, p_par)), type = "s", col = 2)
 ```
+
+#### New data
+
+```{r}
+bompard2020 <- path2data |>
+  paste0("doi_10_5061_dryad_9p8cz8wfh__v20210123/act2datasetRpcr.txt") |>
+  readr::read_table() |> 
+  filter(Total > 0)
+```
+
+```{r}
+bompard2020 |> 
+  pull(Total) |> 
+  hist(0:800, xlab = "oocyst load L", ylab = "frequency", main = NA)
+```
+
+```{r}
+bompard2020 |> 
+  filter(Total < 50) |> 
+  pull(Total) |> 
+  hist(0:50, xlab = "oocyst load L", ylab = "frequency", main = NA)
+```
+
+```{r}
+bompard2020 |> 
+  group_by(Total) |> 
+  tally() |> 
+  mutate(cum_n = cumsum(n) / sum(n)) |> 
+  with(plot(Total, cum_n, type = "s", ylim = 0:1,
+            xlab = "oocyst load L", ylab = "cumulative proportion of samples"))
+
+p_par2 <- 1 / mean(bompard2020$Total)
+x_s <- 1:max_load
+lines(x_s, cumsum(dgeom(x_s, p_par2)), type = "s", col = 2)
+```
+
 
 Figure 2B from @aleshnick_experimental_2020 suggests a non-linear relationship $h$
 between the sporozoite load and the transmission efficiency $b$ of *P. yoelii* from
@@ -534,17 +663,17 @@ plot(load_vals, g_calibrated(load_vals), type = "l", lwd = lwd_val, col = 2,
 ```
 
 $$
-\mu(\lambda) = \sum_{L = 1}^{+\infty}\frac{g(\lambda L)}{g(L)}\omega(L)
+\zeta(\lambda) = \sum_{L = 1}^{+\infty}\frac{g(\lambda L)}{g(L)}\omega(L)
 $$
 
 $$
-\mu(\lambda) = \sum_{L = 1}^{+\infty}\frac{1 - e^{-\lambda L}}{1 - e^{-L}}(1-p_o)^{L-1}p_o
+\zeta(\lambda) = \sum_{L = 1}^{+\infty}\frac{1 - e^{-\lambda L}}{1 - e^{-L}}(1-p_o)^{L-1}p_o
 $$
 
 Approximation:
 
 $$
-\mu(\lambda) \simeq \mu_w(\lambda) = \frac{\lambda}{w + (1 - w)\lambda}
+\zeta(\lambda) \simeq \zeta_w(\lambda) = \frac{\lambda}{w + (1 - w)\lambda}
 $$
 
 with a constant $w$.
@@ -558,9 +687,19 @@ mu1 <- function(lambda) {
 mu <- function(lambda) map_dbl(lambda, mu1)
 ```
 
-```{r transmission_reduction, cache = TRUE}
+```{r eval = FALSE, purl = FALSE}
 lambda_vals <- seq(0, 1, le = 512)
 mu_vals <- mu(lambda_vals)
+```
+
+```{r include = FALSE}
+lambda_vals <- seq(0, 1, le = 512)
+if (file_exists("mu_vals.rds")) {
+  mu_vals <- readRDScache("mu_vals.rds")
+} else {
+  mu_vals <- mu(lambda_vals)
+  saveRDScache(mu_vals, "mu_vals.rds")
+}
 ```
 
 ```{r fig.height = eps * 6, fig.width = eps * 8, margin1 = FALSE, margin2 = TRUE}
@@ -578,9 +717,28 @@ lines(lambda_vals, lambda_vals / (w + (1 - w) * lambda_vals), col = 2)
 par(opar)
 ```
 
-Note that although the $\mu$ function is not perfectly symmetric respective to the
+Note that although the $\zeta$ function is not perfectly symmetric respective to the
 second diagonal as the approximation is, the approximation with $w = 0.36$ does a
 rather good job.
+
+```{r}
+l_4dpi <- function(alpha, beta, h) {
+  integrate(function(t) (1 - alpha(t)) * (1 - beta(t)) * h(t), 0, Inf)
+}
+```
+
+```{r}
+lambda <- function(tau, a, p) {
+  exp(-a * p * integrate(function(u) (1 - l_4dpi(u)), 0, tau))
+}
+```
+
+```{r}
+theta <- function(g) {
+  integrate(function(tau) exp(-g * tau), 0, Inf)
+}
+```
+
 
 ### Size of oocysts at 7 dpi
 
@@ -588,8 +746,17 @@ rather good job.
 delta_data <- reading_exp_data("percentage_inhibition_size2.rds")
 ```
 
-```{r delta_model, cache = TRUE}
+```{r eval = FALSE, purl = FALSE}
 delta_model <- calibration(delta_data)
+```
+
+```{r include = FALSE}
+if (file_exists("delta_model.rds")) {
+  delta_model <- readRDScache("delta_model.rds")
+} else {
+  delta_model <- calibration(delta_data)
+  saveRDScache(delta_model, "delta_model.rds")
+}
 ```
 
 ```{r}
@@ -601,11 +768,19 @@ plot_data_model(delta_data, delta_simulations,
                 bquote("reduction" ~ delta ~ "of the size of oocysts"))
 ```
 
-If $\gamma$ is the reduction factor of the growth rate, then a good approximation of
-the reduction factor $1 - \delta$ of the size of the oocysts at 7 dpi given blood
-meal on treated patients 3 days earlier is:
+$$
+\gamma(\delta) = (1 - \delta) + \frac{C}{D}\delta
+$$
 
-$$
-1 - \delta = \frac{10 + 3\gamma}{13}
-$$
+where $C$ is the size at 4 dpi and $D$ is the size increase from 4 to 7 dpi in the
+controls.
+
+```{r}
+volume <- function(V0, Vmax, r, t) {
+  Vmax * V0 * exp(r * t) / (Vmax - V0 + V0 * exp(r * t))
+}
+
+area <- function(v) (9 * pi / 16)^(1 / 3) * v^(2 / 3)
+curve(volume(V0 = .1, Vmax = 10, r = .1, x), 0, 100)
+```
 
