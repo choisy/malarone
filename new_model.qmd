@@ -564,25 +564,61 @@ lines(x_s, cumsum(dgeom(x_s, p_par)), type = "s", col = 2)
 
 #### New data
 
-```{r}
+```{r message = FALSE}
 bompard2020 <- path2data |>
   paste0("doi_10_5061_dryad_9p8cz8wfh__v20210123/act2datasetRpcr.txt") |>
-  readr::read_table() |> 
-  filter(Total > 0)
+  readr::read_table()
 ```
 
 ```{r}
 bompard2020 |> 
+  filter(Total > 0) |> 
   pull(Total) |> 
   hist(0:800, xlab = "oocyst load L", ylab = "frequency", main = NA)
 ```
 
 ```{r}
 bompard2020 |> 
-  filter(Total < 50) |> 
+  filter(0 < Total, Total < 50) |> 
   pull(Total) |> 
   hist(0:50, xlab = "oocyst load L", ylab = "frequency", main = NA)
 ```
+
+```{r}
+negbinom <- bompard2020 |> 
+  pull(Total) |> 
+  fitdistr("negative binomial")
+```
+
+```{r}
+fit_zi_nbinom <- function(x) {
+  require(glmmTMB)
+  fit <- glmmTMB(y ~ 1, data.frame(y = x), nbinom2, ~ 1)
+  c(pi   = plogis(fixef(fit)$zi[[1]]),
+    size = sigma(fit),
+    mu   = predict(fit, type = "conditional")[1])
+}
+
+fit_zi_nbinom(c(rep(0, 2000), rnbinom(8000, size = 28.75, mu = 1.8)))
+```
+
+```{r}
+bompard2020 |> 
+  pull(Total) |> 
+  fit_zi_nbinom()
+```
+
+```{r}
+bompard2020 |> 
+  group_by(Total) |> 
+  tally() |> 
+  mutate(cum_n = cumsum(n) / sum(n)) |> 
+  with(plot(Total, cum_n, type = "s", xlim = c(0, 50), ylim = c(.85, 1),
+            xlab = "oocyst load L", ylab = "cumulative proportion of samples"))
+```
+
+
+
 
 ```{r}
 bompard2020 |> 
@@ -595,7 +631,10 @@ bompard2020 |>
 p_par2 <- 1 / mean(bompard2020$Total)
 x_s <- 1:max_load
 lines(x_s, cumsum(dgeom(x_s, p_par2)), type = "s", col = 2)
+lines(1:800, cumsum(dnbinom(1:800, 1.5, mu = 10.95123598)), col = 4)
+lines(1:800, cumsum(dnbinom(1:800, size = 1 / sigma(fit), mu = predict(fit, type = "conditional")[1])))
 ```
+
 
 
 Figure 2B from @aleshnick_experimental_2020 suggests a non-linear relationship $h$
