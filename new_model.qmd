@@ -103,6 +103,12 @@ library(purrr)
 
 ## Functions
 
+Tuning `readxl::read_excel()`:
+
+```{r}
+read_excel2 <- function(file, ...) readxl::read_excel(paste0(path2data, file), ...)
+```
+
 Tuning `polygon()`:
 
 ```{r}
@@ -530,13 +536,6 @@ bompard2020 <- path2data |>
 
 ```{r}
 bompard2020 |> 
-  filter(Total > 0) |> 
-  pull(Total) |> 
-  hist(0:800, xlab = "oocyst load L", ylab = "frequency", main = NA)
-```
-
-```{r}
-bompard2020 |> 
   filter(0 < Total, Total < 50) |> 
   pull(Total) |> 
   hist(0:50, xlab = "oocyst load L", ylab = "frequency", main = NA)
@@ -547,8 +546,20 @@ bompard2020 |>
   group_by(Total) |> 
   tally() |> 
   mutate(cum_n = cumsum(n) / sum(n)) |> 
-  with(plot(Total, cum_n, type = "s", xlim = c(0, 50), ylim = c(.85, 1),
+  with(plot(Total, cum_n, type = "h", xlim = c(0, 100), ylim = c(.85, 1),
             xlab = "oocyst load L", ylab = "cumulative proportion of samples"))
+```
+
+```{r}
+tmp <- bompard2020 |> 
+  filter(Total > 0) |> 
+  group_by(Total) |> 
+  tally() |> 
+  mutate(cum_n = cumsum(n) / sum(n)) |> 
+  with(approx(Total, cum_n, 1:max(Total))) |> 
+  last()
+
+weights <- c(tmp[1], diff(tmp))
 ```
 
 Figure 2B from @aleshnick_experimental_2020 suggests a non-linear relationship $h$
@@ -564,9 +575,8 @@ between sporozoite load and the proportion of successful infections, converting 
 into a relationship with oocyst load using @miura_strong_2019's 1000 factor.
 
 ```{r}
-aleshnick2020 <- path2data |> 
-  paste0("ppat.1008181.s006.xlsx") |> 
-  readxl::read_excel() |> 
+aleshnick2020 <- "ppat.1008181.s006.xlsx" |> 
+  read_excel2() |> 
   mutate(load = `Salivary Gland Load` / 1000) |> 
   rename(infection = `Malaria Infection`) |> 
   select(load, infection)
@@ -619,25 +629,11 @@ $$
 \zeta(\lambda) = \sum_{L = 1}^{+\infty}\frac{g(\lambda L)}{g(L)}\omega(L)
 $$
 
-$$
-\zeta(\lambda) = \sum_{L = 1}^{+\infty}\frac{1 - e^{-\lambda L}}{1 - e^{-L}}(1-p_o)^{L-1}p_o
-$$
-
-Approximation:
-
-$$
-\zeta(\lambda) \simeq \zeta_w(\lambda) = \frac{\lambda}{w + (1 - w)\lambda}
-$$
-
-with a constant $w$.
-
 ```{r}
-mu1 <- function(lambda) {
-  sum(map_dbl(1:1000,
-              ~ dgeom(.x - 1, p_par) * g_calibrated(lambda * .x) / g_calibrated(.x)))
+mu <- function(lambda, w = weights) {
+  Ls <- seq_along(w)
+  map_dbl(lambda, ~ sum(weights * g_calibrated(.x * Ls) / g_calibrated(Ls)))
 }
-
-mu <- function(lambda) map_dbl(lambda, mu1)
 ```
 
 ```{r eval = FALSE, purl = FALSE}
@@ -665,8 +661,6 @@ plot(lambda_vals, mu_vals, type = "l", lwd = lwd_val, col = 4, xaxs = "i", yaxs 
      ylab = "reducing factor of transmission")
 segments(0, 0, 1, 1)
 box(bty = "o")
-w <- .36
-lines(lambda_vals, lambda_vals / (w + (1 - w) * lambda_vals), col = 2)
 par(opar)
 ```
 
@@ -694,6 +688,15 @@ theta <- function(g) {
 
 
 ### Size of oocysts at 7 dpi
+
+#### Shaw et al. 2000
+
+```{r}
+shaw_fig1 <- read_excel2("journal.ppat.1009131.s013.xlsx", "Fig1BC")
+shaw_fig3 <- read_excel2("journal.ppat.1009131.s013.xlsx", "Fig3 & FigS2")
+```
+
+#### This study
 
 ```{r}
 delta_data <- reading_exp_data("percentage_inhibition_size2.rds")
