@@ -519,50 +519,8 @@ lines(x, with(as.list(beta_fit), f4dpi(x, A, k, d)))
 
 ### Converting $\alpha$ and $\beta$ into reduction of infectiousness
 
-#### Old data
-
 Here we are computing the function $\mu$ that converts a reduction in oocyst load into
 a reduction in infectiousness. 
-
-```{r message = FALSE}
-oocysts_control <- path2data |>
-  paste0("ASAAP4b_oocyst2.txt") |>
-  readr::read_table() |> 
-  filter(day_of_dissection == "7dpi",
-         time_points %in% c("Control", "Unfed"),
-         total_oocysts > 0) |> 
-  select(total_oocysts) |> 
-  na.exclude()
-```
-
-```{r}
-total_oocysts <- oocysts_control$total_oocysts
-  
-hist(total_oocysts, main = NA,
-     xlab = "oocyst load L in the controls", ylab = "frequency")
-```
-
-```{r}
-max_load <- max(total_oocysts)
-
-hist(total_oocysts, 0:max_load + .5, main = NA,
-     xlab = "oocyst load L in the controls", ylab = "frequency")
-```
-
-```{r}
-oocysts_control |> 
-  group_by(total_oocysts) |> 
-  tally() |> 
-  mutate(cum_n = cumsum(n) / sum(n)) |> 
-  with(plot(total_oocysts, cum_n, type = "s", ylim = 0:1,
-            xlab = "oocyst load L", ylab = "cumulative proportion of samples"))
-
-p_par <- 1 / mean(total_oocysts)
-x_s <- 1:max_load
-lines(x_s, cumsum(dgeom(x_s, p_par)), type = "s", col = 2)
-```
-
-#### New data
 
 ```{r message = FALSE}
 bompard2020 <- path2data |>
@@ -585,30 +543,6 @@ bompard2020 |>
 ```
 
 ```{r}
-negbinom <- bompard2020 |> 
-  pull(Total) |> 
-  fitdistr("negative binomial")
-```
-
-```{r}
-fit_zi_nbinom <- function(x) {
-  require(glmmTMB)
-  fit <- glmmTMB(y ~ 1, data.frame(y = x), nbinom2, ~ 1)
-  c(pi   = plogis(fixef(fit)$zi[[1]]),
-    size = sigma(fit),
-    mu   = predict(fit, type = "conditional")[1])
-}
-
-fit_zi_nbinom(c(rep(0, 2000), rnbinom(8000, size = 28.75, mu = 1.8)))
-```
-
-```{r}
-bompard2020 |> 
-  pull(Total) |> 
-  fit_zi_nbinom()
-```
-
-```{r}
 bompard2020 |> 
   group_by(Total) |> 
   tally() |> 
@@ -616,26 +550,6 @@ bompard2020 |>
   with(plot(Total, cum_n, type = "s", xlim = c(0, 50), ylim = c(.85, 1),
             xlab = "oocyst load L", ylab = "cumulative proportion of samples"))
 ```
-
-
-
-
-```{r}
-bompard2020 |> 
-  group_by(Total) |> 
-  tally() |> 
-  mutate(cum_n = cumsum(n) / sum(n)) |> 
-  with(plot(Total, cum_n, type = "s", ylim = 0:1,
-            xlab = "oocyst load L", ylab = "cumulative proportion of samples"))
-
-p_par2 <- 1 / mean(bompard2020$Total)
-x_s <- 1:max_load
-lines(x_s, cumsum(dgeom(x_s, p_par2)), type = "s", col = 2)
-lines(1:800, cumsum(dnbinom(1:800, 1.5, mu = 10.95123598)), col = 4)
-lines(1:800, cumsum(dnbinom(1:800, size = 1 / sigma(fit), mu = predict(fit, type = "conditional")[1])))
-```
-
-
 
 Figure 2B from @aleshnick_experimental_2020 suggests a non-linear relationship $h$
 between the sporozoite load and the transmission efficiency $b$ of *P. yoelii* from
