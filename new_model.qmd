@@ -696,6 +696,175 @@ shaw_fig1 <- read_excel2("journal.ppat.1009131.s013.xlsx", "Fig1BC")
 shaw_fig3 <- read_excel2("journal.ppat.1009131.s013.xlsx", "Fig3 & FigS2")
 ```
 
+```{r}
+oo_size <- shaw_fig1 |> 
+  select(Group, `Blood Feeds`, `Mean oocyst size`) |> 
+  na.exclude()
+```
+
+```{r}
+EIP <- shaw_fig3 |> 
+  mutate(infected = `Infected?` == "Yes") |> 
+  select(Group, `Blood Feeds`, `Days pIBM`, infected) |> 
+  na.exclude()
+```
+
+```{r}
+with(oo_size, table(Group, `Blood Feeds`))
+```
+
+```{r}
+mod <- EIP |> 
+  filter(Group == "dsGFP", `Blood Feeds` == 1) |> 
+  glm(infected ~ `Days pIBM`, binomial, data = _)
+
+dpis <- seq(5, 15, le = 512)
+plot(dpis, predict(mod, list(`Days pIBM` = dpis), "response"), type = "l")
+abline(h = .5)
+
+abline(v = optimize(function(x) abs(predict(mod, list(`Days pIBM` = x), "response") - .5), c(5, 15))$minimum)
+```
+
+```{r}
+EIP |> 
+  filter(Group == "dsGFP", `Blood Feeds` == 1) |> 
+  group_by(`Days pIBM`) |> 
+  summarise(infected = mean(infected)) |> 
+  with(points(`Days pIBM`, infected))
+```
+
+```{r}
+EIP |> 
+  filter(Group == "dsGFP", `Blood Feeds` == 1) |> 
+  glm(infected ~ `Days pIBM`, binomial, data = _) |> 
+  coef() |> 
+  last()
+```
+
+```{r}
+rates <- EIP |> 
+  group_by(Group, `Blood Feeds`) |> 
+  group_map(~ bind_cols(.y, rate = glm(infected ~ `Days pIBM`, binomial, data = .x) |>
+                                     coef() |>
+                                     last())) |> 
+  bind_rows()
+```
+
+```{r}
+oo_size |> 
+  left_join(rates, c("Group", "Blood Feeds")) |> 
+  filter(Group == "dsGFP") |> 
+  with(plot(`Mean oocyst size`, rate))
+```
+
+```{r}
+logit_coef <- EIP |> 
+  mutate(across(`Blood Feeds`, as.factor)) |> 
+  filter(Group == "dsGFP") |> # control
+  glm(infected ~ `Days pIBM` + `Days pIBM`:`Blood Feeds`, binomial, data = _) |> 
+  coef()
+```
+
+```{r}
+expit <- function(x, a, b) 1 / (1 + exp(-(a + b * x)))
+```
+
+```{r}
+plot(dpis, expit(dpis, logit_coef[1], logit_coef[2]), type = "l")
+lines(dpis, expit(dpis, logit_coef[1], sum(logit_coef[2:3])))
+abline(h = .5)
+```
+
+```{r}
+find_eip <- function(a, b) {
+  optimize(function(x) abs(expit(x, a, b) - .5), c(2, 20))$min
+}
+
+find_eip(logit_coef[1], logit_coef[2])
+find_eip(logit_coef[1], sum(logit_coef[2:3]))
+
+find_eip(logit_coef[1], 2 * .8)
+
+sum(logit_coef[2:3]) / logit_coef[2]
+```
+
+
+```{r}
+EIP |> 
+  mutate(across(`Blood Feeds`, as.factor)) |> 
+  filter_out(Group == "dsGFP") |> 
+  glm(infected ~ `Days pIBM` + `Days pIBM`:`Blood Feeds`, binomial, data = _)
+```
+
+
+```{r}
+logistic_growth <- function(N0, K, r, t) K / (1 + (K - N0) * exp(-r * t) / N0)
+```
+
+```{r}
+
+```
+
+
+```{r}
+dpis <- seq(5, 15, le = 512)
+lines(logistic_growth(.1, 1, 2, dpis))
+```
+
+
+
+```{r}
+estimate_1EIP <- function(df) {
+  mod <- glm(infected ~ t, binomial, data = df)
+  f <- function(x) abs(predict(mod, list(t = x), "response") - .5)
+  optimize(f, c(5, 15))$minimum  
+}
+```
+
+```{r}
+estimate_EIPs <- function(df, N) {
+  df |> 
+    stratified_bootstrap(N) |> 
+    map_dbl(estimate_EIP)
+}
+```
+
+```{r}
+bootstraping <- function(EIP, oo_size, N = 50) {
+  left_join(
+    EIP |> 
+      rename(t = `Days pIBM`) |> 
+      group_by(Group, `Blood Feeds`) |> 
+      group_map(~ bind_cols(.y, EIP = estimate_EIPs(.x, N))) |> 
+      bind_rows() |> 
+      group_by(Group, `Blood Feeds`) |> 
+      summarise(EPI = mean(EIP), .groups = "drop"),
+    oo_size |> 
+      group_by(Group, `Blood Feeds`) |>
+      group_map(~ bind_cols(.y,
+                            size = mean(sample(.x$`Mean oocyst size`, N, TRUE)))) |> 
+      bind_rows(),
+    c("Group", "Blood Feeds"))
+}
+
+bootstraping(EIP, oo_size)
+```
+
+```{r eval = FALSE}
+tmp <- 100 |> 
+  seq(to = _) |>
+  map(~ bootstraping(EIP, oo_size)) |> 
+  bind_rows() |> 
+  select(size, EPI)
+
+with(tmp, plot(size, EPI))
+```
+
+```{r}
+
+```
+
+
 #### This study
 
 ```{r}
