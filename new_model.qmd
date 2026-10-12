@@ -541,8 +541,7 @@ bompard2020 <- path2data |>
 ```{r}
 bompard2020 |> 
   filter(0 < Total, Total < 50) |> 
-  pull(Total) |> 
-  hist(0:50, xlab = "oocyst load L", ylab = "frequency", main = NA)
+  with(hist(Total, 0:50, xlab = "oocyst load L", ylab = "frequency", main = NA))
 ```
 
 ```{r}
@@ -555,15 +554,15 @@ bompard2020 |>
 ```
 
 ```{r}
-tmp <- bompard2020 |> 
+weights <- bompard2020 |> 
   filter(Total > 0) |> 
   group_by(Total) |> 
   tally() |> 
   mutate(cum_n = cumsum(n) / sum(n)) |> 
   with(approx(Total, cum_n, 1:max(Total))) |> 
-  last()
-
-weights <- c(tmp[1], diff(tmp))
+  setNames(c("load", "weight")) |> 
+  as_tibble() |>
+  mutate(across(weight, ~ c(.x[1], diff(.x))))
 ```
 
 Figure 2B from @aleshnick_experimental_2020 suggests a non-linear relationship $h$
@@ -623,10 +622,9 @@ g_calibrated <- function(x) g(x, params[1], params[2])
 
 ```{r}
 max_load <- 250
+load_vals <- 1:max_load
 
-load_vals <- seq(0, max_load, le = 512)
-
-plot(load_vals, g_calibrated(load_vals), type = "l", lwd = lwd_val, col = 2,
+plot(load_vals, g_calibrated(load_vals), type = "h", lwd = lwd_val, col = 2,
      xlim = c(0, max_load), ylim = c(0, .5),
      xlab = "oocyst load L", ylab = "probability of transmission")
 ```
@@ -637,24 +635,14 @@ $$
 
 ```{r}
 mu <- function(lambda, w = weights) {
-  Ls <- seq_along(w)
-  map_dbl(lambda, ~ sum(weights * g_calibrated(.x * Ls) / g_calibrated(Ls)))
+  lambda |> 
+    map_dbl(~ with(w, sum(weight * g_calibrated(.x * load) / g_calibrated(load))))
 }
 ```
 
-```{r eval = FALSE, purl = FALSE}
+```{r}
 lambda_vals <- seq(0, 1, le = 512)
 mu_vals <- mu(lambda_vals)
-```
-
-```{r include = FALSE}
-lambda_vals <- seq(0, 1, le = 512)
-if (file_exists("mu_vals.rds")) {
-  mu_vals <- readRDScache("mu_vals.rds")
-} else {
-  mu_vals <- mu(lambda_vals)
-  saveRDScache(mu_vals, "mu_vals.rds")
-}
 ```
 
 ```{r fig.height = eps * 6, fig.width = eps * 8, margin1 = FALSE, margin2 = TRUE}
@@ -669,10 +657,6 @@ segments(0, 0, 1, 1)
 box(bty = "o")
 par(opar)
 ```
-
-Note that although the $\zeta$ function is not perfectly symmetric respective to the
-second diagonal as the approximation is, the approximation with $w = 0.36$ does a
-rather good job.
 
 ```{r}
 l_4dpi <- function(alpha, beta, h) {
