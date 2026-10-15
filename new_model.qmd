@@ -62,15 +62,15 @@ if (! dir.exists(path2cache)) dir.create(path2cache)
 
 make_path <- function(x) paste0(path2cache, x)
 file_exists <- function(x) file.exists(make_path(x))
-readRDScache <- function(x) readRDS(make_path(x))
-saveRDScache <- function(object, file) saveRDS(object, make_path(file))
+readRDScache <- function(x) readr::read_rds(make_path(x))
+saveRDScache <- function(object, file) readr::save_rds(object, make_path(file))
 remove_cache <- function(x) {
   file.remove(grep(x, dir(path2cache, full.names = TRUE), value = TRUE))
 }
 ```
 
 ```{r include = FALSE, purl = FALSE}
-par2 <- function(...) par(..., mgp = c(1.5, .5, 0), bty = "n")
+par2 <- function(...) par(..., mgp = c(1.75, .5, 0), bty = "n")
 
 knitr::knit_hooks$set(
   margin1 = function(before, options, envir) {
@@ -106,10 +106,13 @@ library(tidyr)
 
 ## Functions
 
-Tuning `readxl::read_excel()`:
+Tuning data file readers:
 
 ```{r}
-read_excel2 <- function(file, ...) readxl::read_excel(paste0(path2data, file), ...)
+tune_reader <- function(f) function(file, ...) f(paste0(path2data, file), ...)
+read_excel2 <- tune_reader(readxl::read_excel)
+read_table2 <- tune_reader(readr::read_table)
+read_rds2 <- tune_reader(readr::read_rds)
 ```
 
 Tuning `polygon()`:
@@ -129,10 +132,8 @@ reading_exp_data <- function(file) {
   hash <- c(setNames(hours, paste0("H", hours)),
             setNames(24 * days, paste0("D", days)))
   
-  path2data |> 
-    paste0(file) |> 
-    readRDS() |> 
-    tibble::as_tibble() |> 
+  file |> 
+    read_rds2() |> 
     filter(treatment == "AL+AP") |> 
     mutate(t = hash[stringr::str_remove(time_points, "0")],
            value = Inhibition / 100) |> 
@@ -569,9 +570,8 @@ Here we are computing the function $\mu$ that converts a reduction in oocyst loa
 a reduction in infectiousness. 
 
 ```{r message = FALSE}
-bompard2020 <- path2data |>
-  paste0("doi_10_5061_dryad_9p8cz8wfh__v20210123/act2datasetRpcr.txt") |>
-  readr::read_table()
+bompard2020 <- "doi_10_5061_dryad_9p8cz8wfh__v20210123/act2datasetRpcr.txt" |>
+  read_table2()
 ```
 
 ```{r}
@@ -955,6 +955,14 @@ with(OOsize_EPI, {
 delta_data <- reading_exp_data("percentage_inhibition_size2.rds")
 ```
 
+```{r}
+delta_fit <- with(delta_data, calibrate4dpi(t, value))
+```
+
+```{r}
+delta <- with(as.list(delta_fit), make_effect(A, k, d))
+```
+
 ```{r eval = FALSE, purl = FALSE}
 delta_model <- calibration(delta_data)
 ```
@@ -977,19 +985,7 @@ plot_data_model(delta_data, delta_simulations,
                 bquote("reduction" ~ delta ~ "of the size of oocysts"))
 ```
 
-$$
-\gamma(\delta) = (1 - \delta) + \frac{C}{D}\delta
-$$
-
-where $C$ is the size at 4 dpi and $D$ is the size increase from 4 to 7 dpi in the
-controls.
-
 ```{r}
-volume <- function(V0, Vmax, r, t) {
-  Vmax * V0 * exp(r * t) / (Vmax - V0 + V0 * exp(r * t))
-}
 
-area <- function(v) (9 * pi / 16)^(1 / 3) * v^(2 / 3)
-curve(volume(V0 = .1, Vmax = 10, r = .1, x), 0, 100)
 ```
 
