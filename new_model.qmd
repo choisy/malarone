@@ -100,6 +100,7 @@ lwd_val <- 2
 ```{r message = FALSE}
 library(dplyr)
 library(purrr)
+library(tidyr)
 ```
 
 
@@ -149,6 +150,37 @@ stratified_bootstrap <- function(df, N) {
                         map(slice_sample, prop = 1, replace = TRUE) |> 
                         bind_rows())
 }
+```
+
+```{r}
+plot2 <- function(...) plot(..., xlab = "days post infection",
+                                 ylab = "proportion of infectious mosquitoes")
+```
+
+```{r}
+plot3 <- function(...) plot2(..., type = "l", lwd = lwd_val)
+```
+
+```{r}
+predict_glm <- function(object, newdata, ci = .95) {
+  q_val <- qt(1 - (1 - ci) / 2, object$df.residual)
+  f <- object$family$linkinv
+  newdata <- as_tibble(newdata)
+  newdata |> 
+    bind_cols(head(predict(object, newdata, se.fit = TRUE), -1)) |> 
+    mutate(lwr = f(fit - q_val * se.fit),
+           upr = f(fit + q_val * se.fit),
+           fit = f(fit)) |> 
+    select(-se.fit)
+}
+```
+
+```{r}
+arrows2 <- function(...) arrows(..., length = .1, angle = 90, code = 3, lwd = lwd_val)
+```
+
+```{r}
+predict2 <- function(...) predict(..., type = "response")
 ```
 
 
@@ -216,7 +248,7 @@ reduction factor of mosquito infectiousness in the total mosquito population due
 and TRA can then be expressed as
 
 $$
-\theta = \int_0^{+\infty}e^{-\mu\tau}\zeta(\lambda(\tau))d\tau.
+\theta = \int_0^{+\infty}\mu e^{-\mu\tau}\zeta(\lambda(\tau))d\tau.
 $$
 
 ### Parasite maturation and EIP
@@ -372,7 +404,7 @@ calibrate4dpi <- function(x, y) {
 ```
 
 
-### Mosquitoes with oocysts
+### $\alpha(t,\tau)$
 
 Below, we generate the function $\alpha(t)$ from the experimental data of Figure 2a.
 First we need a function that reads experimental data for the treatment group:
@@ -402,7 +434,7 @@ alpha <- with(as.list(alpha_fit), make_effect(A, k, d))
 t <- seq(0, 350, le = 100)
 tau <- seq(0, 350, le = 10)
 
-tidyr::expand_grid(t, tau) |> 
+expand_grid(t, tau) |> 
   mutate(value = alpha(t, tau)) |> 
   pull(value) |>
   matrix(10) |> 
@@ -490,7 +522,7 @@ lines(t_val2, with(as.list(alpha_fit), f4dpi(t_val2, A, k, d)))
 ```
 
 
-### Number of oocysts
+### $\beta(t,\tau)$
 
 ```{r}
 beta_data <- reading_exp_data("figure2c.rds")
@@ -500,6 +532,10 @@ Fitting the model to the data:
 
 ```{r}
 beta_fit <- with(beta_data, calibrate4dpi(t, value))
+```
+
+```{r}
+beta <- with(as.list(beta_fit), make_effect(A, k, d))
 ```
 
 ```{r eval = FALSE, purl = FALSE}
@@ -527,7 +563,7 @@ lines(t_val2, with(as.list(beta_fit), f4dpi(t_val2, A, k, d)))
 ```
 
 
-### Converting $\alpha$ and $\beta$ into reduction of infectiousness
+### $\zeta(\lambda)$
 
 Here we are computing the function $\mu$ that converts a reduction in oocyst load into
 a reduction in infectiousness. 
@@ -634,7 +670,7 @@ $$
 $$
 
 ```{r}
-mu <- function(lambda, w = weights) {
+zeta <- function(lambda, w = weights) {
   lambda |> 
     map_dbl(~ with(w, sum(weight * g_calibrated(.x * load) / g_calibrated(load))))
 }
@@ -642,7 +678,7 @@ mu <- function(lambda, w = weights) {
 
 ```{r}
 lambda_vals <- seq(0, 1, le = 512)
-mu_vals <- mu(lambda_vals)
+zeta_vals <- zeta(lambda_vals)
 ```
 
 ```{r fig.height = eps * 6, fig.width = eps * 8, margin1 = FALSE, margin2 = TRUE}
@@ -650,7 +686,8 @@ mu_vals <- mu(lambda_vals)
 #| fig-cap: the conversion of a reduction on the sporozoite load $L$ into a reduction of the mosquito-to-human probability of transmission $b$ and $R_0$.
 
 opar <- par(pty = "s", xpd = TRUE)
-plot(lambda_vals, mu_vals, type = "l", lwd = lwd_val, col = 4, xaxs = "i", yaxs = "i",
+plot(lambda_vals, zeta_vals, type = "l", lwd = lwd_val, col = 4,
+     xaxs = "i", yaxs = "i",
      xlab = bquote("reducing factor of oocyst load"),
      ylab = "reducing factor of transmission")
 segments(0, 0, 1, 1)
@@ -658,22 +695,39 @@ box(bty = "o")
 par(opar)
 ```
 
+### $\lambda(\tau)$
+
+`Tt` is the frequency at which drug is given in case of mass treatment. For the
+treatment of infected, set `Tt` to a large enough number: `Tt <- 50 * 24`. 
+
 ```{r}
-l_4dpi <- function(alpha, beta, h) {
-  integrate(function(t) (1 - alpha(t)) * (1 - beta(t)) * h(t), 0, Inf)
-}
+integrate2 <- function(...) integrate(...)$value
 ```
 
 ```{r}
-lambda <- function(tau, a, p) {
-  exp(-a * p * integrate(function(u) (1 - l_4dpi(u)), 0, tau))
+l <- function(tau, Tt) {
+  map_dbl(tau,
+          ~ integrate2(function(x) (1 - alpha(x, .x)) * (1 - beta(x, .x)), 0, Tt) / Tt)
 }
+
+# l(5:6 * 24, 15 * 24)
 ```
 
 ```{r}
-theta <- function(g) {
-  integrate(function(tau) exp(-g * tau), 0, Inf)
+lambda <- function(tau, a, p, Tt) {
+  map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - l(x, Tt), 0, .x)))
 }
+
+# lambda(5:6 * 24, 1, .1, 50 * 24)
+# zeta(lambda(5:6 * 24, 1, .1, 50 * 24))
+```
+
+```{r}
+theta <- function(mu, a, p, Tt) {
+  integrate2(function(x) dexp(x, mu) * zeta(lambda(x, a, p, Tt)), 0, 60 * 24)
+}
+
+# theta(mu = 1 / (14 * 24), a = 1, p = .1, Tt = 50 * 24)
 ```
 
 
@@ -681,106 +735,358 @@ theta <- function(g) {
 
 #### Shaw et al. 2000
 
+Loading the data from Figures 1 & 3:
+
 ```{r}
 shaw_fig1 <- read_excel2("journal.ppat.1009131.s013.xlsx", "Fig1BC")
 shaw_fig3 <- read_excel2("journal.ppat.1009131.s013.xlsx", "Fig3 & FigS2")
 ```
 
-```{r}
-oo_size <- shaw_fig1 |> 
-  select(Group, `Blood Feeds`, `Mean oocyst size`) |> 
-  na.exclude()
-```
+Oocysts sizes data from Figure 1C:
 
 ```{r}
-EIP <- shaw_fig3 |> 
-  mutate(infected = `Infected?` == "Yes") |> 
-  select(Group, `Blood Feeds`, `Days pIBM`, infected) |> 
-  na.exclude()
+(oo_size <- shaw_fig1 |> 
+  select(Group, `Blood Feeds`, `Mean oocyst size`) |> 
+  mutate(across(`Blood Feeds`, as.factor)) |> 
+  na.exclude())
 ```
+
+Colors:
+
+```{r}
+colors <- oo_size |> 
+  select(-`Mean oocyst size`) |> 
+  unique() |> 
+  mutate(color = c(yellow = rgb(.944, .745, .510),
+                   blue   = rgb(.636, .657, .812),
+                   red    = rgb(.929, .669, .651),
+                   purple = rgb(.790, .679, .822)))
+
+oo_size <- left_join(oo_size, colors, c("Group", "Blood Feeds"))
+```
+
+Line types:
+
+```{r}
+lty_val <- setNames(rep(1:2, each = 2), colors$color)
+```
+
+Samples sizes across groups and blood meals regimen:
 
 ```{r}
 with(oo_size, table(Group, `Blood Feeds`))
 ```
 
+The oocyst sizes for the 4 treatments:
+
 ```{r}
-mod <- EIP |> 
-  filter(Group == "dsGFP", `Blood Feeds` == 1) |> 
-  glm(infected ~ `Days pIBM`, binomial, data = _)
+tmp <- oo_size |> 
+  mutate(xlab = paste(Group, `Blood Feeds`)) |> 
+  group_split(Group, `Blood Feeds`) |>
+  bind_rows(.id = "x") |> 
+  mutate(across(x, as.integer))
 
-dpis <- seq(5, 15, le = 512)
-plot(dpis, predict(mod, list(`Days pIBM` = dpis), "response"), type = "l")
-abline(h = .5)
+oosise_lab <- expression(mean ~ oocyst ~ size ~ at ~ 7 ~ dpi ~ (µm^2))
 
-abline(v = optimize(function(x) abs(predict(mod, list(`Days pIBM` = x), "response") - .5), c(5, 15))$minimum)
+with(tmp, plot(jitter(x), `Mean oocyst size`,
+               col = color, pch = 19, ylim = c(0, 2e3), xaxt = "n",
+               xlab = NA, ylab = oosise_lab))
 
-EIP |> 
-  filter(Group == "dsGFP", `Blood Feeds` == 1) |> 
-  group_by(`Days pIBM`) |> 
-  summarise(infected = mean(infected)) |> 
-  with(points(`Days pIBM`, infected))
+axis(1, 1:4, unique(tmp$xlab), tick = FALSE, line = -1, lty = 0)
 ```
 
-```{r}
-EIP |> 
-  filter(Group == "dsGFP", `Blood Feeds` == 1) |> 
-  glm(infected ~ `Days pIBM`, binomial, data = _) |> 
-  coef() |> 
-  last()
-```
+The means with confidence intervals of the oocyst sizes in the 4 combinations:
 
 ```{r}
-rates <- EIP |> 
-  group_by(Group, `Blood Feeds`) |> 
-  group_map(~ bind_cols(.y, rate = glm(infected ~ `Days pIBM`, binomial, data = .x) |>
-                                     coef() |>
-                                     last())) |> 
-  bind_rows()
+(mean_oosize <- oo_size |> 
+  mutate(bf = as.factor(`Blood Feeds`)) |> 
+  summarise(mod = list(lm(`Mean oocyst size` ~ 1)), .by = c(Group, bf, color)) |> 
+  mutate(oosize_M = map_dbl(mod, coef),
+         ci = map(mod,
+                  ~ setNames(as.vector(confint(.x)), c("oosize_L", "oosize_U")))) |> 
+  unnest_wider(ci) |> 
+  select(-mod))
 ```
 
-```{r}
-oo_size |> 
-  left_join(rates, c("Group", "Blood Feeds")) |> 
-  filter(Group == "dsGFP") |> 
-  with(plot(`Mean oocyst size`, rate))
-```
+Maturity data from Figure 3C:
 
 ```{r}
-logit_coef <- EIP |> 
+(EIP <- shaw_fig3 |> 
+  mutate(infected = `Infected?` == "Yes") |> 
+  select(Group, `Blood Feeds`, `Days pIBM`, infected) |> 
   mutate(across(`Blood Feeds`, as.factor)) |> 
-  filter(Group == "dsGFP") |> # control
-  glm(infected ~ `Days pIBM` + `Days pIBM`:`Blood Feeds`, binomial, data = _) |> 
-  coef()
+  na.exclude() |> 
+  left_join(colors, c("Group", "Blood Feeds")))
 ```
+
+A function that finds the EIP from a logistic model:
+
+```{r}
+#find_EIP <- function(mod) {
+#  optimize(function(x) abs(predict(mod, list(`Days pIBM` = x), "response") - .5),
+#           c(5, 15))$minimum
+#}
+```
+
+Computing EIP for 1 treatment:
+
+```{r}
+#second_meal <- 3
+#
+#tmp <- filter(EIP, Group == "dsGFP", `Blood Feeds` == 1)
+#
+#mod <- glm(infected ~ `Days pIBM`, binomial, data = tmp)
+#
+#dpis <- seq(second_meal, 18, le = 512)
+#plot2(dpis, predict(mod, list(`Days pIBM` = dpis), "response"),
+#      col = colors["yellow"])
+#abline(h = .5); abline(v = find_EIP(mod)); abline(v = second_meal)
+#
+#add_data(tmp, colors["yellow"])
+```
+
+The growth rate:
+
+```{r}
+#last(coef(mod))
+```
+
+```{r}
+#rates <- EIP |> 
+#  summarise(rate = last(coef(glm(infected ~ `Days pIBM`, binomial))),
+#            .by = c(Group, `Blood Feeds`))
+```
+
+```{r}
+#oo_size |> 
+#  left_join(rates, c("Group", "Blood Feeds")) |> 
+#  filter(Group == "dsGFP") |> 
+#  with(plot(`Mean oocyst size`, rate))
+```
+
+```{r}
+#logit_coef <- EIP |> 
+#  mutate(across(`Blood Feeds`, as.factor),
+#         time = `Days pIBM` - second_meal) |> # time of the second blood meal
+#  filter(Group == "dsGFP") |> # control
+#  glm(infected ~ time + time:`Blood Feeds`, binomial, data = _) |> 
+#  coef()
+```
+
+```{r}
+#mod <- EIP |> 
+#  mutate(across(`Blood Feeds`, as.factor),
+#         time = `Days pIBM` - second_meal) |> # time of the second blood meal
+#  filter(Group == "dsGFP") |> # control
+#  glm(infected ~ time + time:`Blood Feeds`, binomial, data = _)
+```
+
+Estimating the EIPs with confidence intervals, forcing the same intercept at 3 dpi for
+a given group.
+
+First, generating the models for each of the 4 combinations:
+
+```{r}
+second_meal <- 3
+
+models <- EIP |> 
+  mutate(across(`Blood Feeds`, as.factor),
+         time = `Days pIBM` - second_meal) |>
+  summarise(mod = list(glm(infected ~ time + time:`Blood Feeds`, binomial)),
+            .by = Group)
+```
+
+A function that adds proportion data with confidence interval to a plot:
+
+```{r}
+add_data <- function(x) {
+  x |> 
+    summarise(prop = list(prop.test(sum(infected), length(infected))),
+              .by = c(`Days pIBM`, color)) |> 
+    mutate(p  = map_dbl(prop, "estimate"),
+           ci = map(prop, ~ setNames(.x$conf.int, c("lwr", "upr")))) |> 
+    unnest_wider(ci) |> 
+    with({
+      col <- unique(color)
+      points(`Days pIBM`, p, pch = 19, col = col)
+      arrows2(`Days pIBM`, lwr, `Days pIBM`, upr, col = col)
+    })
+}
+```
+
+A function that finds the EIP from a given model and a given number of blood feeds:
+
+```{r}
+find_EIP <- function(mod, bf, val = "fit") {
+  optimise(
+    function(x) abs(predict_glm(mod, list(time = x, `Blood Feeds` = bf))[[val]] - .5),
+    c(5, 20)
+  )$min
+}
+```
+
+A function that plots the model together with the data for 1 combination of group and
+number of blood meals:
+
+```{r}
+plot1combination <- function(gp, bf) {
+  col <- colors |>
+    filter(Group == gp, `Blood Feeds` == bf) |>
+    pull(color)
+  
+  mod <- models |> 
+    filter(Group == gp) |> 
+    pull(mod) |> 
+    first()
+  
+  dpis <- seq(0, 15, le = 512)
+  plot3(dpis + second_meal,
+        predict2(mod, tibble(time = dpis, `Blood Feeds` = bf)), col = col)
+    
+  EIP |> 
+    filter(Group == gp, `Blood Feeds` == bf) |> 
+    add_data()
+  
+  abline(h = .5)
+  abline(v = second_meal + c(0, find_EIP(mod, "1")))
+}
+```
+
+Running it onto the 4 combinations:
+
+```{r}
+with(colors, walk2(Group, `Blood Feeds`, ~ plot1combination(.x, .y)))
+```
+
+The 4 groups together:
+
+```{r}
+plot2(NA, xlim = c(3, 18), ylim = 0:1)
+
+dpis <- seq(0, 15, le = 512)
+colors |> 
+  left_join(models, "Group") |> 
+  mutate(predictions = map2(mod, `Blood Feeds`,
+                            ~ predict2(.x, tibble(time          = dpis,
+                                                  `Blood Feeds` = .y)))) |> 
+  with(walk2(predictions, color,
+             ~ lines(dpis + second_meal, .x,
+                     lwd = lwd_val, col = .y, lty = lty_val[.y])))
+
+abline(h = .5)
+abline(v = c(3, 7))
+```
+
+Estimating the EPIs with confidence intervals for the 4 combinations:
+
+```{r}
+find_EIP <- function(mod, bf, val = "fit") {
+  optimise(
+    function(x) abs(predict_glm(mod, list(time = x, `Blood Feeds` = bf))[[val]] - .5),
+    c(5, 20)
+  )$min
+}
+```
+
+```{r}
+EIPs <- colors |> 
+  select(-color) |> 
+  rename(bf = `Blood Feeds`) |> 
+  expand_grid(name = c("fit", "lwr", "upr")) |> 
+  left_join(models, "Group") |> 
+  mutate(value = pmap_dbl(list(mod, bf, name), find_EIP)) |> 
+  select(-mod) |> 
+  pivot_wider() |> 
+  mutate(across(c(fit, lwr, upr), ~ .x + second_meal)) |> 
+  rename(EIP_M = fit, EIP_L = lwr, EIP_U = upr)
+```
+
+The function to minimize in order to estimate the EIP:
+
+```{r}
+#target <- function(x, mod, bf, val) {
+#  abs(predict_glm(mod, list(time = x, `Blood Feeds` = bf))[[val]] - .5)
+#}
+```
+
+Estimating the EPIs with confidence intervals for the 4 combinations:
+
+```{r}
+#EIPs <- expand_grid(Group = unique(EIP$Group),
+#                    bf    = as.factor(unique(EIP$`Blood Feeds`)),
+#                    name  = c("fit", "lwr", "upr")) |> 
+#  left_join(models, "Group") |> 
+#  mutate(value = pmap_dbl(list(mod, bf, name),
+#                          ~ optimise(function(x) target(x, ..1, ..2, ..3),
+#                                     c(5, 20))$min)) |> 
+#  select(-mod) |> 
+#  pivot_wider() |> 
+#  mutate(across(c(fit, lwr, upr), ~ .x + second_meal)) |> 
+#  rename(EIP_M = fit, EIP_L = lwr, EIP_U = upr)
+```
+
+Putting together oocyst sizes and EPI:
+
+```{r}
+(OOsize_EPI <- left_join(mean_oosize, EIPs, c("Group", "bf")))
+```
+
+```{r}
+with(OOsize_EPI, {
+  xs <- c(oosize_M, oosize_L, oosize_U)
+  ys <- c(EIP_M, EIP_L, EIP_U)
+  plot(oosize_M, EIP_M, xlim = c(min(xs), max(xs)), ylim = c(min(ys), max(ys)),
+       xlab = oosise_lab, ylab = "EIP (days)", col = color, pch = 19)
+  arrows3 <- function(...) arrows2(..., col = color, lty = lty_val[color])
+  arrows3(oosize_M, EIP_L, oosize_M, EIP_U)
+  arrows3(oosize_L, EIP_M, oosize_U, EIP_M)
+})
+```
+
+
+
+
+
+
+
+
 
 ```{r}
 expit <- function(x, a, b) 1 / (1 + exp(-(a + b * x)))
 ```
 
 ```{r}
-plot(dpis, expit(dpis, logit_coef[1], logit_coef[2]), type = "l")
-lines(dpis, expit(dpis, logit_coef[1], sum(logit_coef[2:3])))
-abline(h = .5)
-```
-
-```{r}
 find_eip <- function(a, b) {
   optimize(function(x) abs(expit(x, a, b) - .5), c(2, 20))$min
 }
-
-find_eip(logit_coef[1], logit_coef[2])
-find_eip(logit_coef[1], sum(logit_coef[2:3]))
-
-find_eip(logit_coef[1], 2 * .8)
-
-sum(logit_coef[2:3]) / logit_coef[2]
 ```
 
 ```{r}
-EIP |> 
-  mutate(across(`Blood Feeds`, as.factor)) |> 
-  filter_out(Group == "dsGFP") |> 
-  glm(infected ~ `Days pIBM` + `Days pIBM`:`Blood Feeds`, binomial, data = _)
+#plot2(dpis, expit(dpis - second_meal, logit_coef[1], logit_coef[2]), ylim = 0:1)
+#lines(dpis, expit(dpis - second_meal, logit_coef[1], sum(logit_coef[2:3])))
+#abline(h = .5); abline(v = second_meal)
+#abline(v = find_eip(logit_coef[1], logit_coef[2]) + second_meal)
+#abline(v = find_eip(logit_coef[1], sum(logit_coef[2:3])) + second_meal)
+```
+
+```{r}
+#EIP |> 
+#  mutate(across(`Blood Feeds`, as.factor),
+#         time = `Days pIBM` - second_meal) |> # time of the second blood meal
+#  summarise(glm_coef = list(coef(glm(infected ~ time + time:`Blood Feeds`, binomial))),
+#            .by = Group)
+```
+
+```{r}
+#find_eip(logit_coef[1], 2 * .8)
+#sum(logit_coef[2:3]) / logit_coef[2]
+```
+
+```{r}
+#EIP |> 
+#  mutate(across(`Blood Feeds`, as.factor)) |> 
+#  filter_out(Group == "dsGFP") |> 
+#  glm(infected ~ `Days pIBM` + `Days pIBM`:`Blood Feeds`, binomial, data = _)
 ```
 
 ```{r}
