@@ -886,7 +886,7 @@ plot1combination <- function(gp, bf) {
     add_data()
   
   abline(h = .5)
-  abline(v = second_meal + c(0, find_EIP(mod, "1")))
+  abline(v = second_meal + c(0, find_EIP(mod, bf)))
 }
 ```
 
