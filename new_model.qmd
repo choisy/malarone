@@ -819,68 +819,6 @@ Maturity data from Figure 3C:
   left_join(colors, c("Group", "Blood Feeds")))
 ```
 
-A function that finds the EIP from a logistic model:
-
-```{r}
-#find_EIP <- function(mod) {
-#  optimize(function(x) abs(predict(mod, list(`Days pIBM` = x), "response") - .5),
-#           c(5, 15))$minimum
-#}
-```
-
-Computing EIP for 1 treatment:
-
-```{r}
-#second_meal <- 3
-#
-#tmp <- filter(EIP, Group == "dsGFP", `Blood Feeds` == 1)
-#
-#mod <- glm(infected ~ `Days pIBM`, binomial, data = tmp)
-#
-#dpis <- seq(second_meal, 18, le = 512)
-#plot2(dpis, predict(mod, list(`Days pIBM` = dpis), "response"),
-#      col = colors["yellow"])
-#abline(h = .5); abline(v = find_EIP(mod)); abline(v = second_meal)
-#
-#add_data(tmp, colors["yellow"])
-```
-
-The growth rate:
-
-```{r}
-#last(coef(mod))
-```
-
-```{r}
-#rates <- EIP |> 
-#  summarise(rate = last(coef(glm(infected ~ `Days pIBM`, binomial))),
-#            .by = c(Group, `Blood Feeds`))
-```
-
-```{r}
-#oo_size |> 
-#  left_join(rates, c("Group", "Blood Feeds")) |> 
-#  filter(Group == "dsGFP") |> 
-#  with(plot(`Mean oocyst size`, rate))
-```
-
-```{r}
-#logit_coef <- EIP |> 
-#  mutate(across(`Blood Feeds`, as.factor),
-#         time = `Days pIBM` - second_meal) |> # time of the second blood meal
-#  filter(Group == "dsGFP") |> # control
-#  glm(infected ~ time + time:`Blood Feeds`, binomial, data = _) |> 
-#  coef()
-```
-
-```{r}
-#mod <- EIP |> 
-#  mutate(across(`Blood Feeds`, as.factor),
-#         time = `Days pIBM` - second_meal) |> # time of the second blood meal
-#  filter(Group == "dsGFP") |> # control
-#  glm(infected ~ time + time:`Blood Feeds`, binomial, data = _)
-```
-
 Estimating the EIPs with confidence intervals, forcing the same intercept at 3 dpi for
 a given group.
 
@@ -980,15 +918,6 @@ abline(v = c(3, 7))
 Estimating the EPIs with confidence intervals for the 4 combinations:
 
 ```{r}
-find_EIP <- function(mod, bf, val = "fit") {
-  optimise(
-    function(x) abs(predict_glm(mod, list(time = x, `Blood Feeds` = bf))[[val]] - .5),
-    c(5, 20)
-  )$min
-}
-```
-
-```{r}
 EIPs <- colors |> 
   select(-color) |> 
   rename(bf = `Blood Feeds`) |> 
@@ -999,30 +928,6 @@ EIPs <- colors |>
   pivot_wider() |> 
   mutate(across(c(fit, lwr, upr), ~ .x + second_meal)) |> 
   rename(EIP_M = fit, EIP_L = lwr, EIP_U = upr)
-```
-
-The function to minimize in order to estimate the EIP:
-
-```{r}
-#target <- function(x, mod, bf, val) {
-#  abs(predict_glm(mod, list(time = x, `Blood Feeds` = bf))[[val]] - .5)
-#}
-```
-
-Estimating the EPIs with confidence intervals for the 4 combinations:
-
-```{r}
-#EIPs <- expand_grid(Group = unique(EIP$Group),
-#                    bf    = as.factor(unique(EIP$`Blood Feeds`)),
-#                    name  = c("fit", "lwr", "upr")) |> 
-#  left_join(models, "Group") |> 
-#  mutate(value = pmap_dbl(list(mod, bf, name),
-#                          ~ optimise(function(x) target(x, ..1, ..2, ..3),
-#                                     c(5, 20))$min)) |> 
-#  select(-mod) |> 
-#  pivot_wider() |> 
-#  mutate(across(c(fit, lwr, upr), ~ .x + second_meal)) |> 
-#  rename(EIP_M = fit, EIP_L = lwr, EIP_U = upr)
 ```
 
 Putting together oocyst sizes and EPI:
