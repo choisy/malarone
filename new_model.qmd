@@ -985,7 +985,110 @@ plot_data_model(delta_data, delta_simulations,
                 bquote("reduction" ~ delta ~ "of the size of oocysts"))
 ```
 
-```{r}
-
+```{r message = FALSE}
+oocyst_size <- read_table2("oocyst_size2.txt")
 ```
+
+```{r}
+oocyst_size_crtl <- oocyst_size |> 
+  filter(time_points %in% c("Unfed", "Control")) |> 
+  mutate(across(Area, ~ .x * 1e6)) |> 
+  pull(Area)
+
+hist(oocyst_size_crtl, 20, main = NA, xlab = "oocyst size", ylab = "frequency")
+```
+
+```{r}
+expit <- function(x, a, b) 1 / (1 + exp(-(a + b * x)))
+```
+
+```{r}
+optimise2 <- function(f, ...) optimise(f, c(3, 20), ...)$min
+```
+
+```{r}
+rate_val <- models |> 
+  pull(mod) |> 
+  map(~ cumsum(coef(.x)[-1])) |> 
+  unlist()
+
+mos <- mean_oosize$oosize_M
+mod <- lm(rate_val ~ mos)
+plot(mean_oosize$oosize_M, rate_val)
+abline(mod)
+
+compute_rate <- function(mean_oo_size) predict(mod, list(mos = mean_oo_size))
+
+compute_rate(mean(oocyst_size_crtl))
+
+intercepts <- map_dbl(models$mod, ~ coef(.x)[1])
+
+reduction_in_size <- .8
+
+ref_rate <- compute_rate(mean(oocyst_size_crtl))
+new_rate <- compute_rate(reduction_in_size * mean(oocyst_size_crtl))
+
+ref_EIP <- optimise2(function(x) abs(expit(x, intercepts[1], ref_rate) - .5))
+new_EIP <- optimise2(function(x) abs(expit(x, intercepts[1], new_rate) - .5))
+
+new_EIP / ref_EIP
+```
+
+```{r}
+#find_eip <- function(a, b) optimise2(function(x) abs(expit(x, a, b) - .5))
+```
+
+```{r}
+#m_oo_size_val <- mean(oocyst_size_crtl)
+#
+#EIP_increase <- function(reduction_in_size, intercept, m_oo_size = m_oo_size_val) {
+#  ref_rate <- compute_rate(m_oo_size)
+#  new_rate <- compute_rate(reduction_in_size * m_oo_size)
+#  find_eip(intercept, new_rate) / find_eip(intercept, ref_rate)
+#}
+#
+#EIP_increase(.8, intercepts[1])
+```
+
+```{r}
+#size_reductions <- seq(0, 1, le = 512)[-1]
+#EIP_increases1 <- map_dbl(size_reductions, ~ EIP_increase(.x, intercepts[1]))
+#EIP_increases2 <- map_dbl(size_reductions, ~ EIP_increase(.x, intercepts[2]))
+#plot(EIP_increases1, EIP_increases2)
+#abline(0, 1)
+#EIP_increases <- map2_dbl(EIP_increases1, EIP_increases2, ~ mean(.x, .y))
+#plot(size_reductions, EIP_increases, type = "l")
+```
+
+Converting a reduction in size into a reduction in rate:
+
+```{r}
+m_oo_size_val <- mean(oocyst_size_crtl)
+
+size2rate_reduction <- function(reduction_in_size, ref = m_oo_size_val) {
+  compute_rate(reduction_in_size * ref) / compute_rate(ref)
+}
+
+#size2rate_reduction(c(.8, .7))
+#size2rate_reduction(0)
+```
+
+
+#### Let's go
+
+```{r}
+qq <- function(tau, Tt) {
+  map_dbl(tau, ~ integrate2(function(x) size2rate_reduction(1 - delta(x, tau)), 0, Tt) / Tt)
+}
+
+# qq(5:6 * 24, 15 * 24)
+
+qq(4 * 24, 28 * 24)
+qq(4 * 24, 28 * 24 * 2)
+qq(4 * 24, 200)
+
+plot(0:300, delta(0:300, 1 * 24))
+```
+
+
 
