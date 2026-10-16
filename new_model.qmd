@@ -414,31 +414,47 @@ First we need a function that reads experimental data for the treatment group:
 alpha_data <- reading_exp_data("figure2a.rds")
 ```
 
-Fitting the model to the data:
+Fitting the model to the data at 4 dpi:
 
 ```{r}
-alpha_fit <- with(alpha_data, calibrate4dpi(t, value))
+alpha_fit4dpi <- with(alpha_data, calibrate4dpi(t, value))
 ```
 
 ```{r}
 make_effect <- function(A, k, d) {
-  A <- A * exp(4 * d)
+  A <- A * exp(4 * 24 * d)
   function(t, tau) A * (1 - exp(-k * t)) * exp(-d * (t + tau))
 }
 ```
 
 ```{r}
-alpha <- with(as.list(alpha_fit), make_effect(A, k, d))
+make_effect2 <- function(A, k, d, r) {
+  A <- A * exp(4 * 24 * r)
+  function(t, tau) A * (1 - exp(-k * t)) * exp(-d * t - r * tau)
+}
+```
+
+```{r}
+alpha1 <- with(as.list(alpha_fit4dpi), make_effect(A, k, d))
+```
+
+```{r}
+alpha2 <- with(as.list(alpha_fit4dpi), make_effect2(A, k, d, d / 3))
+```
+
+```{r}
+alpha <- alpha2
 ```
 
 ```{r fig.width = 7}
+n_tau <- 10
 t <- seq(0, 350, le = 100)
-tau <- seq(0, 350, le = 10)
+tau <- seq(0, 350, le = n_tau)
 
 expand_grid(t, tau) |> 
   mutate(value = alpha(t, tau)) |> 
   pull(value) |>
-  matrix(10) |> 
+  matrix(n_tau) |> 
   persp(tau, t, z = _, theta = 45, zlab = "TBA alpha")
 ```
 
@@ -450,11 +466,13 @@ plot(t_val, alpha(t_val, tau = 0), type = "n",
      xlab = "time post drug administration (hours)",
      ylab = bquote("reduction" ~ alpha ~ "of mosquitoes with oocysts"))
 walk(seq(0, 700, 4), ~ lines(t_val, alpha(t_val, tau = .x)))
-lines(t_val, alpha(t_val, tau = 4), col = 2, lwd = lwd_val)
+lines(t_val, alpha(t_val, tau = 4 * 24), col = 2, lwd = lwd_val)
 ```
 
+A function that does bootstrapped calibration at 4 dpi:
+
 ```{r}
-calibration <- function(data, N = 1e4, eps = 1.1) {
+boot_calibration_4dpi <- function(data, N = 1e4, eps = 1.1) {
   model <- data |> 
     stratified_bootstrap(eps * N) |> 
     map(~ with(.x, safely(calibrate4dpi)(t, value)))
@@ -468,22 +486,22 @@ calibration <- function(data, N = 1e4, eps = 1.1) {
 It takes (1'20" on the laptop):
 
 ```{r eval = FALSE, purl = FALSE}
-alpha_model <- calibration(alpha_data)
+alpha_model_4dpi <- boot_calibration_4dpi(alpha_data)
 ```
 
 ```{r include = FALSE}
 if (file_exists("alpha_model.rds")) {
-  alpha_model <- readRDScache("alpha_model.rds")
+  alpha_model_4dpi <- readRDScache("alpha_model.rds")
 } else {
-  alpha_model <- calibration(alpha_data)
-  saveRDScache(alpha_model, "alpha_model.rds")
+  alpha_model_4dpi <- boot_calibration_4dpi(alpha_data)
+  saveRDScache(alpha_model_4dpi, "alpha_model.rds")
 }
 ```
 
 ```{r}
 t_val2 <- seq(0, 1.05 * t_max)
 
-simulate <- function(model, xs = t_val2) {
+trajectories <- function(model, xs = t_val2) {
   model |> 
     set_names() |> 
     map_dfc(~ with(as.list(.x), f4dpi(xs, A, k, d)))
@@ -491,7 +509,7 @@ simulate <- function(model, xs = t_val2) {
 ```
 
 ```{r}
-alpha_simulations <- simulate(alpha_model)
+alpha_trajectories <- trajectories(alpha_model_4dpi)
 ```
 
 ```{r}
@@ -516,10 +534,10 @@ plot_data_model <- function(data, simulations, ylabel, col_data = 4, col_model =
 ```
 
 ```{r}
-plot_data_model(alpha_data, alpha_simulations,
+plot_data_model(alpha_data, alpha_trajectories,
                 bquote("reduction" ~ alpha ~ "of mosquitoes with oocysts"))
 
-lines(t_val2, with(as.list(alpha_fit), f4dpi(t_val2, A, k, d)))
+lines(t_val2, with(as.list(alpha_fit4dpi), f4dpi(t_val2, A, k, d)))
 ```
 
 
@@ -532,35 +550,43 @@ beta_data <- reading_exp_data("figure2c.rds")
 Fitting the model to the data:
 
 ```{r}
-beta_fit <- with(beta_data, calibrate4dpi(t, value))
+beta_fit4dpi <- with(beta_data, calibrate4dpi(t, value))
 ```
 
 ```{r}
-beta <- with(as.list(beta_fit), make_effect(A, k, d))
+beta1 <- with(as.list(beta_fit4dpi), make_effect(A, k, d))
+```
+
+```{r}
+beta2 <- with(as.list(beta_fit4dpi), make_effect2(A, k, d, d / 3))
+```
+
+```{r}
+beta <- beta2
 ```
 
 ```{r eval = FALSE, purl = FALSE}
-beta_model <- calibration(beta_data)
+beta_model_4dpi <- boot_calibration_4dpi(beta_data)
 ```
 
 ```{r include = FALSE}
 if (file_exists("beta_model.rds")) {
-  beta_model <- readRDScache("beta_model.rds")
+  beta_model_4dpi <- readRDScache("beta_model.rds")
 } else {
-  beta_model <- calibration(beta_data)
-  saveRDScache(beta_model, "beta_model.rds")
+  beta_model_4dpi <- boot_calibration_4dpi(beta_data)
+  saveRDScache(beta_model_4dpi, "beta_model.rds")
 }
 ```
 
 ```{r}
-beta_simulations <- simulate(beta_model)
+beta_trajectories <- trajectories(beta_model_4dpi)
 ```
 
 ```{r}
-plot_data_model(beta_data, beta_simulations,
+plot_data_model(beta_data, beta_trajectories,
                 bquote("reduction" ~ beta ~ "of the number of oocysts"))
 
-lines(t_val2, with(as.list(beta_fit), f4dpi(t_val2, A, k, d)))
+lines(t_val2, with(as.list(beta_fit4dpi), f4dpi(t_val2, A, k, d)))
 ```
 
 
@@ -956,32 +982,40 @@ delta_data <- reading_exp_data("percentage_inhibition_size2.rds")
 ```
 
 ```{r}
-delta_fit <- with(delta_data, calibrate4dpi(t, value))
+delta_fit4dpi <- with(delta_data, calibrate4dpi(t, value))
 ```
 
 ```{r}
-delta <- with(as.list(delta_fit), make_effect(A, k, d))
+delta1 <- with(as.list(delta_fit4dpi), make_effect(A, k, d))
+```
+
+```{r}
+delta2 <- with(as.list(delta_fit4dpi), make_effect2(A, k, d, d / 3))
+```
+
+```{r}
+delta <- delta2
 ```
 
 ```{r eval = FALSE, purl = FALSE}
-delta_model <- calibration(delta_data)
+delta_model_4dpi <- boot_calibration_4dpi(delta_data)
 ```
 
 ```{r include = FALSE}
 if (file_exists("delta_model.rds")) {
-  delta_model <- readRDScache("delta_model.rds")
+  delta_model_4dpi <- readRDScache("delta_model.rds")
 } else {
-  delta_model <- calibration(delta_data)
-  saveRDScache(delta_model, "delta_model.rds")
+  delta_model_4dpi <- boot_calibration_4dpi(delta_data)
+  saveRDScache(delta_model_4dpi, "delta_model.rds")
 }
 ```
 
 ```{r}
-delta_simulations <- simulate(delta_model)
+delta_trajectories <- trajectories(delta_model_4dpi)
 ```
 
 ```{r}
-plot_data_model(delta_data, delta_simulations,
+plot_data_model(delta_data, delta_trajectories,
                 bquote("reduction" ~ delta ~ "of the size of oocysts"))
 ```
 
