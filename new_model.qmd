@@ -961,40 +961,40 @@ abline(v = c(3, 7))
 Estimating the EPIs with confidence intervals for the 4 combinations:
 
 ```{r}
-EIPs <- colors |> 
-  select(-color) |> 
-  rename(bf = `Blood Feeds`) |> 
-  expand_grid(name = c("fit", "lwr", "upr")) |> 
-  left_join(models, "Group") |> 
-  mutate(value = pmap_dbl(list(mod, bf, name), find_EIP)) |> 
-  select(-mod) |> 
-  pivot_wider() |> 
-  mutate(across(c(fit, lwr, upr), ~ .x + second_meal)) |> 
-  rename(EIP_M = fit, EIP_L = lwr, EIP_U = upr)
+#EIPs <- colors |> 
+#  select(-color) |> 
+#  rename(bf = `Blood Feeds`) |> 
+#  expand_grid(name = c("fit", "lwr", "upr")) |> 
+#  left_join(models, "Group") |> 
+#  mutate(value = pmap_dbl(list(mod, bf, name), find_EIP)) |> 
+#  select(-mod) |> 
+#  pivot_wider() |> 
+#  mutate(across(c(fit, lwr, upr), ~ .x + second_meal)) |> 
+#  rename(EIP_M = fit, EIP_L = lwr, EIP_U = upr)
 ```
 
 Putting together oocyst sizes and EPI:
 
 ```{r}
-(OOsize_EPI <- left_join(mean_oosize, EIPs, c("Group", "bf")))
+#(OOsize_EPI <- left_join(mean_oosize, EIPs, c("Group", "bf")))
 ```
 
 ```{r}
-with(OOsize_EPI, {
-  xs <- c(oosize_M, oosize_L, oosize_U)
-  ys <- c(EIP_M, EIP_L, EIP_U)
-  plot(oosize_M, EIP_M, xlim = c(min(xs), max(xs)), ylim = c(min(ys), max(ys)),
-       xlab = oosise_lab, ylab = "EIP (days)", col = color, pch = 19)
-  arrows3 <- function(...) arrows2(..., col = color, lty = lty_val[color])
-  arrows3(oosize_M, EIP_L, oosize_M, EIP_U)
-  arrows3(oosize_L, EIP_M, oosize_U, EIP_M)
-})
+#with(OOsize_EPI, {
+#  xs <- c(oosize_M, oosize_L, oosize_U)
+#  ys <- c(EIP_M, EIP_L, EIP_U)
+#  plot(oosize_M, EIP_M, xlim = c(min(xs), max(xs)), ylim = c(min(ys), max(ys)),
+#       xlab = oosise_lab, ylab = "EIP (days)", col = color, pch = 19)
+#  arrows3 <- function(...) arrows2(..., col = color, lty = lty_val[color])
+#  arrows3(oosize_M, EIP_L, oosize_M, EIP_U)
+#  arrows3(oosize_L, EIP_M, oosize_U, EIP_M)
+#})
 ```
 
 
-#### This study
+#### $\delta$
 
-```{r}
+```{r message = FALSE}
 delta_data <- reading_exp_data("percentage_inhibition_size2.rds")
 ```
 
@@ -1036,6 +1036,9 @@ plot_data_model(delta_data, delta_trajectories,
                 bquote("reduction" ~ delta ~ "of the size of oocysts"))
 ```
 
+
+#### This study
+
 ```{r message = FALSE}
 oocyst_size <- read_table2("oocyst_size2.txt")
 ```
@@ -1046,7 +1049,11 @@ oocyst_size_crtl <- oocyst_size |>
   mutate(across(Area, ~ .x * 1e6)) |> 
   pull(Area)
 
-hist(oocyst_size_crtl, 20, main = NA, xlab = "oocyst size", ylab = "frequency")
+hist(oocyst_size_crtl, 20, main = NA, col = 4,
+     xlab = "oocyst size", ylab = "frequency")
+
+mean_oosize_crtl <- mean(oocyst_size_crtl)
+abline(v = mean_oosize_crtl, col = 2, lwd = lwd_val)
 ```
 
 ```{r}
@@ -1065,50 +1072,26 @@ rate_val <- models |>
 
 mos <- mean_oosize$oosize_M
 mod <- lm(rate_val ~ mos)
-plot(mean_oosize$oosize_M, rate_val)
-abline(mod)
 
 compute_rate <- function(mean_oo_size) predict(mod, list(mos = mean_oo_size))
 
-compute_rate(mean(oocyst_size_crtl))
+plot(mean_oosize$oosize_M, rate_val, col = colors$color, pch = 19, cex = 1.5,
+     xlim = c(0, 1100), ylim = c(0, 1.1),     
+     xlab = oosise_lab, ylab = "oocyst maturity rate")
 
+abline(mod, col = 4)
+abline(v = mean_oosize_crtl)
+ref_rate <- compute_rate(mean_oosize_crtl)
+abline(h = ref_rate)
+```
+
+```{r}
 intercepts <- map_dbl(models$mod, ~ coef(.x)[1])
 
 reduction_in_size <- .8
-
-ref_rate <- compute_rate(mean(oocyst_size_crtl))
-new_rate <- compute_rate(reduction_in_size * mean(oocyst_size_crtl))
-
-ref_EIP <- optimise2(function(x) abs(expit(x, intercepts[1], ref_rate) - .5))
-new_EIP <- optimise2(function(x) abs(expit(x, intercepts[1], new_rate) - .5))
-
-new_EIP / ref_EIP
-```
-
-```{r}
-#find_eip <- function(a, b) optimise2(function(x) abs(expit(x, a, b) - .5))
-```
-
-```{r}
-#m_oo_size_val <- mean(oocyst_size_crtl)
-#
-#EIP_increase <- function(reduction_in_size, intercept, m_oo_size = m_oo_size_val) {
-#  ref_rate <- compute_rate(m_oo_size)
-#  new_rate <- compute_rate(reduction_in_size * m_oo_size)
-#  find_eip(intercept, new_rate) / find_eip(intercept, ref_rate)
-#}
-#
-#EIP_increase(.8, intercepts[1])
-```
-
-```{r}
-#size_reductions <- seq(0, 1, le = 512)[-1]
-#EIP_increases1 <- map_dbl(size_reductions, ~ EIP_increase(.x, intercepts[1]))
-#EIP_increases2 <- map_dbl(size_reductions, ~ EIP_increase(.x, intercepts[2]))
-#plot(EIP_increases1, EIP_increases2)
-#abline(0, 1)
-#EIP_increases <- map2_dbl(EIP_increases1, EIP_increases2, ~ mean(.x, .y))
-#plot(size_reductions, EIP_increases, type = "l")
+new_rate <- compute_rate(reduction_in_size * mean_oosize_crtl)
+# reduction factor:
+new_rate / ref_rate
 ```
 
 Converting a reduction in size into a reduction in rate:
