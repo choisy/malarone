@@ -345,13 +345,7 @@ saturating increase (captured by $k$) followed by an exponential decrease (captu
 $d$) reflecting the PK/PD of the drug and, as function of $\tau$, the effect is
 characterized by an exponential decrease (captured by $r$) simply reflecting the growth
 of the parasite (and thus the decrease of the relative concentration of the drug in
-each blood meal). Parameter $A$ account for the maximum value reached. Given that the
-efficacy of a drug depends on the concentration of the drug respective to the size of
-the parasite, one can argue $r = d$, which simplifies the formula:
-
-$$
-f(t,\tau) = A \cdot (1 - e^{-kt})\cdot e^{-d\cdot(t + \tau)}
-$$
+each blood meal). Parameter $A$ account for the maximum value reached.
 
 A version of the model at 4 dpi:
 
@@ -421,52 +415,66 @@ alpha_fit4dpi <- with(alpha_data, calibrate4dpi(t, value))
 ```
 
 ```{r}
-make_effect <- function(A, k, d) {
-  A <- A * exp(4 * 24 * d)
-  function(t, tau) A * (1 - exp(-k * t)) * exp(-d * (t + tau))
-}
-```
-
-```{r}
-make_effect2 <- function(A, k, d, r) {
+make_effect <- function(A, k, d, r) {
   A <- A * exp(4 * 24 * r)
-  function(t, tau) A * (1 - exp(-k * t)) * exp(-d * t - r * tau)
+  function(t, tau) pmin(1, A * (1 - exp(-k * t)) * exp(-d * t - r * tau))
 }
 ```
 
 ```{r}
-alpha1 <- with(as.list(alpha_fit4dpi), make_effect(A, k, d))
+alpha1 <- with(as.list(alpha_fit4dpi), make_effect(A, k, d, d))
 ```
 
 ```{r}
-alpha2 <- with(as.list(alpha_fit4dpi), make_effect2(A, k, d, d / 3))
+alpha2 <- with(as.list(alpha_fit4dpi), make_effect(A, k, d, d / 3))
 ```
 
 ```{r}
 alpha <- alpha2
 ```
 
-```{r fig.width = 7}
+```{r fig.width = 4, fig.height = 4}
+#| layout-ncol: 2
 n_tau <- 10
-t <- seq(0, 350, le = 100)
+n_t <- 100
+t <- seq(0, 350, le = n_t)
 tau <- seq(0, 350, le = n_tau)
+tau_val <- 4 * 24
 
-expand_grid(t, tau) |> 
-  mutate(value = alpha(t, tau)) |> 
-  pull(value) |>
-  matrix(n_tau) |> 
-  persp(tau, t, z = _, theta = 45, zlab = "TBA alpha")
+plot3d <- function(f) {
+  opar <- par(plt = c(.05, .95, .05, .95))
+  pmat <- expand_grid(t, tau) |> 
+    mutate(value = f(t, tau)) |> 
+    pull(value) |>
+    matrix(n_tau) |> 
+    persp(tau, t, z = _, theta = 45, border = 4, zlim = 0:1,
+          xlab = "\u03C4 days post infection",
+          ylab = "t days post drug administration",
+          zlab = "TBA \u03B1")
+  
+  trans3d(rep(tau_val, n_t), t, alpha(t, tau_val), pmat) |> 
+    with(lines(x, y, col = "red", lwd = 3))
+  par(opar)
+}
+
+plot3d(alpha)
+plot3d(alpha1)
 ```
 
 ```{r}
 t_max <- 700
 t_val <- 0:t_max
 
-plot(t_val, alpha(t_val, tau = 0), type = "n",
-     xlab = "time post drug administration (hours)",
-     ylab = bquote("reduction" ~ alpha ~ "of mosquitoes with oocysts"))
-walk(seq(0, 700, 4), ~ lines(t_val, alpha(t_val, tau = .x)))
-lines(t_val, alpha(t_val, tau = 4 * 24), col = 2, lwd = lwd_val)
+plot2d <- function(f) {
+  plot(t_val, f(t_val, tau = 0), type = "n", ylim = 0:1,
+       xlab = "time post drug administration (hours)",
+       ylab = bquote("reduction" ~ alpha ~ "of mosquitoes with oocysts"))
+  walk(seq(0, 700, 24), ~ lines(t_val, f(t_val, tau = .x), col = 4))
+  lines(t_val, f(t_val, tau = 4 * 24), col = 2, lwd = lwd_val)
+}
+
+plot2d(alpha)
+plot2d(alpha1)
 ```
 
 A function that does bootstrapped calibration at 4 dpi:
@@ -554,11 +562,11 @@ beta_fit4dpi <- with(beta_data, calibrate4dpi(t, value))
 ```
 
 ```{r}
-beta1 <- with(as.list(beta_fit4dpi), make_effect(A, k, d))
+beta1 <- with(as.list(beta_fit4dpi), make_effect(A, k, d, d))
 ```
 
 ```{r}
-beta2 <- with(as.list(beta_fit4dpi), make_effect2(A, k, d, d / 3))
+beta2 <- with(as.list(beta_fit4dpi), make_effect(A, k, d, d / 3))
 ```
 
 ```{r}
@@ -603,7 +611,8 @@ bompard2020 <- "doi_10_5061_dryad_9p8cz8wfh__v20210123/act2datasetRpcr.txt" |>
 ```{r}
 bompard2020 |> 
   filter(0 < Total, Total < 50) |> 
-  with(hist(Total, 0:50, xlab = "oocyst load L", ylab = "frequency", main = NA))
+  with(hist(Total, 0:50, xlab = "oocyst load L", ylab = "frequency",
+            main = NA, col = 4))
 ```
 
 ```{r}
@@ -611,7 +620,7 @@ bompard2020 |>
   group_by(Total) |> 
   tally() |> 
   mutate(cum_n = cumsum(n) / sum(n)) |> 
-  with(plot(Total, cum_n, type = "h", xlim = c(0, 100), ylim = c(.85, 1),
+  with(plot(Total, cum_n, type = "h", col = 4, xlim = c(0, 100), ylim = c(.85, 1),
             xlab = "oocyst load L", ylab = "cumulative proportion of samples"))
 ```
 
@@ -686,7 +695,7 @@ g_calibrated <- function(x) g(x, params[1], params[2])
 max_load <- 250
 load_vals <- 1:max_load
 
-plot(load_vals, g_calibrated(load_vals), type = "h", lwd = lwd_val, col = 2,
+plot(load_vals, g_calibrated(load_vals), type = "h", lwd = lwd_val, col = 4,
      xlim = c(0, max_load), ylim = c(0, .5),
      xlab = "oocyst load L", ylab = "probability of transmission")
 ```
@@ -707,11 +716,11 @@ lambda_vals <- seq(0, 1, le = 512)
 zeta_vals <- zeta(lambda_vals)
 ```
 
-```{r fig.height = eps * 6, fig.width = eps * 8, margin1 = FALSE, margin2 = TRUE}
+```{r fig.height = eps * 5, fig.width = eps * 5, margin1 = FALSE, margin2 = TRUE}
 #| label: fig-b_reduction
 #| fig-cap: the conversion of a reduction on the sporozoite load $L$ into a reduction of the mosquito-to-human probability of transmission $b$ and $R_0$.
 
-opar <- par(pty = "s", xpd = TRUE)
+opar <- par(pty = "s", xpd = TRUE, plt = c(.15, .95, .15, .95))
 plot(lambda_vals, zeta_vals, type = "l", lwd = lwd_val, col = 4,
      xaxs = "i", yaxs = "i",
      xlab = bquote("reducing factor of oocyst load"),
@@ -720,6 +729,7 @@ segments(0, 0, 1, 1)
 box(bty = "o")
 par(opar)
 ```
+
 
 ### $\lambda(\tau)$
 
@@ -747,6 +757,9 @@ lambda <- function(tau, a, p, Tt) {
 # lambda(5:6 * 24, 1, .1, 50 * 24)
 # zeta(lambda(5:6 * 24, 1, .1, 50 * 24))
 ```
+
+
+### $\theta(\alpha, \beta)$
 
 ```{r}
 theta <- function(mu, a, p, Tt) {
@@ -918,8 +931,12 @@ plot1combination <- function(gp, bf) {
 
 Running it onto the 4 combinations:
 
-```{r}
+```{r fig.height = eps * 5 / 1.4, fig.width = eps * 7 / 1.4}
+#| layout-ncol: 2
+#| layout-nrow: 2
+opar <- par(plt = c(.15, .95, .21, .89))
 with(colors, walk2(Group, `Blood Feeds`, ~ plot1combination(.x, .y)))
+par(opar)
 ```
 
 The 4 groups together:
@@ -986,11 +1003,11 @@ delta_fit4dpi <- with(delta_data, calibrate4dpi(t, value))
 ```
 
 ```{r}
-delta1 <- with(as.list(delta_fit4dpi), make_effect(A, k, d))
+delta1 <- with(as.list(delta_fit4dpi), make_effect(A, k, d, d))
 ```
 
 ```{r}
-delta2 <- with(as.list(delta_fit4dpi), make_effect2(A, k, d, d / 3))
+delta2 <- with(as.list(delta_fit4dpi), make_effect(A, k, d, d / 3))
 ```
 
 ```{r}
