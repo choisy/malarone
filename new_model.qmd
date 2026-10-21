@@ -760,10 +760,54 @@ theta <- function(mu, a, p, Tt) {
 # theta(mu = 1 / (14 * 24), a = 1, p = .1, Tt = 50 * 24)
 ```
 
+### $\delta(t, \tau)$
 
-### Size of oocysts at 7 dpi
+$\delta(t, \tau)$ is the reduction of size of the oocysts at 7 dpi.
 
-#### Shaw et al. 2000
+```{r message = FALSE}
+delta_data <- reading_exp_data("percentage_inhibition_size2.rds")
+```
+
+```{r}
+delta_fit4dpi <- with(delta_data, calibrate4dpi(t, value))
+```
+
+```{r}
+delta1 <- with(as.list(delta_fit4dpi), make_effect(A, k, d, d))
+```
+
+```{r}
+delta2 <- with(as.list(delta_fit4dpi), make_effect(A, k, d, d / 3))
+```
+
+```{r}
+delta <- delta2
+```
+
+```{r eval = FALSE, purl = FALSE}
+delta_model_4dpi <- boot_calibration_4dpi(delta_data)
+```
+
+```{r include = FALSE}
+if (file_exists("delta_model.rds")) {
+  delta_model_4dpi <- readRDScache("delta_model.rds")
+} else {
+  delta_model_4dpi <- boot_calibration_4dpi(delta_data)
+  saveRDScache(delta_model_4dpi, "delta_model.rds")
+}
+```
+
+```{r}
+delta_trajectories <- trajectories(delta_model_4dpi)
+```
+
+```{r}
+plot_data_model(delta_data, delta_trajectories,
+                bquote("reduction" ~ delta ~ "of the size of oocysts"))
+```
+
+Next we need to convert a reduction in the size of oocysts at 7 dpi into a reduction
+of the oocyst maturation rate. For that, let's look at the data from Shaw et al. 2000.
 
 Loading the data from Figures 1 & 3:
 
@@ -949,86 +993,16 @@ abline(h = .5)
 abline(v = c(3, 7))
 ```
 
-Estimating the EPIs with confidence intervals for the 4 combinations:
+The maturation rate from these curves:
 
 ```{r}
-#EIPs <- colors |> 
-#  select(-color) |> 
-#  rename(bf = `Blood Feeds`) |> 
-#  expand_grid(name = c("fit", "lwr", "upr")) |> 
-#  left_join(models, "Group") |> 
-#  mutate(value = pmap_dbl(list(mod, bf, name), find_EIP)) |> 
-#  select(-mod) |> 
-#  pivot_wider() |> 
-#  mutate(across(c(fit, lwr, upr), ~ .x + second_meal)) |> 
-#  rename(EIP_M = fit, EIP_L = lwr, EIP_U = upr)
+rate_val <- models |> 
+  pull(mod) |> 
+  map(~ cumsum(coef(.x)[-1])) |> 
+  unlist()
 ```
 
-Putting together oocyst sizes and EPI:
-
-```{r}
-#(OOsize_EPI <- left_join(mean_oosize, EIPs, c("Group", "bf")))
-```
-
-```{r}
-#with(OOsize_EPI, {
-#  xs <- c(oosize_M, oosize_L, oosize_U)
-#  ys <- c(EIP_M, EIP_L, EIP_U)
-#  plot(oosize_M, EIP_M, xlim = c(min(xs), max(xs)), ylim = c(min(ys), max(ys)),
-#       xlab = oosise_lab, ylab = "EIP (days)", col = color, pch = 19)
-#  arrows3 <- function(...) arrows2(..., col = color, lty = lty_val[color])
-#  arrows3(oosize_M, EIP_L, oosize_M, EIP_U)
-#  arrows3(oosize_L, EIP_M, oosize_U, EIP_M)
-#})
-```
-
-
-#### $\delta$
-
-```{r message = FALSE}
-delta_data <- reading_exp_data("percentage_inhibition_size2.rds")
-```
-
-```{r}
-delta_fit4dpi <- with(delta_data, calibrate4dpi(t, value))
-```
-
-```{r}
-delta1 <- with(as.list(delta_fit4dpi), make_effect(A, k, d, d))
-```
-
-```{r}
-delta2 <- with(as.list(delta_fit4dpi), make_effect(A, k, d, d / 3))
-```
-
-```{r}
-delta <- delta2
-```
-
-```{r eval = FALSE, purl = FALSE}
-delta_model_4dpi <- boot_calibration_4dpi(delta_data)
-```
-
-```{r include = FALSE}
-if (file_exists("delta_model.rds")) {
-  delta_model_4dpi <- readRDScache("delta_model.rds")
-} else {
-  delta_model_4dpi <- boot_calibration_4dpi(delta_data)
-  saveRDScache(delta_model_4dpi, "delta_model.rds")
-}
-```
-
-```{r}
-delta_trajectories <- trajectories(delta_model_4dpi)
-```
-
-```{r}
-plot_data_model(delta_data, delta_trajectories,
-                bquote("reduction" ~ delta ~ "of the size of oocysts"))
-```
-
-
-#### This study
+Let's look at the mean oocyst size at 7 dpi on the controls mosquitoes of our study:
 
 ```{r message = FALSE}
 oocyst_size <- read_table2("oocyst_size2.txt")
@@ -1047,25 +1021,18 @@ mean_oosize_crtl <- mean(oocyst_size_crtl)
 abline(v = mean_oosize_crtl, col = 2, lwd = lwd_val)
 ```
 
-```{r}
-expit <- function(x, a, b) 1 / (1 + exp(-(a + b * x)))
-```
+A function that converts the oocyst size at 7 dpi into a rate of oocyst maturity:
 
 ```{r}
-optimise2 <- function(f, ...) optimise(f, c(3, 20), ...)$min
-```
-
-```{r}
-rate_val <- models |> 
-  pull(mod) |> 
-  map(~ cumsum(coef(.x)[-1])) |> 
-  unlist()
-
 mos <- mean_oosize$oosize_M
 mod <- lm(rate_val ~ mos)
-
 compute_rate <- function(mean_oo_size) predict(mod, list(mos = mean_oo_size))
+```
 
+Let's look at the relationship between the mean oocyst size at 7 dpi and the oocyst
+rate of maturity:
+
+```{r}
 plot(mean_oosize$oosize_M, rate_val, col = colors$color, pch = 19, cex = 1.5,
      xlim = c(0, 1100), ylim = c(0, 1.1),     
      xlab = oosise_lab, ylab = "oocyst maturity rate")
@@ -1076,16 +1043,7 @@ ref_rate <- compute_rate(mean_oosize_crtl)
 abline(h = ref_rate)
 ```
 
-```{r}
-intercepts <- map_dbl(models$mod, ~ coef(.x)[1])
-
-reduction_in_size <- .8
-new_rate <- compute_rate(reduction_in_size * mean_oosize_crtl)
-# reduction factor:
-new_rate / ref_rate
-```
-
-Converting a reduction in size into a reduction in rate:
+A function that converts a reduction in size into a reduction in rate:
 
 ```{r}
 m_oo_size_val <- mean(oocyst_size_crtl)
@@ -1098,22 +1056,29 @@ size2rate_reduction <- function(reduction_in_size, ref = m_oo_size_val) {
 #size2rate_reduction(0)
 ```
 
-
-#### Let's go
-
 ```{r}
-qq <- function(tau, Tt) {
-  map_dbl(tau, ~ integrate2(function(x) size2rate_reduction(1 - delta(x, tau)), 0, Tt) / Tt)
+qf <- function(tau, Tt) {
+  map_dbl(tau,
+          ~ integrate2(function(x) size2rate_reduction(1 - delta(x, .x)), 0, Tt) / Tt)
 }
 
-# qq(5:6 * 24, 15 * 24)
-
-qq(4 * 24, 28 * 24)
-qq(4 * 24, 28 * 24 * 2)
-qq(4 * 24, 200)
-
-plot(0:300, delta(0:300, 1 * 24))
+# qf(5:6 * 24, 15 * 24)
 ```
 
+```{r}
+kappaf <- function(tau, a, p, Tt) {
+  map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - qf(x, Tt), 0, .x)))
+}
+
+# kappaf(5:6 * 24, 1, .1, 50 * 24)
+```
+
+```{r}
+EIPf <- function(n, a, p, Tt) {
+  optimise(function(x) abs(x * kappaf(x, a, p, Tt) - n), c(0, 100))$min
+}
+
+# EIPf(10, 1, .1, 50 * 24)
+```
 
 
