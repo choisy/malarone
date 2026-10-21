@@ -1081,4 +1081,11 @@ EIPf <- function(n, a, p, Tt) {
 # EIPf(10, 1, .1, 50 * 24)
 ```
 
+```{r}
+R0reduction <- function(n, mu, a, p, Tt) {
+  theta(mu, a, p, Tt) * exp((n - EIPf(n, a, p, Tt)) * mu)  
+}
+
+# R0reduction(10, 1 / 14, 1, .1, 50 * 24)
+```
 
