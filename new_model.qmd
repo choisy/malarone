@@ -254,6 +254,7 @@ $$
 
 ### Parasite maturation and EIP
 
+
 The EIP is the time at which the parasite reaches maturity for transmission. Call
 $z(\tau)$ the dimensionless **level of parasite maturity** at time $\tau$ post
 infection and assume it increases from some arbitrary value 0 right after infection:
