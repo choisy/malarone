@@ -254,31 +254,26 @@ $$
 
 ### Parasite maturation and EIP
 
-
-The EIP is the time at which the parasite reaches maturity for transmission. Call
-$z(\tau)$ the dimensionless **level of parasite maturity** at time $\tau$ post
-infection and assume it increases from some arbitrary value 0 right after infection:
-
-$$
-z(0) = 0
-$$
-
-to some arbitrary value 1 once maturity for transmission is reached:
+Call $z(\tau)$ the **proportion of infectious mosquitoes** at time $\tau$ post
+infection and assume it increases logistically from some arbitrary value close to 0
+right after infection to 1 when all the mosquitoes are infectious. Under the same
+assumption as above that mosquitoes get infected by bites on untreated humans only then
 
 $$
-z(\mbox{EIP}) = 1
+z(\tau) = \frac{1}{1 + \exp(n\nu(0) - \tau\nu(\tau))}
 $$
 
-at a **maturation rate** $\nu$ that is independent of the level of maturity (but that
-can depend of the time $\tau$ post infection due in particular to bites on treated
-humans):
+where the growth rate $\nu$ depends on $\tau$ accounting for the fact it gets reduced
+by any blood meal taken on treated patients and $n$ is the EIP in absence of treatment.
+By definition, the EIP $T$ is the mean time post infection at which the parasite
+reaches maturity for transmission, thus implicitly defined as
 
 $$
-\frac{dz}{d\tau} = \nu(\tau).
+z(T) = \frac{1}{2}.
 $$
+We can verify that, in absence of treatment (i.e. $\nu(\tau) = \nu(0)$, $\forall\tau$),
+$z(n) = 1/2$.
 
-Note that the values 0 and 1 are just convenient choices here and that their exact
-values do not matter for the analysis.
 
 #### 1 bite, all human treated
 
@@ -291,6 +286,7 @@ $$
 q(\tau) = \int_0^{+\infty} \gamma(t, \tau) h(t) dt
 $$
 
+
 #### Multiple bites, $p\%$ human treated
 
 In a similar way as done above for the parasite load, we can express the fact that each
@@ -300,25 +296,19 @@ differential equation
 $$
 \frac{d\nu}{d\tau} = -(1 - q(\tau))ap\nu(\tau)
 $$
-Under the same assumption as above that mosquitoes get infected by bites on untreated
-humans only then
+
+which leads to the following expression of the mean cumulative reduction factor of the
+maturation rate:
 
 $$
-\nu(0) = \frac{1}{n}
+\kappa(\tau) = \exp\left[-ap \int_0^\tau (1-q(s))\,ds\right]
 $$
 
-leading to
-
-$$
-\nu(\tau) = \frac{1}{n} \exp\left[-ap\int_0^{\tau}(1 - q(u))du\right]
-$$
-
-where $n$ is the value of the **EIP in absence of treatment** in the human population.
-Now that we have this, we can implicitly express the average EIP in presence of the
+Now that we have this, we can implicitly express the average EIP $T$ in presence of the
 treatment in the human population as the value $T$ satisfying 
 
 $$
-\int_0^{T}\nu(\tau)d\tau = 1
+T\kappa(T) = n
 $$
 
 ### $R_0$ reduction effect
