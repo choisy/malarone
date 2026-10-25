@@ -63,7 +63,7 @@ if (! dir.exists(path2cache)) dir.create(path2cache)
 make_path <- function(x) paste0(path2cache, x)
 file_exists <- function(x) file.exists(make_path(x))
 readRDScache <- function(x) readr::read_rds(make_path(x))
-saveRDScache <- function(object, file) readr::save_rds(object, make_path(file))
+saveRDScache <- function(object, file) readr::write_rds(object, make_path(file))
 remove_cache <- function(x) {
   file.remove(grep(x, dir(path2cache, full.names = TRUE), value = TRUE))
 }
@@ -94,6 +94,12 @@ Line width:
 lwd_val <- 2
 ```
 
+Colors:
+
+```{r}
+YlOrRd11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
+```
+
 
 ## Packages
 
@@ -101,6 +107,7 @@ lwd_val <- 2
 library(dplyr)
 library(purrr)
 library(tidyr)
+library(furrr)
 ```
 
 
@@ -207,37 +214,41 @@ $$
 
 Call $h(t)$ is the density of probability of the
 **distribution of times post drug administration** in the population of treated humans.
-The mean reduction factor $l(\tau)$ of parasite load acroos the population of infected
-mosquitoes due to
-**1 bite on treated people at time $\tau$** then reads
+The mean reduction factor $l(\tau, m)$ of parasite load across the population of
+infected mosquitoes due to **1 bite on treated people at time $\tau$** then reads
 
 $$
-l(\tau) = \int_0^{+\infty}(1 - \alpha(t, \tau))(1 - \beta(t, \tau))h(t)dt.
+l(\tau, m) = \int_0^{m}(1 - \alpha(t, \tau))(1 - \beta(t, \tau))h(t)dt.
 $$
+
+when we consider people who have been infected over the past $m$ hours. Whenever we
+would need $m = +\infty$ in theory, a value of $m$ large enough so that
+$\alpha(t,\tau) = \beta(t,\tau)\simeq 0$ would be enough in practice.
 
 #### Multiple bites, $p\%$ human treated
 
-Call $a$ the **mosquito bite rate**, $p$ the
-**proportion of the human population that receives treatment** and $\lambda(\tau)$ the
+Call $a$ the **mosquito bite rate**, $p(m)$ the
+**proportion of the human population that has received treatment** over the past $m$
+hours and $\lambda(\tau,m)$ the
 **mean cumulative reduction factor of the parasite load due to all the bites that have occurred until time $\tau$**.
 The fact that each bite on a treated human reduces the parasite load of
-$(1 - l(\tau)) \%$ is then conveyed by the following differential equation
+$(1 - l(\tau,m)) \%$ is conveyed by the following differential equation
 
 $$
-\frac{d\lambda}{d\tau} = -(1 - l(\tau)) a p \lambda(\tau).
+\frac{d\lambda}{d\tau} = -(1 - l(\tau, m)) a p(m) \lambda(\tau, m).
 $$
 
 If we now assume that mosquitoes get infected by bites on untreated humans only then
 
 $$
-\lambda(0) = 1,
+\lambda(0, m) = 1,
 $$
 
 which leads to the following expression of the mean cumulative reduction factor of the
 parasite load at time $\tau$
 
 $$
-\lambda(\tau) = \exp\left[-ap\int_0^\tau(1 - l(u))du\right]
+\lambda(\tau, m) = \exp\left[-ap(m)\int_0^\tau(1 - l(u,m))du\right]
 $$
 
 #### Mean infectiousness reduction
@@ -249,7 +260,7 @@ reduction factor of mosquito infectiousness in the total mosquito population due
 and TRA can then be expressed as
 
 $$
-\theta = \int_0^{+\infty}\mu e^{-\mu\tau}\zeta(\lambda(\tau))d\tau.
+\theta = \int_0^{+\infty}\mu e^{-\mu\tau}\zeta(\lambda(\tau,m))d\tau.
 $$
 
 ### Parasite maturation and EIP
@@ -260,7 +271,7 @@ right after infection to 1 when all the mosquitoes are infectious. Under the sam
 assumption as above that mosquitoes get infected by bites on untreated humans only then
 
 $$
-z(\tau) = \frac{1}{1 + \exp(n\nu(0) - \tau\nu(\tau))}
+z(\tau) = \frac{1}{1 + e^{n\nu(0) - \tau\nu(\tau)}}
 $$
 
 where the growth rate $\nu$ depends on $\tau$ accounting for the fact it gets reduced
@@ -278,37 +289,37 @@ $z(n) = 1/2$.
 #### 1 bite, all human treated
 
 Call $\gamma(t, \tau)$ the **reduction factor of the maturation rate** consecutively to
-1 blood meal at times $t$ and $\tau$. The mean reduction factor $q(\tau)$ of the
+1 blood meal at times $t$ and $\tau$. The mean reduction factor $q(\tau,m)$ of the
 maturation rate across the population of infected mosquitoes due to
 **1 bite on treated people at time $\tau$** then reads
 
 $$
-q(\tau) = \int_0^{+\infty} \gamma(t, \tau) h(t) dt
+q(\tau,m) = \int_0^{m} \gamma(t, \tau) h(t) dt
 $$
 
 
 #### Multiple bites, $p\%$ human treated
 
 In a similar way as done above for the parasite load, we can express the fact that each
-bite on treated human reduces the maturation rate by $1 - q(\tau)$ by the following
+bite on treated human reduces the maturation rate by $(1 - q(\tau,m))$% by the following
 differential equation
 
 $$
-\frac{d\nu}{d\tau} = -(1 - q(\tau))ap\nu(\tau)
+\frac{d\nu}{d\tau} = -(1 - q(\tau,m))ap(m)\nu(\tau,m)
 $$
 
 which leads to the following expression of the mean cumulative reduction factor of the
 maturation rate:
 
 $$
-\kappa(\tau) = \exp\left[-ap \int_0^\tau (1-q(s))\,ds\right]
+\kappa(\tau,m) = \exp\left[-ap(m) \int_0^\tau (1-q(s,m))\,ds\right]
 $$
 
 Now that we have this, we can implicitly express the average EIP $T$ in presence of the
 treatment in the human population as the value $T$ satisfying 
 
 $$
-T\kappa(T) = n
+T\kappa(T,m) = n
 $$
 
 ### $R_0$ reduction effect
@@ -724,40 +735,37 @@ par(opar)
 
 ### $\lambda(\tau)$
 
-`Tt` is the frequency at which drug is given in case of mass treatment. For the
-treatment of infected, set `Tt` to a large enough number: `Tt <- 50 * 24`. 
-
 ```{r}
 integrate2 <- function(...) integrate(...)$value
 ```
 
 ```{r}
-l <- function(tau, Tt) {
+l <- function(tau, m) {
   map_dbl(tau,
-          ~ integrate2(function(x) (1 - alpha(x, .x)) * (1 - beta(x, .x)), 0, Tt) / Tt)
+          ~ integrate2(function(x) (1 - alpha(x, .x)) * (1 - beta(x, .x)), 0, m) / m)
 }
 
 # l(5:6 * 24, 15 * 24)
 ```
 
 ```{r}
-lambda <- function(tau, a, p, Tt) {
-  map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - l(x, Tt), 0, .x)))
+lambda <- function(tau, a, p, m) {
+  map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - l(x, m), 0, .x)))
 }
 
-# lambda(5:6 * 24, 1, .1, 50 * 24)
-# zeta(lambda(5:6 * 24, 1, .1, 50 * 24))
+# lambda(5:6 * 24, 1 / (3 * 24), 1, 50 * 24)
+# zeta(lambda(5:6 * 24, 1 / (3 * 24), 1, 50 * 24))
 ```
 
 
 ### $\theta(\alpha, \beta)$
 
 ```{r}
-theta <- function(mu, a, p, Tt) {
-  integrate2(function(x) dexp(x, mu) * zeta(lambda(x, a, p, Tt)), 0, 60 * 24)
+theta <- function(mu, a, p, m, infinity) {
+  integrate2(function(x) dexp(x, mu) * zeta(lambda(x, a, p, m)), 0, infinity)
 }
 
-# theta(mu = 1 / (14 * 24), a = 1, p = .1, Tt = 50 * 24)
+# theta(mu = 1 / (14 * 24), a = 1 / (3 * 24), p = 1, m = 50 * 24, infinity = 50 * 24)
 ```
 
 ### $\delta(t, \tau)$
@@ -1057,35 +1065,252 @@ size2rate_reduction <- function(reduction_in_size, ref = m_oo_size_val) {
 ```
 
 ```{r}
-qf <- function(tau, Tt) {
+qf <- function(tau, m) {
   map_dbl(tau,
-          ~ integrate2(function(x) size2rate_reduction(1 - delta(x, .x)), 0, Tt) / Tt)
+          ~ integrate2(function(x) size2rate_reduction(1 - delta(x, .x)), 0, m) / m)
 }
 
 # qf(5:6 * 24, 15 * 24)
 ```
 
 ```{r}
-kappaf <- function(tau, a, p, Tt) {
-  map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - qf(x, Tt), 0, .x)))
+kappaf <- function(tau, a, p, m) {
+  map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - qf(x, m), 0, .x)))
 }
 
-# kappaf(5:6 * 24, 1, .1, 50 * 24)
+# kappaf(5:6 * 24, 1 / (3 * 24), .1, 50 * 24)
 ```
 
 ```{r}
-EIPf <- function(n, a, p, Tt) {
-  optimise(function(x) abs(x * kappaf(x, a, p, Tt) - n), c(0, 100))$min
+EIPf <- function(n, a, p, m) {
+  optimise(function(x) abs(x * kappaf(x, a, p, m) - n), c(0, 24 * 100))$min
 }
 
-# EIPf(10, 1, .1, 50 * 24)
+# EIPf(10 * 24, 1 / (3 * 24), .1, 50 * 24)
 ```
 
 ```{r}
-R0reduction <- function(n, mu, a, p, Tt) {
-  theta(mu, a, p, Tt) * exp((n - EIPf(n, a, p, Tt)) * mu)  
+reduction <- function(n, mu, a, p, m, infinity) {
+  theta(mu, a, p, m, infinity) * exp((n - EIPf(n, a, p, m)) * mu)  
 }
 
-# R0reduction(10, 1 / 14, 1, .1, 50 * 24)
+# reduction(10 * 24, 1 / (14 * 24), 1 / (3 * 24), .1, 50 * 24, 50 * 24)
+```
+
+## Explorations
+
+### Mass treatment
+
+A function that computes the $R_0$ reduction values in the context of mass treatment:
+
+```{r}
+mass_treatment <- function(n = 10, mu = 1 / 14, a = 1 / 3,
+                           T_min = 3, T_max = 8, p_vals = 0:10 / 10, infinity = 250) {
+  n <- n * 24
+  mu <- mu / 24
+  a <- a / 24
+  infinity <- infinity * 24
+  
+  expand_grid(p_vals, m_vals = (T_min * 7):(T_max * 7) * 24) |> 
+    mutate(reduction =
+             future_map2_dbl(p_vals, m_vals,
+                             ~ reduction(n, mu, a, p = .x, m = .y, infinity)))
+}
+```
+
+A function that plots the output of `mass_treatment()`:
+
+```{r}
+plot_mass_treatment <- function(data) {
+  with(data, plot(m_vals, reduction, type = "n", xaxt = "n", xaxs = "i", yaxs = "i",
+                  xlab = "intake frequency (/week)",
+                  ylab = bquote(R[0] ~ "reduction factor"),
+                  xlim = rev(range(m_vals)), ylim = 0:1))
+  
+  hours_per_week <- 7 * 24
+  T_range <- range(data$m_vals) / hours_per_week
+  labels <- T_range[1]:T_range[2]
+  ats <- labels * hours_per_week
+  axis(1, ats, labels)
+  abline(v = ats, col = "grey")
+  abline(h = 0:10 / 10, col = "grey")
+  box(bty = "o")
+  
+  data |> 
+    group_split(p_vals) |> 
+    walk2(YlOrRd11, ~ with(.x, lines(m_vals, reduction, col = .y, lwd = lwd_val)))
+}
+```
+
+Takes 1':
+
+```{r eval = FALSE, purl = FALSE}
+plan(multisession, workers = 12)
+mtreat1 <- mass_treatment()
+plan(sequential)
+```
+
+```{r include = FALSE}
+if (file_exists("mtreat1.rds")) {
+  mtreat1 <- readRDScache("mtreat1.rds")
+} else {
+  plan(multisession, workers = 12)
+  mtreat1 <- mass_treatment()
+  plan(sequential)
+  saveRDScache(mtreat1, "mtreat1.rds")
+}
+```
+
+```{r}
+plot_mass_treatment(mtreat1)
+```
+
+
+### Treatment of infected
+
+The equilibrium proportion $\bar{S}$ of susceptible (to clinical infection) in the
+population:
+
+$$
+\bar{S} = \frac{1 + ac/\mu}{R_0 + ac/\mu}
+$$
+where $c$ is the efficiency of transmission from human to mosquito. R code:
+
+```{r}
+susceptible <- function(R0, c, a, mu) {
+  tmp <- a * c / mu
+  (1 + tmp) / (R0 + tmp)
+}
+```
+
+The proportion of susceptibles that gets a clinical infection over the past period of
+time $m$:
+
+$$
+P_m = 1 - \exp\left(-\frac{(R_0-1)}{1+ac/\mu}rm\right)
+$$
+
+where $r$ is the human recovery rate. R code:
+
+```{r}
+proba_infection <- function(R0, r, m, a, c, mu) {
+  1 - exp(-r * m * (R0 - 1) / (1 + a * c / mu))
+}
+```
+
+Combining the two to compute the proportion of clinical cases over the past period of
+time $m$:
+
+$$
+P_m\bar{S} = \frac{1+ac/\mu}{R_0+ac/\mu} \left[1-\exp\left(-\frac{(R_0-1)}{1+ac/\mu}rm\right)\right]
+$$
+
+R code:
+
+```{r}
+incidence <- function(R0, c, a, mu, r, m)  {
+  tmp1 <- a * c / mu
+  tmp2 <- tmp1 + 1
+  tmp2 * (1 - exp(-r * m * (R0 - 1) / tmp2)) / (R0 + tmp1)
+}
+```
+
+A function that shows the 3 things as a function of $R_0$: proportion of susceptibles,
+probability of getting clinical infection and proportion of clinical infections:
+
+```{r}
+clinical_cases <- function(a = 1 / 3, mu = 1 / 14, r = 1 / 200, m = 30, c = .3) {
+  R0s <- seq(1, 100, le = 512)
+  prop_susc <- map_dbl(R0s, ~ susceptible(.x, c, a, mu))
+  p_inf <- map_dbl(R0s, ~ proba_infection(.x, r, m, a, c, mu))
+  plot(R0s, prop_susc, type = "l", lwd = lwd_val, col = 4,
+       xlab = bquote(R[0]), ylab = "proportion or probability")
+  lines(R0s, p_inf, lwd = lwd_val, col = 3)
+  lines(R0s, p_inf * prop_susc, lwd = lwd_val, col = 2)
+  legend("right", legend = c("proportion of susceptibles",
+                             "probability of getting severely infected",
+                             "proportion of clinical cases"),
+         lty = 1, lwd = lwd_val, col = 4:2, bty = "n")
+}
+```
+
+An example:
+
+```{r}
+clinical_cases(m = 30)
+```
+
+```{r}
+R0s <- seq(1, 100, le = 512)
+inc_vals <- map_dbl(R0s, ~ incidence(.x, c = .3, a = 1 / 3, mu = 1 / 14,
+                                     r = 1 / 200, m = 30))
+plot(R0s, inc_vals, type = "l",lwd)
+```
+
+
+Iterations: a limit cycle appears for `R0i` below 40.
+
+```{r eval=FALSE}
+R0i <- 40
+n <- 10
+mu <- 1 / 14
+a <- 1 / 3
+prop <- 1
+m <- 50
+cv <- .3
+r <- 1 / 200
+
+nb <- 10
+R0 <- p <- rep(0, nb + 1)
+R0 <- R0_tmp <- R0i
+
+for (i in 2:(nb + 1)) {
+  p[i - 1] <- p_tmp <- incidence(R0_tmp, cv, a, mu, r, m)
+  R0[i] <- R0_tmp <- reduction(n, mu, a, prop * p_tmp, m, infinity) * R0i
+}
+
+plot(R0, type = "o")
+plot(head(p, -1), type = "o")
+R0
+```
+
+```{r}
+finalR0nl <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250) {
+  nleqslv::nleqslv(c(R0i, incidence(R0i, cv, a, mu, r, m)),
+                   function(vars) {
+                      R0 <- vars[1]
+                      p  <- vars[2]
+                      c(R0 - reduction(n, mu, a, prop * p, m, infinity) * R0i,
+                        p  - incidence(R0, cv, a, mu, r, m)) })$x[1]
+}
+
+#finalR0nl(R0i = 50, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1, m = 50, cv = .3, r = 1 / 200)
+```
+
+```{r}
+finalR0rs <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250) {
+  rootSolve::multiroot(function(vars) {
+                         R0 <- vars[1]
+                         p  <- vars[2]
+                         c(R0 - reduction(n, mu, a, prop * p, m, infinity) * R0i,
+                           p  - incidence(R0, cv, a, mu, r, m)) },
+                       c(R0i, incidence(R0i, cv, a, mu, r, m)))$root[1]
+}
+
+#finalR0rs(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1, m = 50, cv = .3, r = 1 / 200)
+```
+
+
+```{r}
+R0i_val <- 5:15 * 10
+#R0f_val <- map_dbl(R0i_val, ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1, m = 50, cv = .3, r = 1 / 200))
+```
+
+```{r}
+#plot(R0i_val, R0f_val / R0i_val, type = "o")
+```
+
+```{r}
+#finalR0nl(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1, m = 50, cv = .3, r = 1 / 200)
 ```
 
