@@ -1240,17 +1240,20 @@ An example:
 clinical_cases(m = 30)
 ```
 
+Zoom onto the incidence of clinical cases:
+
 ```{r}
 R0s <- seq(1, 100, le = 512)
+m <- 30
 inc_vals <- map_dbl(R0s, ~ incidence(.x, c = .3, a = 1 / 3, mu = 1 / 14,
-                                     r = 1 / 200, m = 30))
-plot(R0s, inc_vals, type = "l",lwd)
+                                     r = 1 / 200, m = m))
+plot(R0s, inc_vals, type = "l", lwd = lwd_val, col = 2,
+     xlab = bquote(R[0]), ylab = paste("new clinical cases over the past", m, "days"))
 ```
 
+Manual iterations: a limit cycle appears for `R0i` below 40.
 
-Iterations: a limit cycle appears for `R0i` below 40.
-
-```{r eval=FALSE}
+```{r eval = FALSE}
 R0i <- 40
 n <- 10
 mu <- 1 / 14
@@ -1274,6 +1277,8 @@ plot(head(p, -1), type = "o")
 R0
 ```
 
+A function that looks for the equilibrium value of $R_0$ using the `nleqslv` package:
+
 ```{r}
 finalR0nl <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250) {
   nleqslv::nleqslv(c(R0i, incidence(R0i, cv, a, mu, r, m)),
@@ -1283,9 +1288,9 @@ finalR0nl <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250) {
                       c(R0 - reduction(n, mu, a, prop * p, m, infinity) * R0i,
                         p  - incidence(R0, cv, a, mu, r, m)) })$x[1]
 }
-
-#finalR0nl(R0i = 50, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1, m = 50, cv = .3, r = 1 / 200)
 ```
+
+A function that does the same but using the `rootSolve` package:
 
 ```{r}
 finalR0rs <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250) {
@@ -1296,21 +1301,152 @@ finalR0rs <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250) {
                            p  - incidence(R0, cv, a, mu, r, m)) },
                        c(R0i, incidence(R0i, cv, a, mu, r, m)))$root[1]
 }
-
-#finalR0rs(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1, m = 50, cv = .3, r = 1 / 200)
 ```
 
+The functions from the `nleqslv` and `rootSolve` packages are equivalent but `nleqslv`
+is slightly faster. Explorations:
 
-```{r}
+```{r eval = FALSE, purl = FALSE}
 R0i_val <- 5:15 * 10
-#R0f_val <- map_dbl(R0i_val, ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1, m = 50, cv = .3, r = 1 / 200))
+R0f <- tibble(m = c(4:7 * 10, seq(100, 250, 50))) |> 
+  mutate(R0f = map(m,
+                   \(x) map_dbl(R0i_val,
+                                ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14, a = 1 / 3,
+                                            prop = 1, m = x, cv = .3, r = 1 / 200))))
+```
+
+```{r include = FALSE}
+R0i_val <- 5:15 * 10
+if (file_exists("R0f.rds")) {
+  R0f <- readRDScache("R0f.rds")
+  m_vals <- c(4:7 * 10, seq(100, 250, 50))
+  set <- setdiff(m_vals, R0f$m)
+  if (length(set)) {
+    R0f <- tibble(m = set) |> 
+      mutate(R0f = map(m,
+                       \(x) map_dbl(R0i_val,
+                                    ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14,
+                                                a = 1 / 3, prop = 1, m = x, cv = .3,
+                                                r = 1 / 200)))) |> 
+      bind_rows(R0f)
+    saveRDScache(R0f, "R0f.rds")
+  }
+} else {
+  R0f <- tibble(m = c(4:7 * 10, seq(100, 250, 50))) |> 
+    mutate(R0f = map(m,
+                     \(x) map_dbl(R0i_val,
+                                  ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14, a = 1 / 3,
+                                              prop = 1, m = x, cv = .3, r = 1 / 200))))
+  saveRDScache(R0f, "R0f.rds")
+}
+```
+
+Phenomenological extrapolation with a Hill model:
+
+```{r}
+extrapolate <- function(x) {
+  x |> 
+    mutate(R0reduction = map(R0f, ~ .x / R0i_val)) |> 
+    unnest(c(R0f, R0reduction)) |> 
+    summarise(fit = list(nls(R0reduction ~ R0i_val^h / (K^h + R0i_val^h),
+                             start = c(K = 5, h = .7))), .by = m) |> 
+    mutate(pred = map(fit, ~ predict(.x, newdata = data.frame(R0i_val = R0_new))))
+}
 ```
 
 ```{r}
-#plot(R0i_val, R0f_val / R0i_val, type = "o")
+R0_new <- seq(15, 150, le = 512)
+R0f <- R0f |> 
+  mutate(R0reduction = map(R0f, ~ .x / R0i_val)) |> 
+  unnest(c(R0f, R0reduction)) |> 
+  summarise(fit = list(nls(R0reduction ~ R0i_val^h / (K^h + R0i_val^h),
+                           start = c(K = 5, h = .7))), .by = m) |> 
+  mutate(pred = map(fit, ~ predict(.x, newdata = data.frame(R0i_val = R0_new))))
 ```
 
 ```{r}
-#finalR0nl(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1, m = 50, cv = .3, r = 1 / 200)
+plot(NA, xlim = c(0, 150), ylim = c(.6, 1),
+     xlab = bquote(initial ~ value ~ of ~ R[0]), ylab = bquote(R[0] ~ reduction))
+with(R0f, walk(pred, ~ lines(R0_new, .x, col = 4)))
+```
+
+```{r}
+R0f |> 
+  mutate(first = map_dbl(pred, first)) |> 
+  with(plot(m, first, type = "o", col = 4, lwd = lwd_val,
+            xlab = "time period of incidence definition (days)",
+            ylab = bquote(R[0] ~ reduction ~ at ~ R[0] == 15)))
+```
+
+Looking for the optimal value of `m`:
+
+```{r eval = FALSE, purl = FALSE}
+m_vals <- 66:72
+reduc_val <- map_dbl(m_vals, ~ finalR0nl(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3,
+                                         prop = 1, m = .x, cv = .3, r = 1 / 200) / 40) 
+```
+
+```{r include = FALSE}
+m_vals <- 66:72
+if (file_exists("reduc_val.rds")) {
+  reduc_val <- readRDScache("reduc_val.rds")
+} else {
+  reduc_val <- map_dbl(m_vals,
+                       ~ finalR0nl(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1,
+                                   m = .x, cv = .3, r = 1 / 200) / 40)
+  saveRDScache(reduc_val, "reduc_val.rds")
+}
+```
+
+```{r}
+plot(m_vals, reduc_val, type = "o", col = 4, lwd = lwd_val,
+     xlab = "time period of incidence definition (days)",
+     ylab = bquote(R[0] ~ reduction ~ at ~ R[0] == 40))
+```
+
+```{r}
+p_vals = 
+map_dbl(p_vals, ~ finalR0nl(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = .x, m = 69, cv = .3, r = 1 / 200) / 40)
+```
+
+```{r eval = FALSE, purl = FALSE}
+R0fprop <- tibble(p = 0:10 / 10) |> 
+  mutate(R0f = map(p,
+                   \(x) map_dbl(R0i_val,
+                                ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14, a = 1 / 3,
+                                            prop = x, m = 69, cv = .3, r = 1 / 200))))
+```
+
+```{r include = FALSE}
+if (file_exists("R0fprop.rds")) {
+  R0fprop <- readRDScache("R0fprop.rds")
+} else {
+  R0fprop <- tibble(p = 0:10 / 10) |> 
+    mutate(R0f = map(p,
+                     \(x) map_dbl(R0i_val,
+                                  ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14, a = 1 / 3,
+                                              prop = x, m = 69, cv = .3, r = 1 / 200))))
+  saveRDScache(R0fprop, "R0fprop.rds")
+}
+```
+
+```{r}
+R0fprop2 <- R0fprop |> 
+  filter(p > .3) |> 
+  mutate(R0reduction = map(R0f, ~ .x / R0i_val)) |> 
+  unnest(c(R0f, R0reduction)) |> 
+  summarise(fit = list(nls(R0reduction ~ R0i_val^h / (K^h + R0i_val^h),
+                           start = c(K = 5, h = .7))), .by = p) |> 
+  mutate(pred = map(fit, ~ predict(.x, newdata = data.frame(R0i_val = R0_new))))
+```
+
+```{r}
+plot(NA, xlim = c(0, 150), ylim = c(0, 1),
+     xlab = bquote(initial ~ value ~ of ~ R[0]), ylab = bquote(R[0] ~ reduction ~ factor))
+with(R0fprop2, walk(pred, ~ lines(R0_new, .x, col = 4)))
+
+R0fprop |> 
+  mutate(R0reduction = map(R0f, ~ .x / R0i_val)) |> 
+  with(walk(R0reduction, ~ points(R0i_val, .x)))
 ```
 
