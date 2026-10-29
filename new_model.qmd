@@ -1174,6 +1174,7 @@ population:
 $$
 \bar{S} = \frac{1 + ac/\mu}{R_0 + ac/\mu}
 $$
+
 where $c$ is the efficiency of transmission from human to mosquito. R code:
 
 ```{r}
@@ -1234,7 +1235,7 @@ clinical_cases <- function(a = 1 / 3, mu = 1 / 14, r = 1 / 200, m = 30, c = .3) 
 }
 ```
 
-An example:
+An example where incidence is defined over the past 30 days:
 
 ```{r}
 clinical_cases(m = 30)
@@ -1251,30 +1252,64 @@ plot(R0s, inc_vals, type = "l", lwd = lwd_val, col = 2,
      xlab = bquote(R[0]), ylab = paste("new clinical cases over the past", m, "days"))
 ```
 
-Manual iterations: a limit cycle appears for `R0i` below 40.
+A function that computes the iterations through the $R_0$ and $m$ values:
 
-```{r eval = FALSE}
-R0i <- 40
-n <- 10
-mu <- 1 / 14
-a <- 1 / 3
-prop <- 1
-m <- 50
-cv <- .3
-r <- 1 / 200
+```{r}
+dynamics <- function(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1, m = 50,
+                     cv = .3, r = 1 / 200, infinity = 250, nb = 10) {
+  R0 <- p <- rep(0, nb + 1)
+  R0 <- R0_tmp <- R0i
+  for (i in 2:(nb + 1)) {
+    p[i - 1] <- p_tmp <- incidence(R0_tmp, cv, a, mu, r, m)
+    R0[i] <- R0_tmp <- reduction(n, mu, a, prop * p_tmp, m, infinity) * R0i
+  }
+  list(R0 = R0, p = head(p, -1))
+}
+```
 
-nb <- 10
-R0 <- p <- rep(0, nb + 1)
-R0 <- R0_tmp <- R0i
+A function that draws the outpout of `dynamics()`:
 
-for (i in 2:(nb + 1)) {
-  p[i - 1] <- p_tmp <- incidence(R0_tmp, cv, a, mu, r, m)
-  R0[i] <- R0_tmp <- reduction(n, mu, a, prop * p_tmp, m, infinity) * R0i
+```{r}
+plot_dynamics <- function(x) {
+  plott <- function(...) {
+    plot(..., type = "o", xlab = "iteration", col = 4, lwd = lwd_val)
+  }
+  with(x, {
+    plott(R0, ylab = bquote(R[0]))
+    plott(p,  ylab = "incidence")
+  })
+}
+```
+
+Computing the dynamics of starting values of $R_0$ of 40 and 30:
+
+```{r eval = FALSE, purl = FALSE}
+out40 <- dynamics()
+out30 <- dynamics(30)
+```
+
+```{r include = FALSE}
+if (file_exists("out40.rds")) {
+  out40 <- readRDScache("out40.rds")
+} else {
+  out40 <- dynamics()
+  saveRDScache(out40, "out40.rds")
 }
 
-plot(R0, type = "o")
-plot(head(p, -1), type = "o")
-R0
+if (file_exists("out30.rds")) {
+  out30 <- readRDScache("out30.rds")
+} else {
+  out30 <- dynamics()
+  saveRDScache(out30, "out30.rds")
+}
+```
+
+Through manual iterations we can see that a limit cycle appears for `R0i` below 40:
+
+```{r}
+#| layout-ncol: 2
+plot_dynamics(out40)
+plot_dynamics(out30)
 ```
 
 A function that looks for the equilibrium value of $R_0$ using the `nleqslv` package:
@@ -1306,74 +1341,60 @@ finalR0rs <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250) {
 The functions from the `nleqslv` and `rootSolve` packages are equivalent but `nleqslv`
 is slightly faster. Explorations:
 
-```{r eval = FALSE, purl = FALSE}
-R0i_val <- 5:15 * 10
-R0f <- tibble(m = c(4:7 * 10, seq(100, 250, 50))) |> 
-  mutate(R0f = map(m,
-                   \(x) map_dbl(R0i_val,
-                                ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14, a = 1 / 3,
-                                            prop = 1, m = x, cv = .3, r = 1 / 200))))
-```
-
-```{r include = FALSE}
-R0i_val <- 5:15 * 10
-if (file_exists("R0f.rds")) {
-  R0f <- readRDScache("R0f.rds")
-  m_vals <- c(4:7 * 10, seq(100, 250, 50))
-  set <- setdiff(m_vals, R0f$m)
-  if (length(set)) {
-    R0f <- tibble(m = set) |> 
-      mutate(R0f = map(m,
-                       \(x) map_dbl(R0i_val,
-                                    ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14,
-                                                a = 1 / 3, prop = 1, m = x, cv = .3,
-                                                r = 1 / 200)))) |> 
-      bind_rows(R0f)
-    saveRDScache(R0f, "R0f.rds")
-  }
-} else {
-  R0f <- tibble(m = c(4:7 * 10, seq(100, 250, 50))) |> 
-    mutate(R0f = map(m,
-                     \(x) map_dbl(R0i_val,
-                                  ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14, a = 1 / 3,
-                                              prop = 1, m = x, cv = .3, r = 1 / 200))))
-  saveRDScache(R0f, "R0f.rds")
-}
-```
-
-Phenomenological extrapolation with a Hill model:
+(takes 8'40")
 
 ```{r}
-extrapolate <- function(x) {
-  x |> 
-    mutate(R0reduction = map(R0f, ~ .x / R0i_val)) |> 
-    unnest(c(R0f, R0reduction)) |> 
-    summarise(fit = list(nls(R0reduction ~ R0i_val^h / (K^h + R0i_val^h),
-                             start = c(K = 5, h = .7))), .by = m) |> 
-    mutate(pred = map(fit, ~ predict(.x, newdata = data.frame(R0i_val = R0_new))))
+m_vals <- c(4:7 * 10, seq(100, 250, 50))
+
+R0red <- expand_grid(m  = m_vals,
+                     R0 = 5:15 * 10) |> 
+  mutate(reduction = map2_dbl(R0, m, ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14,
+                                                 a = 1 / 3, prop = 1, m = .y,
+                                                 cv = .3, r = 1 / 200) / .x))
+```
+
+```{r}
+m_vals <- c(4:7 * 10, seq(100, 250, 50))
+if (file_exists("R0red.rds")) {
+  R0red <- readRDScache("R0red.rds")
+} else {
+  R0red <- expand_grid(m  = m_vals,
+                       R0 = 5:15 * 10) |> 
+    mutate(reduction = map2_dbl(R0, m, ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14,
+                                                   a = 1 / 3, prop = 1, m = .y,
+                                                   cv = .3, r = 1 / 200) / .x))
+  saveRDScache(R0red, "R0red.rds")
 }
+```
+
+```{r}
+with(R0red, plot(R0, reduction, col = 4))
 ```
 
 ```{r}
 R0_new <- seq(15, 150, le = 512)
-R0f <- R0f |> 
-  mutate(R0reduction = map(R0f, ~ .x / R0i_val)) |> 
-  unnest(c(R0f, R0reduction)) |> 
-  summarise(fit = list(nls(R0reduction ~ R0i_val^h / (K^h + R0i_val^h),
+
+R0red_Hill <- R0red |> 
+  summarise(fit = list(nls(reduction ~ R0^h / (K^h + R0^h),
                            start = c(K = 5, h = .7))), .by = m) |> 
-  mutate(pred = map(fit, ~ predict(.x, newdata = data.frame(R0i_val = R0_new))))
+  mutate(reduction = map(fit, ~ predict(.x, newdata = data.frame(R0 = R0_new)))) |> 
+  select(-fit) |> 
+  left_join(expand_grid(m = m_vals, R0 = list(R0_new)), "m") |> 
+  unnest(c(reduction, R0))
 ```
 
 ```{r}
 plot(NA, xlim = c(0, 150), ylim = c(.6, 1),
      xlab = bquote(initial ~ value ~ of ~ R[0]), ylab = bquote(R[0] ~ reduction))
-with(R0f, walk(pred, ~ lines(R0_new, .x, col = 4)))
+R0red_Hill |> 
+  group_by(m) |> 
+  group_walk(~ with(.x, lines(R0, reduction, col = 4)))
 ```
 
 ```{r}
-R0f |> 
-  mutate(first = map_dbl(pred, first)) |> 
-  with(plot(m, first, type = "o", col = 4, lwd = lwd_val,
+R0red_Hill |> 
+  filter(R0 == 15) |> 
+  with(plot(m, reduction, type = "o", col = 4, lwd = lwd_val,
             xlab = "time period of incidence definition (days)",
             ylab = bquote(R[0] ~ reduction ~ at ~ R[0] == 15)))
 ```
@@ -1381,17 +1402,17 @@ R0f |>
 Looking for the optimal value of `m`:
 
 ```{r eval = FALSE, purl = FALSE}
-m_vals <- 66:72
-reduc_val <- map_dbl(m_vals, ~ finalR0nl(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3,
-                                         prop = 1, m = .x, cv = .3, r = 1 / 200) / 40) 
+m_vals2 <- 66:72
+reduc_val <- map_dbl(m_vals2, ~ finalR0nl(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3,
+                                          prop = 1, m = .x, cv = .3, r = 1 / 200) / 40) 
 ```
 
 ```{r include = FALSE}
-m_vals <- 66:72
+m_vals2 <- 66:72
 if (file_exists("reduc_val.rds")) {
   reduc_val <- readRDScache("reduc_val.rds")
 } else {
-  reduc_val <- map_dbl(m_vals,
+  reduc_val <- map_dbl(m_vals2,
                        ~ finalR0nl(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1,
                                    m = .x, cv = .3, r = 1 / 200) / 40)
   saveRDScache(reduc_val, "reduc_val.rds")
@@ -1399,16 +1420,20 @@ if (file_exists("reduc_val.rds")) {
 ```
 
 ```{r}
-plot(m_vals, reduc_val, type = "o", col = 4, lwd = lwd_val,
+plot(m_vals2, reduc_val, type = "o", col = 4, lwd = lwd_val,
      xlab = "time period of incidence definition (days)",
      ylab = bquote(R[0] ~ reduction ~ at ~ R[0] == 40))
 ```
 
+
+
+
+
 ```{r eval = FALSE, purl = FALSE}
 R0fprop <- expand_grid(p = 1:10 / 10, R0 = 10 * 5:15) |> 
   mutate(reduction = map2_dbl(p, R0,
-                              ~ finalR0nl(R0i = .y, n = 10, mu = 1 / 14,
-                                          a = 1 / 3, prop = .x, m = 69, cv = .3,
+                              ~ finalR0nl(R0i = .y, n = 10, mu = 1 / 14, a = 1 / 3,
+                                          prop = .x, m = 69, cv = .3,
                                           r = 1 / 200) / .y))  
 ```
 
@@ -1418,8 +1443,8 @@ if (file_exists("R0fprop.rds")) {
 } else {
   R0fprop <- expand_grid(p = 1:10 / 10, R0 = 10 * 5:15) |> 
     mutate(reduction = map2_dbl(p, R0,
-                                ~ finalR0nl(R0i = .y, n = 10, mu = 1 / 14,
-                                            a = 1 / 3, prop = .x, m = 69, cv = .3,
+                                ~ finalR0nl(R0i = .y, n = 10, mu = 1 / 14, a = 1 / 3,
+                                            prop = .x, m = 69, cv = .3,
                                             r = 1 / 200) / .y))  
   saveRDScache(R0fprop, "R0fprop.rds")
 }
@@ -1444,8 +1469,6 @@ R0fprop |>
   summarise(fit = list(safely(nls)(reduction ~ R0^h / (K^h + R0^h), data = pick(everything()), start = c(K = 5, h = .7))), .by = p) |> 
   pull(fit)
 ```
-
-
 
 
 ```{r}
