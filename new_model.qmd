@@ -1139,6 +1139,10 @@ plot_mass_treatment <- function(data) {
     group_split(p_vals) |> 
     walk2(YlOrRd11, ~ with(.x, lines(m_vals, reduction, col = .y, lwd = lwd_val)))
   
+  legend("bottomleft", legend = paste(0:10 * 10, "%"), col = YlOrRd11, lty = 1,
+         lwd = lwd_val, title = "proportion of population treated", adj = c(1, .5),
+         x.intersp = 4, y.intersp = .85, xjust = .5, ncol = 2, inset = .03)
+  
   box(bty = "o")
 }
 ```
