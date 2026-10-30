@@ -1524,11 +1524,18 @@ plot_treatment_infected <- function(data) {
     unnest(reduction) |> 
     group_split(prop) |> 
     walk2(tail(YlOrRd11, -1), ~ with(.x, lines(R0, prediction, col = .y, lwd = lwd_val)))
-  
+
+  legend("bottomright", legend = paste(0:10 * 10, "%"), col = YlOrRd11, lty = 1,
+         lwd = lwd_val, title = "proportion of cases treated", adj = c(1, .5),
+         x.intersp = 4, y.intersp = .85, xjust = .5, ncol = 2, inset = .03)
+    
   box(bty = "o")
 }
+```
 
+```{r}
 plot_treatment_infected(out)
 ```
+
 
 
