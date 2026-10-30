@@ -1134,11 +1134,12 @@ plot_mass_treatment <- function(data) {
   axis(1, ats, labels)
   abline(v = ats, col = "grey")
   abline(h = 0:10 / 10, col = "grey")
-  box(bty = "o")
   
   data |> 
     group_split(p_vals) |> 
     walk2(YlOrRd11, ~ with(.x, lines(m_vals, reduction, col = .y, lwd = lwd_val)))
+  
+  box(bty = "o")
 }
 ```
 
@@ -1341,28 +1342,32 @@ finalR0rs <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250) {
 The functions from the `nleqslv` and `rootSolve` packages are equivalent but `nleqslv`
 is slightly faster. Explorations:
 
-(takes 8'40")
+(takes 8'40" in sequential mode on the Mac Mini and 24" in parallel mode on the M2)
 
-```{r}
+```{r eval = FALSE, purl = FALSE}
 m_vals <- c(4:7 * 10, seq(100, 250, 50))
-
+plan(multisession, workers = 12)
 R0red <- expand_grid(m  = m_vals,
                      R0 = 5:15 * 10) |> 
-  mutate(reduction = map2_dbl(R0, m, ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14,
-                                                 a = 1 / 3, prop = 1, m = .y,
-                                                 cv = .3, r = 1 / 200) / .x))
+  mutate(reduction = future_map2_dbl(R0, m, ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14,
+                                                        a = 1 / 3, prop = 1, m = .y,
+                                                        cv = .3, r = 1 / 200) / .x))
+plan(sequential)
 ```
 
-```{r}
+```{r include = FALSE}
 m_vals <- c(4:7 * 10, seq(100, 250, 50))
 if (file_exists("R0red.rds")) {
   R0red <- readRDScache("R0red.rds")
 } else {
+  plan(multisession, workers = 12)
   R0red <- expand_grid(m  = m_vals,
                        R0 = 5:15 * 10) |> 
-    mutate(reduction = map2_dbl(R0, m, ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14,
+    mutate(reduction = future_map2_dbl(R0, m,
+                                       ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14,
                                                    a = 1 / 3, prop = 1, m = .y,
                                                    cv = .3, r = 1 / 200) / .x))
+  plan(sequential)
   saveRDScache(R0red, "R0red.rds")
 }
 ```
@@ -1425,105 +1430,105 @@ plot(m_vals2, reduc_val, type = "o", col = 4, lwd = lwd_val,
      ylab = bquote(R[0] ~ reduction ~ at ~ R[0] == 40))
 ```
 
-
-
-
+Now we know that we want to use `m = 69`. Let's now explore various values of `prop`
+(takes 29" on the M2):
 
 ```{r eval = FALSE, purl = FALSE}
-R0fprop <- expand_grid(p = 1:10 / 10, R0 = 10 * 5:15) |> 
-  mutate(reduction = map2_dbl(p, R0,
-                              ~ finalR0nl(R0i = .y, n = 10, mu = 1 / 14, a = 1 / 3,
-                                          prop = .x, m = 69, cv = .3,
-                                          r = 1 / 200) / .y))  
+plan(multisession, workers = 12)
+R0red2 <- expand_grid(prop = 1:10 / 10,
+                      R0   = 5:15 * 10) |> 
+  mutate(reduction = future_map2_dbl(R0, prop,
+                                     ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14,
+                                                 a = 1 / 3, prop = .y, m = 69,
+                                                 cv = .3, r = 1 / 200) / .x))
+plan(sequential)
 ```
 
 ```{r include = FALSE}
-if (file_exists("R0fprop.rds")) {
-  R0fprop <- readRDScache("R0fprop.rds")
+if (file_exists("R0red2.rds")) {
+  R0red2 <- readRDScache("R0red2.rds")
 } else {
-  R0fprop <- expand_grid(p = 1:10 / 10, R0 = 10 * 5:15) |> 
-    mutate(reduction = map2_dbl(p, R0,
-                                ~ finalR0nl(R0i = .y, n = 10, mu = 1 / 14, a = 1 / 3,
-                                            prop = .x, m = 69, cv = .3,
-                                            r = 1 / 200) / .y))  
-  saveRDScache(R0fprop, "R0fprop.rds")
+  R0red2 <- expand_grid(prop = 1:10 / 10,
+                        R0   = 5:15 * 10) |> 
+    mutate(reduction = future_map2_dbl(R0, prop,
+                                       ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14,
+                                                   a = 1 / 3, prop = .y, m = 69,
+                                                   cv = .3, r = 1 / 200) / .x))
+  saveRDScache(R0red2, "R0red2.rds")
 }
 ```
 
-```{r}
-R0fprop |> 
-  filter(p > .9) |> 
-  nls(reduction ~ R0^h / (K^h + R0^h), data = _, start = c(K = 5, h = .7))
-```
+Let's try to perform Hill extrapolation for each value of `prop` and get rid off all
+the `prop` values where extrapolation fails. We e
 
 ```{r}
-R0fprop |> 
-  filter(p > .9) |> 
-  summarise(fit = list(nls(reduction ~ R0^h / (K^h + R0^h), start = c(K = 5, h = .7))), .by = p) |> 
-  pull(fit)
-```
-
-```{r}
-R0fprop |> 
-  filter(p > .9) |> 
-  summarise(fit = list(safely(nls)(reduction ~ R0^h / (K^h + R0^h), data = pick(everything()), start = c(K = 5, h = .7))), .by = p) |> 
-  pull(fit)
-```
-
-
-```{r}
-aaa <- R0fprop |> 
-  mutate(R0reduction = map(R0f, ~ .x / R0i_val)) |> 
-  filter(p == .4) |> 
-  pull(R0reduction) |> 
-  first()
-
-#plot(R0i_val, aaa)
-nls(aaa ~ R0i_val^h / (K^h + R0i_val^h), start = c(K = 5, h = .7))
-```
-
-```{r}
-tmp <- R0fprop |> 
-  mutate(R0reduction = map(R0f, ~ .x / R0i_val)) |> 
-  select(-R0f) |> 
-  unnest(c(R0reduction)) |> 
-  filter(p > .9) |> 
-  summarise(fit = list(safely(nls)(R0reduction ~ R0i_val^h / (K^h + R0i_val^h),
-                                   start = c(K = 5, h = .7), algo = "port")), .by = p) |> 
+tmp <- R0red2 |> 
+  summarise(fit = list(safely(nls)(reduction ~ R0^h / (K^h + R0^h),
+                                   data = pick(everything()),
+                                   start = c(K = 5, h = .7))), .by = prop) |> 
   filter_out(map_lgl(map(fit, "result"), is.null)) |> 
   mutate(across(fit, ~ map(.x, "result")),
          coeff = map(fit, coef)) |>
   unnest_wider(coeff)
 
-tmp
+modK <- tmp |> 
+  select(prop, K) |> 
+  bind_rows(tibble(prop = 0, K = 0)) |> 
+  lm(K ~ prop + I(prop^2), data = _)
 
-#modK <- tmp |> 
-#  select(p, K) |> 
-#  bind_rows(tibble(p = 0, K = 0)) |> 
-#  lm(K ~ p + I(p^2), data = _)
+modh <- lm(h ~ prop + I(prop^2), tmp)
 
-#modh <- lm(h ~ p + I(p^2), tmp)
-#
-#R0fprop2 <- R0fprop |> 
-#  mutate(K = predict(modK, list(p = p)),
-#         h = predict(modh, list(p = p))) |> 
-#  mutate(R0reduction = map(R0f, ~ .x / R0i_val)) |> 
-#  unnest(c(R0f, R0reduction)) |> 
-#  summarise(fit = list(safely(nls)(R0reduction ~ R0i_val^h / (K^h + R0i_val^h),
-#                                   start = c(K = first(K), h = first(h)))), .by = p) |> 
-#  filter_out(map_lgl(map(fit, "result"), is.null)) |>
-#  mutate(across(fit, ~ map(.x, "result")),
-#         pred = map(fit, ~ predict(.x, newdata = data.frame(R0i_val = R0_new))))
+out <- R0red2 |> 
+  nest(.by = prop) |>
+  mutate(K0  = predict(modK, list(prop = prop)),
+         h0  = predict(modh, list(prop = prop)),
+         fit = pmap(list(data, K0, h0),
+                    ~ nls(reduction ~ R0^h / (K^h + R0^h),
+                          data = ..1, start = c(K = ..2, h = ..3))),
+         reduction = map(fit,
+                         ~ tibble(R0 = R0_new,
+                                  prediction = predict(.x,
+                                                       newdata = list(R0 = R0_new))))) |> 
+  select(-c(K0, h0, fit))
 ```
 
-```{r eval = FALSE}
-plot(NA, xlim = c(0, 150), ylim = c(0, 1),
-     xlab = bquote(initial ~ value ~ of ~ R[0]), ylab = bquote(R[0] ~ reduction ~ factor))
-with(R0fprop2, walk(pred, ~ lines(R0_new, .x, col = 4)))
+Verifying the quality of the extrapolations:
 
-R0fprop |> 
-  mutate(R0reduction = map(R0f, ~ .x / R0i_val)) |> 
-  with(walk(R0reduction, ~ points(R0i_val, .x)))
+```{r}
+plot(NA, xlim = c(0, 150), ylim = 0:1,
+     xlab = bquote(initial ~ value ~ of ~ R[0]), ylab = bquote(R[0] ~ reduction))
+
+out |> 
+  select(prop, reduction) |> 
+  unnest(reduction) |> 
+  group_by(prop) |> 
+  group_walk(~ with(.x, lines(R0, prediction, col = 4)))
+
+out |> 
+  select(prop, data) |> 
+  unnest(data) |> 
+  group_by(prop) |> 
+  group_walk(~ with(.x, points(R0, reduction, col = 4)))
+```
+
+```{r}
+plot_treatment_infected <- function(data) {
+  plot(NA, xlim = c(15, 150), ylim = 0:1, xaxs = "i", yaxs = "i",
+     xlab = bquote(initial ~ value ~ of ~ R[0]), ylab = bquote(R[0] ~ reduction))
+  
+  abline(v = 0:15 * 10, col = "grey")
+  abline(h = 0:10 / 10, col = "grey")
+  
+  data |> 
+    select(prop, reduction) |> 
+    unnest(reduction) |> 
+    group_split(prop) |> 
+    walk2(tail(YlOrRd11, -1), ~ with(.x, lines(R0, prediction, col = .y, lwd = lwd_val)))
+  
+  box(bty = "o")
+}
+
+plot_treatment_infected(out)
 ```
 
 
