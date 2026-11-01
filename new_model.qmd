@@ -1549,6 +1549,8 @@ plot_treatment_infected(out)
 ```
 
 
+
+
 ## Nonlinearities
 
 ```{r}
@@ -1601,13 +1603,11 @@ N_target <- 1e3
 
 N <- n_workers * ceiling(1.05 * N_target / n_workers)
 plan(multisession, workers = n_workers)
-#system.time(
   conv <- future_pmap(list(sample(alpha2s, N), sample(beta2s, N), sample(delta2s, N)),
                       ~ safely(reduction1)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
                                            1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
     keep(~ is.null(.x$error)) |> 
     map_dbl("result")
-#)
 plan(sequential)
 ```
 
@@ -1669,18 +1669,16 @@ mass_treatment2 <- function(n = 10, mu = 1 / 14, a = 1 / 3, T_min = 3, T_max = 8
 }
 ```
 
-Takes 3h45':
+Takes 3h45' with `N_target = 50`:
 
 ```{r eval = FALSE, purl = FALSE}
 N_target <- 50
 N <- n_workers * ceiling(1.05 * N_target / n_workers)
 
 plan(multisession, workers = 12)
-system.time(
 mtreat2_50 <- mass_treatment2(alpha = sample(alpha2s, N),
                               beta  = sample(beta2s,  N),
                               gamma = sample(delta2s, N))
-)
 plan(sequential)
 ```
 
@@ -1691,12 +1689,10 @@ N <- n_workers * ceiling(1.05 * N_target / n_workers)
 if (file_exists("mtreat2_50.rds")) {
   mtreat2_50 <- readRDScache("mtreat2_50.rds")
 } else {
-  plan(multisession, workers = 12)
-  system.time(
+  plan(multisession, workers = n_workers)
   mtreat2_50 <- mass_treatment2(alpha = sample(alpha2s, N),
                                 beta  = sample(beta2s,  N),
                                 gamma = sample(delta2s, N))
-  )
   plan(sequential)
   saveRDScache(mtreat2_50, "mtreat2_50.rds")
 }
@@ -1706,4 +1702,87 @@ if (file_exists("mtreat2_50.rds")) {
 plot_mass_treatment(mtreat2_50)
 ```
 
+
+## Treatment of infected
+
+A function that searches for the optimal value of `m`:
+
+```{r}
+search_m <- function(m = 63:74, R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1,
+                     cv = .3, r = 1 / 200) {
+  m |>
+    tibble() |> 
+    mutate(reduction =
+             future_map_dbl(m, ~ finalR0nl(R0i, n, mu, a, prop, m = .x, cv, r) / R0i)) |> 
+    filter(reduction == min(reduction)) |> 
+    pull(m)
+}
+```
+
+```{r}
+extrapolate <- function(x, R0_new = seq(15, 150, le = 512), K0 = 5, h0 = .7) {
+# Trying to fit a Hill model on reduction as a function of R0 for each value of prop:
+  first_try <- x |> 
+    summarise(fit = list(safely(nls)(reduction ~ R0^h / (K^h + R0^h),
+                                     data = pick(everything()),
+                                     start = c(K = K0, h = h0))), .by = prop) |> 
+    filter_out(map_lgl(map(fit, "result"), is.null)) |> 
+    mutate(across(fit, ~ map(.x, "result")),
+           coeff = map(fit, coef)) |>
+    unnest_wider(coeff)
+
+# Modelling the values of the parameters of the Hill model as a function of prop:
+  modK <- first_try |> 
+    select(prop, K) |> 
+    bind_rows(tibble(prop = 0, K = 0)) |> 
+    lm(K ~ prop + I(prop^2), data = _)
+  
+  modh <- lm(h ~ prop + I(prop^2), first_try)
+
+# Using the output of the second modelling as starting values of the first modelling:
+  x |> 
+    nest(.by = prop) |>
+    mutate(K0  = predict(modK, list(prop = prop)),
+           h0  = predict(modh, list(prop = prop)),
+           fit = pmap(list(data, K0, h0),
+                      ~ nls(reduction ~ R0^h / (K^h + R0^h),
+                            data = ..1, start = c(K = ..2, h = ..3))),
+           reduction = map(fit,
+                           ~ tibble(R0 = R0_new,
+                                    prediction =
+                                      predict(.x, newdata = list(R0 = R0_new))))) |> 
+    select(-c(K0, h0, fit))
+}
+```
+
+```{r}
+treatment_infected <- function(R0 = 5:15 * 10, prop = 1:10 / 10, m = 63:74, n = 10,
+                               mu = 1 / 14, a = 1 / 3, cv = .3, r = 1 / 200,
+                               R0_new = seq(15, 150, le = 512), K0 = 5, h0 = .7) {
+  m_opt <- search_m(m, first(R0), n, mu, a, prop = 1, cv, r)
+  expand_grid(prop, R0) |> 
+    mutate(reduction = future_map2(R0, prop,
+                                   ~ safely(finalR0nl)(R0i = .x, n, mu, a, prop = .y,
+                                                       m = m_opt, cv, r))) |> 
+    filter(map_lgl(reduction, ~ is.null(.x$error))) |> 
+    mutate(across(reduction, ~ map_dbl(.x, "result") / R0)) |> 
+    extrapolate(R0_new, K0, h0)
+}
+```
+
+Takes 32":
+
+```{r}
+plan(multisession, workers = n_workers)
+system.time(out <- treatment_infected())
+plan(sequential)
+```
+
+```{r}
+plot_treatment_infected(out)
+```
+
+```{r}
+
+```
 
