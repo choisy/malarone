@@ -20,10 +20,6 @@ gert::git_add(file)
 gert::git_commit("Adding the .nojekyll file")
 gert::git_push()
 rm(file)
-
-knitr::purl("new_model.qmd", "tmp.R", documentation = FALSE)
-source("tmp.R")
-file.remove("tmp.R")
 ```
 
 ```{r include = FALSE, eval = FALSE}
