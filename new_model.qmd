@@ -1549,8 +1549,6 @@ plot_treatment_infected(out)
 ```
 
 
-
-
 ## Nonlinearities
 
 ```{r}
@@ -1703,17 +1701,17 @@ plot_mass_treatment(mtreat2_50)
 ```
 
 
-## Treatment of infected
+### Functions for the treatment of infected
 
 A function that searches for the optimal value of `m`:
 
 ```{r}
-search_m <- function(m = 63:74, R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1,
-                     cv = .3, r = 1 / 200) {
+search_m <- function(m = 63:74, R0 = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1,
+                     c = .3, r = 1 / 200) {
   m |>
     tibble() |> 
     mutate(reduction =
-             future_map_dbl(m, ~ finalR0nl(R0i, n, mu, a, prop, m = .x, cv, r) / R0i)) |> 
+             future_map_dbl(m, ~ finalR0nl(R0, n, mu, a, prop, m = .x, c, r) / R0)) |> 
     filter(reduction == min(reduction)) |> 
     pull(m)
 }
@@ -1757,13 +1755,13 @@ extrapolate <- function(x, R0_new = seq(15, 150, le = 512), K0 = 5, h0 = .7) {
 
 ```{r}
 treatment_infected <- function(R0 = 5:15 * 10, prop = 1:10 / 10, m = 63:74, n = 10,
-                               mu = 1 / 14, a = 1 / 3, cv = .3, r = 1 / 200,
+                               mu = 1 / 14, a = 1 / 3, c = .3, r = 1 / 200,
                                R0_new = seq(15, 150, le = 512), K0 = 5, h0 = .7) {
-  m_opt <- search_m(m, first(R0), n, mu, a, prop = 1, cv, r)
+  m_opt <- search_m(m, first(R0), n, mu, a, prop = 1, c, r)
   expand_grid(prop, R0) |> 
     mutate(reduction = future_map2(R0, prop,
                                    ~ safely(finalR0nl)(R0i = .x, n, mu, a, prop = .y,
-                                                       m = m_opt, cv, r))) |> 
+                                                       m = m_opt, c, r))) |> 
     filter(map_lgl(reduction, ~ is.null(.x$error))) |> 
     mutate(across(reduction, ~ map_dbl(.x, "result") / R0)) |> 
     extrapolate(R0_new, K0, h0)
@@ -1782,7 +1780,64 @@ plan(sequential)
 plot_treatment_infected(out)
 ```
 
-```{r}
 
+### Treatment of infected
+
+```{r}
+finalR0nl2 <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250,
+                       alpha, beta, delta) {
+  nleqslv::nleqslv(c(R0i, incidence(R0i, cv, a, mu, r, m)),
+                   function(vars) {
+                      R0 <- vars[1]
+                      p  <- vars[2]
+                      c(R0 - reduction2(n, mu, a, prop * p, m, infinity,
+                                        alpha, beta, delta) * R0i,
+                        p  - incidence(R0, cv, a, mu, r, m)) })$x[1]
+}
+```
+
+```{r}
+search_m2 <- function(m = 63:74, R0 = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1,
+                      c = .3, r = 1 / 200, alpha, beta, delta) {
+  m |>
+    tibble() |> 
+    mutate(reduction =
+             future_map_dbl(m, ~ finalR0nl2(R0, n, mu, a, prop, m = .x, c, r,
+                                            alpha, beta, delta) / R0)) |> 
+    filter(reduction == min(reduction)) |> 
+    pull(m)
+}
+```
+
+```{r}
+treatment_infected2 <- function(R0 = 5:15 * 10, prop = 1:10 / 10, m = 63:74, n = 10,
+                                mu = 1 / 14, a = 1 / 3, c = .3, r = 1 / 200,
+                                R0_new = seq(15, 150, le = 512), K0 = 5, h0 = .7,
+                                alpha, beta, delta) {
+  m_opt <- search_m(m, first(R0), n, mu, a, prop = 1, c, r)
+  expand_grid(prop, R0) |> 
+    mutate(reduction = future_map2(R0, prop,
+                                   ~ safely(finalR0nl2)(R0i = .x, n, mu, a, prop = .y,
+                                                        m = m_opt, c, r,
+                                                        alpha, beta, delta))) |> 
+    filter(map_lgl(reduction, ~ is.null(.x$error))) |> 
+    mutate(across(reduction, ~ map_dbl(.x, "result") / R0)) |> 
+    extrapolate(R0_new, K0, h0)
+}
+```
+
+```{r}
+N_target <- 50
+#N <- n_workers * ceiling(1.05 * N_target / n_workers)
+N <- ceiling(1.05 * N_target)
+
+plan(multisession, workers = n_workers)
+system.time(
+treatinf2_50 <- mass_treatment2(alpha = sample(alpha2s, N),
+                                beta  = sample(beta2s,  N),
+                                gamma = sample(delta2s, N))
+)
+plan(sequential)
+save.image()
 ```
 
