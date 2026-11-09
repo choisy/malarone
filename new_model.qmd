@@ -1837,3 +1837,7 @@ plan(sequential)
 save.image()
 ```
 
+```{r}
+saveRDScache(treatinf2_50, "treatinf2_50.rds")
+```
+
