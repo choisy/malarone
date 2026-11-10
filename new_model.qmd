@@ -1547,6 +1547,8 @@ plot_treatment_infected(out)
 
 ## Nonlinearities
 
+### Convergence
+
 ```{r}
 bootstrap_functions <- function(x, f = function(x) x / 3) {
   map(x, ~ with(as.list(.x), make_effect(A, k, d, f(d))))
@@ -1663,11 +1665,10 @@ mass_treatment2 <- function(n = 10, mu = 1 / 14, a = 1 / 3, T_min = 3, T_max = 8
 }
 ```
 
-Takes 3h45' with `N_target = 50`:
+Takes 3h45' with `N = 50`:
 
 ```{r eval = FALSE, purl = FALSE}
-N_target <- 50
-N <- n_workers * ceiling(1.05 * N_target / n_workers)
+N <- 50
 
 plan(multisession, workers = 12)
 mtreat2_50 <- mass_treatment2(alpha = sample(alpha2s, N),
@@ -1697,7 +1698,7 @@ plot_mass_treatment(mtreat2_50)
 ```
 
 
-### Functions for the treatment of infected
+### Treatment of infected
 
 A function that searches for the optimal value of `m`:
 
@@ -1766,18 +1767,17 @@ treatment_infected <- function(R0 = 5:15 * 10, prop = 1:10 / 10, m = 63:74, n = 
 
 Takes 32":
 
-```{r}
+```{r eval=FALSE}
 plan(multisession, workers = n_workers)
 system.time(out <- treatment_infected())
+saveRDScache(out, "out.rds")
 plan(sequential)
 ```
 
 ```{r}
+out <- readRDScache("out.rds")
 plot_treatment_infected(out)
 ```
-
-
-### Treatment of infected
 
 ```{r}
 finalR0nl2 <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250,
@@ -1822,7 +1822,7 @@ treatment_infected2 <- function(R0 = 5:15 * 10, prop = 1:10 / 10, m = 63:74, n =
 }
 ```
 
-```{r}
+```{r eval=FALSE}
 N_target <- 50
 #N <- n_workers * ceiling(1.05 * N_target / n_workers)
 N <- ceiling(1.05 * N_target)
@@ -1837,7 +1837,7 @@ plan(sequential)
 save.image()
 ```
 
-```{r}
+```{r eval=FALSE}
 saveRDScache(treatinf2_50, "treatinf2_50.rds")
 ```
 
