@@ -96,6 +96,12 @@ Colors:
 YlOrRd11 <- hcl.colors(11, "YlOrRd", rev = TRUE)
 ```
 
+Number of parallel instances:
+
+```{r}
+n_workers <- 12
+```
+
 
 ## Packages
 
@@ -1544,171 +1550,21 @@ plot_treatment_infected <- function(data) {
 plot_treatment_infected(out)
 ```
 
+#### Functions
 
-## Nonlinearities
+Here we put the above code into functions. A function that searches for the optimal
+value of `m`:
 
-### Convergence
-
-```{r}
-bootstrap_functions <- function(x, f = function(x) x / 3) {
-  map(x, ~ with(as.list(.x), make_effect(A, k, d, f(d))))
-}
-
-alpha2s <- bootstrap_functions(alpha_model_4dpi)
-beta2s  <- bootstrap_functions(beta_model_4dpi)
-delta2s <- bootstrap_functions(delta_model_4dpi)
-```
-
-```{r}
-reduction1 <- function(alpha, beta, delta, n, mu, a, p, m, infinity) {
-  l <- function(tau, m) {
-    map_dbl(tau,
-            ~ integrate2(function(x) (1 - alpha(x, .x)) * (1 - beta(x, .x)), 0, m) / m)
-  }
-  
-  qf <- function(tau, m) {
-    map_dbl(tau,
-            ~ integrate2(function(x) size2rate_reduction(1 - delta(x, .x)), 0, m) / m)
-  }
-  
-  lambda <- function(tau, a, p, m) {
-    map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - l(x, m), 0, .x)))
-  }
-  
-  kappaf <- function(tau, a, p, m) {
-    map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - qf(x, m), 0, .x)))
-  }
-  
-  theta <- function(mu, a, p, m, infinity) {
-    integrate2(function(x) dexp(x, mu) * zeta(lambda(x, a, p, m)), 0, infinity)
-  }
-  
-  EIPf <- function(n, a, p, m) {
-    optimise(function(x) abs(x * kappaf(x, a, p, m) - n), c(0, 24 * 100))$min
-  }
-  
-  theta(mu, a, p, m, infinity) * exp((n - EIPf(n, a, p, m)) * mu)  
-}
-```
-
-Let's look at a number of replicates that reaches convergence (take 8'):
-
-```{r eval = FALSE, purl = FALSE}
-n_workers <- 12
-N_target <- 1e3
-
-N <- n_workers * ceiling(1.05 * N_target / n_workers)
-plan(multisession, workers = n_workers)
-  conv <- future_pmap(list(sample(alpha2s, N), sample(beta2s, N), sample(delta2s, N)),
-                      ~ safely(reduction1)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
-                                           1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
-    keep(~ is.null(.x$error)) |> 
-    map_dbl("result")
-plan(sequential)
-```
-
-```{r include = FALSE}
-n_workers <- 12
-N_target <- 1e3
-N <- n_workers * ceiling(1.05 * N_target / n_workers)
-if (file_exists("conv.rds")) {
-  conv <- readRDScache("conv.rds")
-} else {
-  plan(multisession, workers = n_workers)
-    conv <- future_pmap(list(sample(alpha2s, N), sample(beta2s, N), sample(delta2s, N)),
-                        ~ safely(reduction1)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
-                                             1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
-      keep(~ is.null(.x$error)) |> 
-      map_dbl("result")
-  plan(sequential)
-  saveRDScache(conv, "conv.rds")
-}
-```
-
-```{r}
-plot(cummean(conv), ylim = c(.9, .95), type = "l", lwd = lwd_val)
-abline(v = 0:15 * 100, col = "grey")
-abline(h = 91:95 / 100, col = "grey")
-```
-
-```{r}
-reduction2 <- function(n, mu, a, p, m, infinity, alpha, beta, delta) {
-  list(alpha, beta, delta) |> 
-    pmap(~ safely(reduction1)(..1, ..2, ..3, n, mu, a, p, m, infinity)) |> 
-    keep(~ is.null(.x$error)) |> 
-    map_dbl("result") |> 
-    mean()
-}
-```
-
-```{r}
-#reduction2(10 * 24, 1 / (14 * 24), 1 / (3 * 24), .1, 50 * 24, 50 * 24,
-#           alpha2s[1:2], beta2s[1:2], delta2s[1:2])
-```
-
-
-### Mass treatment
-
-```{r}
-mass_treatment2 <- function(n = 10, mu = 1 / 14, a = 1 / 3, T_min = 3, T_max = 8,
-                            p_vals = 0:10 / 10, infinity = 250, alpha, beta, gamma) {
-  n <- n * 24
-  mu <- mu / 24
-  a <- a / 24
-  infinity <- infinity * 24
-  
-  expand_grid(p_vals, m_vals = (T_min * 7):(T_max * 7) * 24) |> 
-    mutate(reduction =
-             future_map2_dbl(p_vals, m_vals,
-                             ~ reduction2(n, mu, a, p = .x, m = .y, infinity,
-                                          alpha, beta, gamma)))
-}
-```
-
-Takes 3h45' with `N = 50`:
-
-```{r eval = FALSE, purl = FALSE}
-N <- 50
-
-plan(multisession, workers = 12)
-mtreat2_50 <- mass_treatment2(alpha = sample(alpha2s, N),
-                              beta  = sample(beta2s,  N),
-                              gamma = sample(delta2s, N))
-plan(sequential)
-```
-
-```{r include = FALSE}
-N_target <- 50
-N <- n_workers * ceiling(1.05 * N_target / n_workers)
-
-if (file_exists("mtreat2_50.rds")) {
-  mtreat2_50 <- readRDScache("mtreat2_50.rds")
-} else {
-  plan(multisession, workers = n_workers)
-  mtreat2_50 <- mass_treatment2(alpha = sample(alpha2s, N),
-                                beta  = sample(beta2s,  N),
-                                gamma = sample(delta2s, N))
-  plan(sequential)
-  saveRDScache(mtreat2_50, "mtreat2_50.rds")
-}
-```
-
-```{r}
-plot_mass_treatment(mtreat2_50)
-```
-
-
-### Treatment of infected
-
-A function that searches for the optimal value of `m`:
+finalR0nl <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250)
 
 ```{r}
 search_m <- function(m = 63:74, R0 = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1,
-                     c = .3, r = 1 / 200) {
+                     c = .3, r = 1 / 200, inifinity = 250) {
   m |>
     tibble() |> 
     mutate(reduction =
-             future_map_dbl(m, ~ finalR0nl(R0, n, mu, a, prop, m = .x, c, r) / R0)) |> 
+             future_map_dbl(m, ~ finalR0nl(R0, n, mu, a, prop,
+                                           m = .x, c, r, infinity) / R0)) |> 
     filter(reduction == min(reduction)) |> 
     pull(m)
 }
@@ -1753,12 +1609,13 @@ extrapolate <- function(x, R0_new = seq(15, 150, le = 512), K0 = 5, h0 = .7) {
 ```{r}
 treatment_infected <- function(R0 = 5:15 * 10, prop = 1:10 / 10, m = 63:74, n = 10,
                                mu = 1 / 14, a = 1 / 3, c = .3, r = 1 / 200,
-                               R0_new = seq(15, 150, le = 512), K0 = 5, h0 = .7) {
-  m_opt <- search_m(m, first(R0), n, mu, a, prop = 1, c, r)
+                               R0_new = seq(15, 150, le = 512), K0 = 5, h0 = .7,
+                               inifinity = 250) {
+  m_opt <- search_m(m, first(R0), n, mu, a, prop = 1, c, r, infinity)
   expand_grid(prop, R0) |> 
     mutate(reduction = future_map2(R0, prop,
                                    ~ safely(finalR0nl)(R0i = .x, n, mu, a, prop = .y,
-                                                       m = m_opt, c, r))) |> 
+                                                       m = m_opt, c, r, inifinity))) |> 
     filter(map_lgl(reduction, ~ is.null(.x$error))) |> 
     mutate(across(reduction, ~ map_dbl(.x, "result") / R0)) |> 
     extrapolate(R0_new, K0, h0)
@@ -1779,6 +1636,178 @@ out <- readRDScache("out.rds")
 plot_treatment_infected(out)
 ```
 
+
+## Nonlinearities
+
+### Convergence
+
+Converting the bootstraped values of the function parameters into as many functions:
+
+```{r}
+bootstrap_functions <- function(x, f = function(x) x / 3) {
+  map(x, ~ with(as.list(.x), make_effect(A, k, d, f(d))))
+}
+
+alpha2s <- bootstrap_functions(alpha_model_4dpi)
+beta2s  <- bootstrap_functions(beta_model_4dpi)
+delta2s <- bootstrap_functions(delta_model_4dpi)
+```
+
+A rewriting of the `reduction()` function that embeds all necessary function back to
+`alpha`, `beta` and `delta`:
+
+```{r}
+reduction1 <- function(alpha, beta, delta, n, mu, a, p, m, infinity) {
+  l <- function(tau, m) {
+    map_dbl(tau,
+            ~ integrate2(function(x) (1 - alpha(x, .x)) * (1 - beta(x, .x)), 0, m) / m)
+  }
+  
+  qf <- function(tau, m) {
+    map_dbl(tau,
+            ~ integrate2(function(x) size2rate_reduction(1 - delta(x, .x)), 0, m) / m)
+  }
+  
+  lambda <- function(tau, a, p, m) {
+    map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - l(x, m), 0, .x)))
+  }
+  
+  kappaf <- function(tau, a, p, m) {
+    map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - qf(x, m), 0, .x)))
+  }
+  
+  theta <- function(mu, a, p, m, infinity) {
+    integrate2(function(x) dexp(x, mu) * zeta(lambda(x, a, p, m)), 0, infinity)
+  }
+  
+  EIPf <- function(n, a, p, m) {
+    optimise(function(x) abs(x * kappaf(x, a, p, m) - n), c(0, 24 * 100))$min
+  }
+  
+  theta(mu, a, p, m, infinity) * exp((n - EIPf(n, a, p, m)) * mu)  
+}
+```
+
+Computing the value of the reduction for a target of `N_target` replicates (take 8'):
+
+```{r eval = FALSE, purl = FALSE}
+N_target <- 1e3
+N <- n_workers * ceiling(1.05 * N_target / n_workers)
+plan(multisession, workers = n_workers)
+  conv <- future_pmap(list(sample(alpha2s, N), sample(beta2s, N), sample(delta2s, N)),
+                      ~ safely(reduction1)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
+                                           1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
+    keep(~ is.null(.x$error)) |> 
+    map_dbl("result")
+plan(sequential)
+```
+
+```{r include = FALSE}
+N_target <- 1e3
+N <- n_workers * ceiling(1.05 * N_target / n_workers)
+if (file_exists("conv.rds")) {
+  conv <- readRDScache("conv.rds")
+} else {
+  plan(multisession, workers = n_workers)
+    conv <- future_pmap(list(sample(alpha2s, N), sample(beta2s, N), sample(delta2s, N)),
+                        ~ safely(reduction1)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
+                                             1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
+      keep(~ is.null(.x$error)) |> 
+      map_dbl("result")
+  plan(sequential)
+  saveRDScache(conv, "conv.rds")
+}
+```
+
+Looking at convergence of the mean value of the reduction effect as the number of
+replicates increases:
+
+```{r}
+cumconv <- cummean(conv)
+plot(cumconv, ylim = c(.9, .95), type = "n")
+abline(v = 0:15 * 100, col = "grey")
+abline(h = 91:95 / 100, col = "grey")
+lines(cumconv, col = 4, lwd = lwd_val)
+```
+
+Another version of the `reduction()` function that computes the reduction effect as an
+average across all the combination of the values of $\alpha$, $\beta$ and $\delta$ as
+defined in the vectors `alpha`, `beta` and `delta`:
+
+```{r}
+reduction2 <- function(n, mu, a, p, m, infinity, alpha, beta, delta) {
+  list(alpha, beta, delta) |> 
+    pmap(~ safely(reduction1)(..1, ..2, ..3, n, mu, a, p, m, infinity)) |> 
+    keep(~ is.null(.x$error)) |> 
+    map_dbl("result") |> 
+    mean()
+}
+```
+
+```{r}
+#reduction2(10 * 24, 1 / (14 * 24), 1 / (3 * 24), .1, 50 * 24, 50 * 24,
+#           alpha2s[1:2], beta2s[1:2], delta2s[1:2])
+```
+
+
+### Mass treatment
+
+A rewriting of `mass_treatment()` working on combination of $\alpha$ , $\beta$ and
+$\delta$:
+
+```{r}
+mass_treatment2 <- function(n = 10, mu = 1 / 14, a = 1 / 3, T_min = 3, T_max = 8,
+                            p_vals = 0:10 / 10, infinity = 250, alpha, beta, gamma) {
+  n <- n * 24
+  mu <- mu / 24
+  a <- a / 24
+  infinity <- infinity * 24
+  
+  expand_grid(p_vals, m_vals = (T_min * 7):(T_max * 7) * 24) |> 
+    mutate(reduction =
+             future_map2_dbl(p_vals, m_vals,
+                             ~ reduction2(n, mu, a, p = .x, m = .y, infinity,
+                                          alpha, beta, gamma)))
+}
+```
+
+Let's run it on 50 samples of the functions $\alpha$, $\beta$ and $\delta$ (it takes
+3h45'):
+
+```{r eval = FALSE, purl = FALSE}
+N <- 50
+plan(multisession, workers = n_workers)
+mtreat2_50 <- mass_treatment2(alpha = sample(alpha2s, N),
+                              beta  = sample(beta2s,  N),
+                              gamma = sample(delta2s, N))
+plan(sequential)
+```
+
+```{r include = FALSE}
+N <- 50
+if (file_exists("mtreat2_50.rds")) {
+  mtreat2_50 <- readRDScache("mtreat2_50.rds")
+} else {
+  plan(multisession, workers = n_workers)
+  mtreat2_50 <- mass_treatment2(alpha = sample(alpha2s, N),
+                                beta  = sample(beta2s,  N),
+                                gamma = sample(delta2s, N))
+  plan(sequential)
+  saveRDScache(mtreat2_50, "mtreat2_50.rds")
+}
+```
+
+Let's look at the new version of the effect of the mass treatment:
+
+```{r}
+plot_mass_treatment(mtreat2_50)
+```
+
+
+### Treatment of infected
+
+A rewriting of `finalR0nl()` working on combination of $\alpha$ , $\beta$ and $\delta$:
+
 ```{r}
 finalR0nl2 <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250,
                        alpha, beta, delta) {
@@ -1792,29 +1821,53 @@ finalR0nl2 <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250,
 }
 ```
 
+A rewriting of `search_m()` working on combination of $\alpha$ , $\beta$ and $\delta$:
+
+```{r}
+#m = 63:74
+#R0 = 40
+#n = 10
+#mu = 1 / 14
+#a = 1 / 3
+#prop = 1
+#c = .3
+#r = 1 / 200
+```
+
+
+```{r}
+#finalR0nl2(R0i, n, mu, a, prop, m, cv, r, infinity = 250, alpha, beta, delta)
+#finalR0nl2(R0, n, mu, a, prop, m = .x, c, r,                 alpha, beta, delta)
+```
+
+
 ```{r}
 search_m2 <- function(m = 63:74, R0 = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1,
-                      c = .3, r = 1 / 200, alpha, beta, delta) {
+                      c = .3, r = 1 / 200, infinity = 250, alpha, beta, delta) {
   m |>
     tibble() |> 
     mutate(reduction =
-             future_map_dbl(m, ~ finalR0nl2(R0, n, mu, a, prop, m = .x, c, r,
+             future_map_dbl(m, ~ finalR0nl2(R0, n, mu, a, prop, m = .x, c, r, infinity,
                                             alpha, beta, delta) / R0)) |> 
     filter(reduction == min(reduction)) |> 
     pull(m)
 }
 ```
 
+A rewriting of `treatment_infected()` working on combination of $\alpha$ , $\beta$ and
+$\delta$:
+
 ```{r}
 treatment_infected2 <- function(R0 = 5:15 * 10, prop = 1:10 / 10, m = 63:74, n = 10,
                                 mu = 1 / 14, a = 1 / 3, c = .3, r = 1 / 200,
                                 R0_new = seq(15, 150, le = 512), K0 = 5, h0 = .7,
-                                alpha, beta, delta) {
-  m_opt <- search_m(m, first(R0), n, mu, a, prop = 1, c, r)
+                                infinity = 250, alpha, beta, delta) {
+  m_opt <- search_m2(m, first(R0), n, mu, a, prop = 1, c, r, infinity,
+                     alpha, beta, delta)
   expand_grid(prop, R0) |> 
     mutate(reduction = future_map2(R0, prop,
                                    ~ safely(finalR0nl2)(R0i = .x, n, mu, a, prop = .y,
-                                                        m = m_opt, c, r,
+                                                        m = m_opt, c, r, infinity,
                                                         alpha, beta, delta))) |> 
     filter(map_lgl(reduction, ~ is.null(.x$error))) |> 
     mutate(across(reduction, ~ map_dbl(.x, "result") / R0)) |> 
@@ -1822,22 +1875,108 @@ treatment_infected2 <- function(R0 = 5:15 * 10, prop = 1:10 / 10, m = 63:74, n =
 }
 ```
 
-```{r eval=FALSE}
-N_target <- 50
-#N <- n_workers * ceiling(1.05 * N_target / n_workers)
-N <- ceiling(1.05 * N_target)
+Let's run it on 50 samples of the functions $\alpha$, $\beta$ and $\delta$ (it takes
+XXX):
 
+```{r eval = FALSE, purl = FALSE}
+N <- 50
 plan(multisession, workers = n_workers)
 system.time(
-treatinf2_50 <- mass_treatment2(alpha = sample(alpha2s, N),
-                                beta  = sample(beta2s,  N),
-                                gamma = sample(delta2s, N))
+treatinf2_50 <- treatment_infected2(alpha = sample(alpha2s, N),
+                                    beta  = sample(beta2s,  N),
+                                    delta = sample(delta2s, N))
 )
 plan(sequential)
 save.image()
 ```
 
-```{r eval=FALSE}
-saveRDScache(treatinf2_50, "treatinf2_50.rds")
+```{r}
+#R0 = 5:15 * 10
+#prop = 1:10 / 10
+#m = 63:74
+#n = 10
+#mu = 1 / 14
+#a = 1 / 3
+#c = .3
+#r = 1 / 200
+#R0_new = seq(15, 150, le = 512)
+#K0 = 5
+#h0 = .7
+
+#N <- 1
+#alpha = sample(alpha2s, N)
+#beta  = sample(beta2s,  N)
+#delta = sample(delta2s, N)
+```
+
+1 : 35"
+
+```{r eval = FALSE, include = FALSE}
+N <- 2
+if (file_exists("treatinf2_50.rds")) {
+  treatinf2_50 <- readRDS("treatinf2_50.rds")
+} else {
+  old_plan <- future::plan()
+  plan(multisession, workers = n_workers)
+  system.time(
+  treatinf2_50 <- treatment_infected2(alpha = sample(alpha2s, N),
+                                      beta  = sample(beta2s,  N),
+                                      delta = sample(delta2s, N))
+  )
+  future::plan(old_plan)
+  saveRDScache(treatinf2_50, "treatinf2_50.rds")
+}
+```
+
+
+
+## DPI effect
+
+```{r}
+#reduction1(alpha, beta, delta, n, mu, a, p, m, infinity)
+
+reduction_dpi <- function(dpi, n, mu, a, p, m, infinity) {
+  reduction1(with(as.list(alpha_fit4dpi), make_effect(A, k, d, d / dpi)),
+             with(as.list(beta_fit4dpi),  make_effect(A, k, d, d / dpi)),
+             with(as.list(delta_fit4dpi), make_effect(A, k, d, d / dpi)),
+             n, mu, a, p, m, infinity)
+}
+
+#reduction_dpi(2, 10 * 24, 1 / (14 * 24), 1 / (3 * 24), .1, 50 * 24, 50 * 24)
+```
+
+```{r}
+mass_treatment_dpi <- function(dpi = c(1 / 3, .5, 1, 2, 3),
+                               n = 10, mu = 1 / 14, a = 1 / 3,
+                               T_min = 3, T_max = 8, p = 1, infinity = 250) {
+  n <- n * 24
+  mu <- mu / 24
+  a <- a / 24
+  infinity <- infinity * 24
+  
+  expand_grid(dpi, m_vals = (T_min * 7):(T_max * 7) * 24) |> 
+    mutate(reduction =
+             future_map2_dbl(dpi, m_vals,
+                             ~ reduction_dpi(dpi = .x, n, mu, a, p, m = .y, infinity)))
+}
+```
+
+6'20" on M2:
+
+```{r}
+plan(multisession, workers = n_workers)
+system.time(
+mtreat_dpi <- mass_treatment_dpi()
+)
+plan(sequential)
+```
+
+```{r}
+with(mtreat_dpi, plot(m_vals, reduction))
+with(filter(mtreat_dpi, dpi < .4), lines(m_vals, reduction))
+with(filter(mtreat_dpi, dpi == .5), lines(m_vals, reduction))
+with(filter(mtreat_dpi, dpi == 1), lines(m_vals, reduction))
+with(filter(mtreat_dpi, dpi == 2), lines(m_vals, reduction))
+with(filter(mtreat_dpi, dpi == 3), lines(m_vals, reduction))
 ```
 
