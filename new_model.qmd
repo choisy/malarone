@@ -2029,28 +2029,6 @@ with(densities, walk2(density, color, ~ lines(.x, col = .y, lwd = lwd_val)))
 ```
 
 ```{r}
-densities <- sizes |> 
-  map(log10) |> 
-  map(density)
-
-x_max <- densities |> 
-  map("x") |> 
-  unlist() |>
-  max()
-
-y_max <- densities |> 
-  map("y") |> 
-  unlist() |> 
-  max()
-
-plot(NA, xlim = c(1, x_max), ylim = c(0, y_max))
-walk(densities, lines)
-```
-
-
-
-
-```{r}
 hill <- function(x, K, n) plogis(n * (log(x) - log(K)))
 ```
 
@@ -2091,9 +2069,18 @@ sizes <- oocyst_size2 |>
 estim_detection(sizes, K = 25, n = 10)$value
 estim_detection(sizes, K = 50, n = 10)$value
 
-(estimations <- map_dbl(10:50, ~ estim_detection(sizes, K = .x, n = 10)))
+system.time(
+estimations <- future_map(10:50, ~ estim_detection(sizes, K = .x, n = 10))
+)
 ```
 
+```{r}
+est_summary <- estimations |>
+  map_dfr(~ setNames(c(exp(rev(.x$par)[1:2]), .x$value), c("n", "K", "mLL")))
+
+with(est_summary, plot(10:50, K))
+abline(0, 1)
+```
 
 
 
