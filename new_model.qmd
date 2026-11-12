@@ -1987,7 +1987,7 @@ with(filter(mtreat_dpi, dpi == 3), lines(m_vals, reduction))
 library(stringr)
 ```
 
-colors
+Colors
 
 ```{r}
 tmp1 <- unique(oocyst_size$time_points)
@@ -1997,7 +1997,7 @@ color_dpa <- c("black", "grey", rev(tail(YlOrRd11, length(tmp2)))) |>
   setNames(c(setdiff(tmp1, tmp2), tmp2))
 ```
 
-new version of the data:
+New version of the data:
 
 ```{r}
 oocyst_size2 <- oocyst_size |>
@@ -2027,6 +2027,401 @@ y_max <- densities |>
 plot(NA, xlim = c(1, x_max), ylim = c(0, y_max))
 with(densities, walk2(density, color, ~ lines(.x, col = .y, lwd = lwd_val)))
 ```
+
+```{r}
+densities |> 
+  filter(time_points == "Control") |> 
+  pull(density) |> 
+  first() |> 
+  plot(lwd = lwd_val, main = NA, col = "grey")
+
+densities |> 
+  filter(time_points == "Unfed") |> 
+  pull(density) |> 
+  first() |> 
+  lines(lwd = lwd_val, col = "black")
+
+densities |> 
+  filter(time_points == "H00") |> 
+  pull(density) |> 
+  first() |> 
+  lines(lwd = lwd_val, col = 2)
+```
+
+### mclust
+
+```{r}
+library(mclust)
+```
+
+```{r}
+x <- oocyst_size2 |> 
+  filter(time_points == "Control") |> 
+  pull(Area)
+
+y <- log(x)
+
+# Fit mixtures with 1 to 6 components
+fit <- Mclust(y, 1:6, "V")
+
+# Optimal number of components according to BIC
+fit$G
+
+# Model parameters
+summary(fit)
+
+fit$parameters$mean
+```
+
+This suggests that the distributions are fairly multimodal.
+
+```{r}
+x <- oocyst_size2 |> 
+  filter(time_points == "Control") |> 
+  pull(Area)
+
+y <- log(x)
+N <- length(x)
+
+# -------------------------------------------------
+# 2. Hill functions
+# -------------------------------------------------
+
+# Probability of detecting small oocysts
+p_small <- function(x, K, n) plogis(n * (log(x) - log(K)))
+
+# Probability of remaining intact
+p_intact <- function(x, R, q) plogis(-q * (log(x) - log(R)))
+
+p_obs <- function(x, K, n, R, q) p_small(x, K, n) * p_intact(x, R, q)
+
+# -------------------------------------------------
+# 3. Numerical integration
+# -------------------------------------------------
+
+# Gauss-Hermite quadrature for standard normal
+# expectations. Requires statmod.
+
+#library(statmod)
+
+gh <- gauss.quad.prob(40, dist = "normal")
+
+# -------------------------------------------------
+# 4. Parameter extraction
+# -------------------------------------------------
+
+# Parameter vector:
+# mu[1:G]
+# log_sigma[1:G]
+# logits for G-1 mixture weights
+# log_K, log_n, log_R, log_q
+
+unpack <- function(par, G) {
+  le <- length(par)
+
+  if (le == 6) {
+    G <- w <- 1
+  } else {
+    G <- le / 3 - 1
+    a <- c(par[2 * G + seq_len(G - 1)], 0)
+    a <- exp(a - max(a))
+    w <- a / sum(a)
+  }
+
+  index <- seq_len(G)
+  c(list(mu = par[index],
+         sigma = exp(par[G + index]),
+         w = w),
+    setNames(tail(par, 4), c("K", "n", "R", "q")))
+}
+
+# -------------------------------------------------
+# 5. Negative log-likelihood
+# -------------------------------------------------
+
+nll <- function(par, G) {
+
+  p <- unpack(par, G)
+
+#  # Avoid pathological numerical regions
+#  if (any(!is.finite(unlist(p))) ||
+#      any(p$sigma < 0.03) ||
+#      any(p$sigma > 3) ||
+#      p$n > 30 || p$q > 30) {
+#    return(1e100)
+#  }
+
+  # Lognormal mixture density
+  component_logdens <- sapply(seq_len(G), function(j) {
+    log(p$w[j]) + dlnorm(x, p$mu[j], p$sigma[j], log = TRUE)
+  })
+
+  component_logdens <- matrix(component_logdens, nrow = N)
+
+  # Stable log-sum-exp
+  mx <- apply(component_logdens, 1, max)
+
+  log_f <- mx + log(rowSums(exp(component_logdens - mx)))
+
+  # Observation probability
+  log_p <- plogis(p$n * (y - log(p$K)), log.p = TRUE) +
+           plogis(-p$q * (y - log(p$R)), log.p = TRUE)
+
+  # Normalization constant
+  Z <- 0
+
+  for (j in seq_len(G)) {
+    # Quadrature nodes on the log-size scale
+    yy <- p$mu[j] + p$sigma[j] * gh$nodes
+    pj <- plogis(p$n * (yy - log(p$K))) * plogis(-p$q * (yy - log(p$R)))
+    Z <- Z + p$w[j] * sum(gh$weights * pj)
+  }
+  if (!is.finite(Z) || Z <= 0) return(1e100)
+
+  -sum(log_f + log_p) + N * log(Z)
+}
+
+# -------------------------------------------------
+# 6. Starting values from mclust
+# -------------------------------------------------
+
+make_start <- function(G) {
+  mc <- Mclust(y, G = G, modelNames = "V")
+  mu <- as.numeric(mc$parameters$mean)
+  sigma <- sqrt(mc$parameters$variance$sigmasq)
+  
+  if (G == 1) {
+    w <- 1
+    logits <- numeric(0)
+  } else {
+    w <- mc$parameters$pro
+    logits <- log(w[1:(G-1)] / w[G])
+  }
+
+  c(mu, log(sigma), logits,
+    log(as.numeric(quantile(x, 0.2))), # K
+    log(3),                            # n
+    log(as.numeric(quantile(x, 0.9))), # R
+    log(3))                            # q
+}
+
+# -------------------------------------------------
+# 7. Fit models with 1 to 6 components
+# -------------------------------------------------
+
+G_values <- 1:6
+fits <- vector("list", length(G_values))
+names(fits) <- as.character(G_values)
+
+comparison <- data.frame(G           = G_values,
+                         logLik      = NA_real_,
+                         BIC         = NA_real_,
+                         convergence = NA_integer_)
+
+for (i in seq_along(G_values)) {
+  G <- G_values[i]
+  start <- make_start(G)
+  fit <- optim(par = start, fn = nll, G = G, method = "Nelder-Mead",
+               control = list(maxit = 20000))
+
+  fits[[i]] <- fit
+
+  # Number of parameters:
+  # G means + G SDs + (G-1) weights
+  # + 4 Hill parameters
+  k <- 3 * G + 3
+
+  comparison$logLik[i] <- -fit$value
+  comparison$BIC[i] <- k * log(N) + 2 * fit$value
+  comparison$convergence[i] <- fit$convergence
+}
+
+print(comparison)
+
+# Lowest BIC is best
+valid <- which(comparison$convergence == 0 & is.finite(comparison$BIC))
+
+if (length(valid) == 0)
+  stop("No model converged successfully.")
+
+best_idx <- valid[which.min(comparison$BIC[valid])]
+
+best_G <- comparison$G[best_idx]
+best_fit <- fits[[best_idx]]
+best_par <- unpack(best_fit$par, best_G)
+
+cat("Selected number of components:", best_G, "\n")
+print(best_par)
+```
+
+```{r}
+G_values <- 1:6
+fits <- vector("list", length(G_values))
+names(fits) <- as.character(G_values)
+
+comparison <- data.frame(G           = G_values,
+                         logLik      = NA_real_,
+                         BIC         = NA_real_,
+                         convergence = NA_integer_)
+
+for (i in seq_along(G_values)) {
+  G <- G_values[i]
+  start <- make_start(G)
+  fit <- optim(par = start, fn = nll, G = G, method = "Nelder-Mead",
+               control = list(maxit = 20000))
+
+  fits[[i]] <- fit
+
+  # Number of parameters:
+  # G means + G SDs + (G-1) weights
+  # + 4 Hill parameters
+  k <- 3 * G + 3
+
+  comparison$logLik[i] <- -fit$value
+  comparison$BIC[i] <- k * log(N) + 2 * fit$value
+  comparison$convergence[i] <- fit$convergence
+}
+
+
+```
+
+```{r}
+make_start <- function(G) {
+  mc <- Mclust(y, G = G, modelNames = "V")
+  mu <- as.numeric(mc$parameters$mean)
+  sigma <- sqrt(mc$parameters$variance$sigmasq)
+  
+  if (G == 1) {
+    w <- 1
+    logits <- numeric(0)
+  } else {
+    w <- mc$parameters$pro
+    logits <- log(w[1:(G-1)] / w[G])
+  }
+
+  c(mu, log(sigma), logits,
+    log(as.numeric(quantile(x, 0.2))), # K
+    log(3),                            # n
+    log(as.numeric(quantile(x, 0.9))), # R
+    log(3))                            # q
+}
+```
+
+```{r}
+marc <- function(x) 1:5
+
+marc()
+
+sapply(1:3, marc)
+
+map_dfc(1:3, marc)
+```
+
+
+```{r}
+x <- oocyst_size2 |> 
+  filter(time_points == "Control") |> 
+  pull(Area)
+
+
+y <- log(x)
+N <- length(x)
+
+
+unpack <- function(par, G) {
+  le <- length(par)
+
+  if (le == 6) {
+    G <- w <- 1
+  } else {
+    G <- le / 3 - 1
+    a <- c(par[2 * G + seq_len(G - 1)], 0)
+    a <- exp(a - max(a))
+    w <- a / sum(a)
+  }
+
+  index <- seq_len(G)
+  c(list(mu = par[index],
+         sigma = exp(par[G + index]),
+         w = w),
+    setNames(tail(par, 4), c("K", "n", "R", "q")))
+}
+
+
+nll <- function(par, G) {
+  p <- unpack(par, G)
+
+  # Lognormal mixture density
+  component_logdens <- sapply(seq_len(G), function(j) {
+    log(p$w[j]) + dlnorm(x, p$mu[j], p$sigma[j], log = TRUE)
+  })
+
+  component_logdens <- matrix(component_logdens, nrow = N)
+  
+  # Stable log-sum-exp
+  mx <- apply(component_logdens, 1, max)
+
+#  log_f <- mx + log(rowSums(exp(component_logdens - mx)))
+  log_f <- mx + log(rowSums(exp(sweep(component_logdens, 1, mx, "-"))))
+
+
+  # Observation probability
+  log_p <- plogis( p$n * (y - log(p$K)), log.p = TRUE) +
+           plogis(-p$q * (y - log(p$R)), log.p = TRUE)
+
+  # Normalization constant
+  Z <- 0
+  for (j in seq_len(G)) {
+    # Quadrature nodes on the log-size scale
+    yy <- p$mu[j] + p$sigma[j] * gh$nodes
+    pj <- plogis(p$n * (yy - log(p$K))) * plogis(-p$q * (yy - log(p$R)))
+    Z <- Z + p$w[j] * sum(gh$weights * pj)
+  }
+  
+  if (!is.finite(Z) || Z <= 0) return(1e100)
+  N * log(Z) - sum(log_f + log_p)
+}
+
+
+make_start <- function(G) {
+  mc <- Mclust(y, G = G, modelNames = "V")
+  mu <- as.numeric(mc$parameters$mean)
+  sigma <- sqrt(mc$parameters$variance$sigmasq)
+  
+  if (G == 1) {
+    w <- 1
+    logits <- numeric(0)
+  } else {
+    w <- mc$parameters$pro
+    logits <- log(w[1:(G - 1)] / w[G])
+  }
+
+  c(mu, log(sigma), logits,
+    log(as.numeric(quantile(x, 0.2))), # K
+    log(3),                            # n
+    log(as.numeric(quantile(x, 0.9))), # R
+    log(3))                            # q
+}
+
+
+fff <- function(x) {
+  x |> 
+    make_start() |> 
+    optim(fn = nll, G = G, method = "Nelder-Mead", control = list(maxit = 20000))
+}
+
+
+fits <- tibble(G = 1:6) |> 
+  mutate(fit         =   map(G, fff),
+         logLik      = - map_dbl(fit, "value"),
+         BIC         =   map2_dbl(G, logLik, ~ (3 * .x + 3) * log(N) - 2 * .y),
+         convergence =   map_dbl(fit, "convergence"))
+
+
+```
+
+
+### Adding detection probabilities
 
 ```{r}
 hill <- function(x, K, n) plogis(n * (log(x) - log(K)))
