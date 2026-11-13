@@ -1163,18 +1163,14 @@ plot_mass_treatment <- function(data) {
 Takes 1':
 
 ```{r eval = FALSE, purl = FALSE}
-#plan(multisession, workers = 12)
 mtreat1 <- mass_treatment()
-#plan(sequential)
 ```
 
 ```{r include = FALSE}
 if (file_exists("mtreat1.rds")) {
   mtreat1 <- readRDScache("mtreat1.rds")
 } else {
-#  plan(multisession, workers = 12)
   mtreat1 <- mass_treatment()
-#  plan(sequential)
   saveRDScache(mtreat1, "mtreat1.rds")
 }
 ```
@@ -1363,13 +1359,11 @@ is slightly faster. Explorations:
 
 ```{r eval = FALSE, purl = FALSE}
 m_vals <- c(4:7 * 10, seq(100, 250, 50))
-#plan(multisession, workers = 12)
 R0red <- expand_grid(m  = m_vals,
                      R0 = 5:15 * 10) |> 
   mutate(reduction = future_map2_dbl(R0, m, ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14,
                                                         a = 1 / 3, prop = 1, m = .y,
                                                         cv = .3, r = 1 / 200) / .x))
-#plan(sequential)
 ```
 
 ```{r include = FALSE}
@@ -1377,14 +1371,12 @@ m_vals <- c(4:7 * 10, seq(100, 250, 50))
 if (file_exists("R0red.rds")) {
   R0red <- readRDScache("R0red.rds")
 } else {
-#  plan(multisession, workers = 12)
   R0red <- expand_grid(m  = m_vals,
                        R0 = 5:15 * 10) |> 
     mutate(reduction = future_map2_dbl(R0, m,
                                        ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14,
                                                    a = 1 / 3, prop = 1, m = .y,
                                                    cv = .3, r = 1 / 200) / .x))
-#  plan(sequential)
   saveRDScache(R0red, "R0red.rds")
 }
 ```
@@ -1451,14 +1443,12 @@ Now we know that we want to use `m = 69`. Let's now explore various values of `p
 (takes 29" on the M2):
 
 ```{r eval = FALSE, purl = FALSE}
-#plan(multisession, workers = 12)
 R0red2 <- expand_grid(prop = 1:10 / 10,
                       R0   = 5:15 * 10) |> 
   mutate(reduction = future_map2_dbl(R0, prop,
                                      ~ finalR0nl(R0i = .x, n = 10, mu = 1 / 14,
                                                  a = 1 / 3, prop = .y, m = 69,
                                                  cv = .3, r = 1 / 200) / .x))
-#plan(sequential)
 ```
 
 ```{r include = FALSE}
@@ -1628,10 +1618,8 @@ treatment_infected <- function(R0 = 5:15 * 10, prop = 1:10 / 10, m = 63:74, n = 
 Takes 32":
 
 ```{r eval=FALSE}
-#plan(multisession, workers = n_workers)
 system.time(out <- treatment_infected())
 saveRDScache(out, "out.rds")
-#plan(sequential)
 ```
 
 ```{r}
@@ -1696,13 +1684,11 @@ Computing the value of the reduction for a target of `N_target` replicates (take
 ```{r eval = FALSE, purl = FALSE}
 N_target <- 1e3
 N <- n_workers * ceiling(1.05 * N_target / n_workers)
-#plan(multisession, workers = n_workers)
   conv <- future_pmap(list(sample(alpha2s, N), sample(beta2s, N), sample(delta2s, N)),
                       ~ safely(reduction1)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
                                            1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
     keep(~ is.null(.x$error)) |> 
     map_dbl("result")
-#plan(sequential)
 ```
 
 ```{r include = FALSE}
@@ -1711,13 +1697,11 @@ N <- n_workers * ceiling(1.05 * N_target / n_workers)
 if (file_exists("conv.rds")) {
   conv <- readRDScache("conv.rds")
 } else {
-#  plan(multisession, workers = n_workers)
     conv <- future_pmap(list(sample(alpha2s, N), sample(beta2s, N), sample(delta2s, N)),
                         ~ safely(reduction1)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
                                              1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
       keep(~ is.null(.x$error)) |> 
       map_dbl("result")
-#  plan(sequential)
   saveRDScache(conv, "conv.rds")
 }
 ```
@@ -1779,11 +1763,9 @@ Let's run it on 50 samples of the functions $\alpha$, $\beta$ and $\delta$ (it t
 
 ```{r eval = FALSE, purl = FALSE}
 N <- 50
-#plan(multisession, workers = n_workers)
 mtreat2_50 <- mass_treatment2(alpha = sample(alpha2s, N),
                               beta  = sample(beta2s,  N),
                               gamma = sample(delta2s, N))
-#plan(sequential)
 ```
 
 ```{r include = FALSE}
@@ -1791,11 +1773,9 @@ N <- 50
 if (file_exists("mtreat2_50.rds")) {
   mtreat2_50 <- readRDScache("mtreat2_50.rds")
 } else {
-#  plan(multisession, workers = n_workers)
   mtreat2_50 <- mass_treatment2(alpha = sample(alpha2s, N),
                                 beta  = sample(beta2s,  N),
                                 gamma = sample(delta2s, N))
-#  plan(sequential)
   saveRDScache(mtreat2_50, "mtreat2_50.rds")
 }
 ```
@@ -1883,13 +1863,11 @@ XXX):
 
 ```{r eval = FALSE, purl = FALSE}
 N <- 50
-#plan(multisession, workers = n_workers)
 system.time(
 treatinf2_50 <- treatment_infected2(alpha = sample(alpha2s, N),
                                     beta  = sample(beta2s,  N),
                                     delta = sample(delta2s, N))
 )
-#plan(sequential)
 save.image()
 ```
 
@@ -1919,14 +1897,11 @@ N <- 2
 if (file_exists("treatinf2_50.rds")) {
   treatinf2_50 <- readRDS("treatinf2_50.rds")
 } else {
-  old_plan <- future::plan()
-#  plan(multisession, workers = n_workers)
   system.time(
   treatinf2_50 <- treatment_infected2(alpha = sample(alpha2s, N),
                                       beta  = sample(beta2s,  N),
                                       delta = sample(delta2s, N))
   )
-#  future::plan(old_plan)
   saveRDScache(treatinf2_50, "treatinf2_50.rds")
 }
 ```
@@ -1967,11 +1942,9 @@ mass_treatment_dpi <- function(dpi = c(1 / 3, .5, 1, 2, 3),
 6'20" on M2:
 
 ```{r eval=FALSE}
-#plan(multisession, workers = n_workers)
 system.time(
 mtreat_dpi <- mass_treatment_dpi()
 )
-#plan(sequential)
 ```
 
 ```{r eval=FALSE}
@@ -2064,6 +2037,30 @@ axis(2, log10(labels), labels)
 box(bty = "o")
 ```
 
+
+### Number of oocyst
+
+```{r message=FALSE}
+number_oocysts <- read_table2("ASAAP4b_oocyst2.txt")
+```
+
+```{r}
+number_oocysts2 <- number_oocysts |> 
+  select(day_of_dissection, total_oocysts) |> 
+  na.exclude()
+```
+
+```{r}
+with(number_oocysts2, plot(density(total_oocysts, from = 0)))
+
+number_oocysts2 |> 
+  filter(day_of_dissection == "7dpi") |> 
+  with(lines(density(total_oocysts, from = 0), col = 2))
+
+number_oocysts2 |> 
+  filter(day_of_dissection == "14dpi") |> 
+  with(lines(density(total_oocysts, from = 0), col = 4))
+```
 
 
 ## The end
