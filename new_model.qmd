@@ -112,7 +112,7 @@ library(furrr)
 library(tidyr)
 library(purrr)
 library(dplyr)
-future::plan(future::multisession, workers = 12)
+future::plan(future::multisession, workers = n_workers)
 ```
 
 
@@ -157,11 +157,11 @@ Stratified bootstrapping:
 
 ```{r}
 stratified_bootstrap <- function(df, N) {
-  map(1:ceiling(N), ~ df |> 
-                        group_by(t) |> 
-                        group_split() |> 
-                        map(slice_sample, prop = 1, replace = TRUE) |> 
-                        bind_rows())
+  future_map(1:ceiling(N), ~ df |> 
+                               group_by(t) |> 
+                               group_split() |> 
+                               map(slice_sample, prop = 1, replace = TRUE) |> 
+                               bind_rows())
 }
 ```
 
@@ -194,6 +194,10 @@ arrows2 <- function(...) arrows(..., length = .1, angle = 90, code = 3, lwd = lw
 
 ```{r}
 predict2 <- function(...) predict(..., type = "response")
+```
+
+```{r}
+integrate2 <- function(...) integrate(...)$value
 ```
 
 
@@ -437,7 +441,7 @@ alpha2 <- with(as.list(alpha_fit4dpi), make_effect(A, k, d, d / 3))
 ```
 
 ```{r}
-alpha <- alpha2
+#alpha <- alpha2
 ```
 
 ```{r fig.width = 4, fig.height = 4}
@@ -459,12 +463,12 @@ plot3d <- function(f) {
           ylab = "t days post drug administration",
           zlab = "TBA \u03B1")
   
-  trans3d(rep(tau_val, n_t), t, alpha(t, tau_val), pmat) |> 
+  trans3d(rep(tau_val, n_t), t, f(t, tau_val), pmat) |> 
     with(lines(x, y, col = "red", lwd = 3))
   par(opar)
 }
 
-plot3d(alpha)
+plot3d(alpha2)
 plot3d(alpha1)
 ```
 
@@ -480,7 +484,7 @@ plot2d <- function(f) {
   lines(t_val, f(t_val, tau = 4 * 24), col = 2, lwd = lwd_val)
 }
 
-plot2d(alpha)
+plot2d(alpha2)
 plot2d(alpha1)
 ```
 
@@ -490,7 +494,7 @@ A function that does bootstrapped calibration at 4 dpi:
 boot_calibration_4dpi <- function(data, N = 1e4, eps = 1.1) {
   model <- data |> 
     stratified_bootstrap(eps * N) |> 
-    map(~ with(.x, safely(calibrate4dpi)(t, value)))
+    future_map(~ with(.x, safely(calibrate4dpi)(t, value)))
 
   model[map_lgl(model, ~ is.null(.x$error))] |>
     map("result") |> 
@@ -498,7 +502,7 @@ boot_calibration_4dpi <- function(data, N = 1e4, eps = 1.1) {
 }
 ```
 
-It takes (1'20" on the laptop):
+It takes (12" on the M2):
 
 ```{r eval = FALSE, purl = FALSE}
 alpha_model_4dpi <- boot_calibration_4dpi(alpha_data)
@@ -577,8 +581,10 @@ beta2 <- with(as.list(beta_fit4dpi), make_effect(A, k, d, d / 3))
 ```
 
 ```{r}
-beta <- beta2
+#beta <- beta2
 ```
+
+Takes 12" on the M2:
 
 ```{r eval = FALSE, purl = FALSE}
 beta_model_4dpi <- boot_calibration_4dpi(beta_data)
@@ -737,26 +743,21 @@ box(bty = "o")
 par(opar)
 ```
 
-
 ### $\lambda(\tau)$
 
 ```{r}
-integrate2 <- function(...) integrate(...)$value
-```
-
-```{r}
-l <- function(tau, m) {
-  map_dbl(tau,
-          ~ integrate2(function(x) (1 - alpha(x, .x)) * (1 - beta(x, .x)), 0, m) / m)
-}
+#l <- function(tau, m) {
+#  map_dbl(tau,
+#          ~ integrate2(function(x) (1 - alpha(x, .x)) * (1 - beta(x, .x)), 0, m) / m)
+#}
 
 # l(5:6 * 24, 15 * 24)
 ```
 
 ```{r}
-lambda <- function(tau, a, p, m) {
-  map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - l(x, m), 0, .x)))
-}
+#lambda <- function(tau, a, p, m) {
+#  map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - l(x, m), 0, .x)))
+#}
 
 # lambda(5:6 * 24, 1 / (3 * 24), 1, 50 * 24)
 # zeta(lambda(5:6 * 24, 1 / (3 * 24), 1, 50 * 24))
@@ -766,9 +767,9 @@ lambda <- function(tau, a, p, m) {
 ### $\theta(\alpha, \beta)$
 
 ```{r}
-theta <- function(mu, a, p, m, infinity) {
-  integrate2(function(x) dexp(x, mu) * zeta(lambda(x, a, p, m)), 0, infinity)
-}
+#theta <- function(mu, a, p, m, infinity) {
+#  integrate2(function(x) dexp(x, mu) * zeta(lambda(x, a, p, m)), 0, infinity)
+#}
 
 # theta(mu = 1 / (14 * 24), a = 1 / (3 * 24), p = 1, m = 50 * 24, infinity = 50 * 24)
 ```
@@ -794,8 +795,10 @@ delta2 <- with(as.list(delta_fit4dpi), make_effect(A, k, d, d / 3))
 ```
 
 ```{r}
-delta <- delta2
+#delta <- delta2
 ```
+
+Takes 12" on the M2:
 
 ```{r eval = FALSE, purl = FALSE}
 delta_model_4dpi <- boot_calibration_4dpi(delta_data)
@@ -867,19 +870,34 @@ with(oo_size, table(Group, `Blood Feeds`))
 The oocyst sizes for the 4 treatments:
 
 ```{r}
-tmp <- oo_size |> 
+#tmp <- oo_size |> 
+#  mutate(xlab = paste(Group, `Blood Feeds`)) |> 
+#  group_split(Group, `Blood Feeds`) |>
+#  bind_rows(.id = "x") |> 
+#  mutate(across(x, as.integer))
+#
+#oosise_lab <- expression(mean ~ oocyst ~ size ~ at ~ 7 ~ dpi ~ (µm^2))
+#
+#with(tmp, plot(jitter(x), `Mean oocyst size`,
+#               col = color, pch = 19, ylim = c(0, 2e3), xaxt = "n",
+#               xlab = NA, ylab = oosise_lab))
+#
+#axis(1, 1:4, unique(tmp$xlab), tick = FALSE, line = -1, lty = 0)
+```
+
+```{r}
+oosise_lab <- expression(mean ~ oocyst ~ size ~ at ~ 7 ~ dpi ~ (µm^2))
+
+oo_size |> 
   mutate(xlab = paste(Group, `Blood Feeds`)) |> 
   group_split(Group, `Blood Feeds`) |>
   bind_rows(.id = "x") |> 
-  mutate(across(x, as.integer))
-
-oosise_lab <- expression(mean ~ oocyst ~ size ~ at ~ 7 ~ dpi ~ (µm^2))
-
-with(tmp, plot(jitter(x), `Mean oocyst size`,
-               col = color, pch = 19, ylim = c(0, 2e3), xaxt = "n",
-               xlab = NA, ylab = oosise_lab))
-
-axis(1, 1:4, unique(tmp$xlab), tick = FALSE, line = -1, lty = 0)
+  mutate(across(x, as.integer)) |> 
+  with({
+    plot(jitter(x), `Mean oocyst size`, col = color, pch = 19, ylim = c(0, 2e3),
+         xaxt = "n", xlab = NA, ylab = oosise_lab)
+    axis(1, 1:4, unique(xlab), tick = FALSE, line = -1, lty = 0)
+  })
 ```
 
 The means with confidence intervals of the oocyst sizes in the 4 combinations:
@@ -907,9 +925,7 @@ Maturity data from Figure 3C:
 ```
 
 Estimating the EIPs with confidence intervals, forcing the same intercept at 3 dpi for
-a given group.
-
-First, generating the models for each of the 4 combinations:
+a given group. First, generating the models for each of the 4 combinations:
 
 ```{r}
 second_meal <- 3
@@ -1052,8 +1068,7 @@ plot(mean_oosize$oosize_M, rate_val, col = colors$color, pch = 19, cex = 1.5,
 
 abline(mod, col = 4)
 abline(v = mean_oosize_crtl)
-ref_rate <- compute_rate(mean_oosize_crtl)
-abline(h = ref_rate)
+abline(h = compute_rate(mean_oosize_crtl))
 ```
 
 A function that converts a reduction in size into a reduction in rate:
@@ -1070,36 +1085,62 @@ size2rate_reduction <- function(reduction_in_size, ref = m_oo_size_val) {
 ```
 
 ```{r}
-qf <- function(tau, m) {
-  map_dbl(tau,
-          ~ integrate2(function(x) size2rate_reduction(1 - delta(x, .x)), 0, m) / m)
-}
+#qf <- function(tau, m) {
+#  map_dbl(tau,
+#          ~ integrate2(function(x) size2rate_reduction(1 - delta(x, .x)), 0, m) / m)
+#}
 
 # qf(5:6 * 24, 15 * 24)
 ```
 
 ```{r}
-kappaf <- function(tau, a, p, m) {
-  map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - qf(x, m), 0, .x)))
-}
+#kappaf <- function(tau, a, p, m) {
+#  map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - qf(x, m), 0, .x)))
+#}
 
 # kappaf(5:6 * 24, 1 / (3 * 24), .1, 50 * 24)
 ```
 
 ```{r}
-EIPf <- function(n, a, p, m) {
-  optimise(function(x) abs(x * kappaf(x, a, p, m) - n), c(0, 24 * 100))$min
-}
+#EIPf <- function(n, a, p, m) {
+#  optimise(function(x) abs(x * kappaf(x, a, p, m) - n), c(0, 24 * 100))$min
+#}
 
 # EIPf(10 * 24, 1 / (3 * 24), .1, 50 * 24)
 ```
 
+Putting everything together to generate the reduction function:
+
 ```{r}
-reduction <- function(n, mu, a, p, m, infinity) {
+reduction <- function(alpha, beta, delta, n, mu, a, p, m, infinity) {
+  l <- function(tau, m) {
+    map_dbl(tau,
+            ~ integrate2(function(x) (1 - alpha(x, .x)) * (1 - beta(x, .x)), 0, m) / m)
+  }
+  
+  qf <- function(tau, m) {
+    map_dbl(tau,
+            ~ integrate2(function(x) size2rate_reduction(1 - delta(x, .x)), 0, m) / m)
+  }
+  
+  lambda <- function(tau, a, p, m) {
+    map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - l(x, m), 0, .x)))
+  }
+  
+  kappaf <- function(tau, a, p, m) {
+    map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - qf(x, m), 0, .x)))
+  }
+  
+  theta <- function(mu, a, p, m, infinity) {
+    integrate2(function(x) dexp(x, mu) * zeta(lambda(x, a, p, m)), 0, infinity)
+  }
+  
+  EIPf <- function(n, a, p, m) {
+    optimise(function(x) abs(x * kappaf(x, a, p, m) - n), c(0, 24 * 100))$min
+  }
+  
   theta(mu, a, p, m, infinity) * exp((n - EIPf(n, a, p, m)) * mu)  
 }
-
-# reduction(10 * 24, 1 / (14 * 24), 1 / (3 * 24), .1, 50 * 24, 50 * 24)
 ```
 
 
@@ -1110,8 +1151,9 @@ reduction <- function(n, mu, a, p, m, infinity) {
 A function that computes the $R_0$ reduction values in the context of mass treatment:
 
 ```{r}
-mass_treatment <- function(n = 10, mu = 1 / 14, a = 1 / 3,
-                           T_min = 3, T_max = 8, p_vals = 0:10 / 10, infinity = 250) {
+mass_treatment <- function(n = 10, mu = 1 / 14, a = 1 / 3, T_min = 3, T_max = 8,
+                           p_vals = 0:10 / 10, infinity = 250,
+                           alpha = alpha2, beta = beta2, delta = delta2) {
   n <- n * 24
   mu <- mu / 24
   a <- a / 24
@@ -1120,7 +1162,8 @@ mass_treatment <- function(n = 10, mu = 1 / 14, a = 1 / 3,
   expand_grid(p_vals, m_vals = (T_min * 7):(T_max * 7) * 24) |> 
     mutate(reduction =
              future_map2_dbl(p_vals, m_vals,
-                             ~ reduction(n, mu, a, p = .x, m = .y, infinity)))
+                             ~ reduction(alpha, beta, delta, n, mu, a, p = .x, m = .y,
+                                          infinity)))
 }
 ```
 
@@ -1160,7 +1203,7 @@ plot_mass_treatment <- function(data) {
 }
 ```
 
-Takes 1':
+Takes 1' on the M2:
 
 ```{r eval = FALSE, purl = FALSE}
 mtreat1 <- mass_treatment()
@@ -1270,12 +1313,14 @@ A function that computes the iterations through the $R_0$ and $m$ values:
 
 ```{r}
 dynamics <- function(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1, m = 50,
-                     cv = .3, r = 1 / 200, infinity = 250, nb = 10) {
+                     cv = .3, r = 1 / 200, infinity = 250, nb = 10,
+                     alpha = alpha2, beta = beta2, delta = delta2) {
   R0 <- p <- rep(0, nb + 1)
   R0 <- R0_tmp <- R0i
   for (i in 2:(nb + 1)) {
     p[i - 1] <- p_tmp <- incidence(R0_tmp, cv, a, mu, r, m)
-    R0[i] <- R0_tmp <- reduction(n, mu, a, prop * p_tmp, m, infinity) * R0i
+    R0[i] <- R0_tmp <- reduction(alpha, beta, delta,
+                                 n, mu, a, prop * p_tmp, m, infinity) * R0i
   }
   list(R0 = R0, p = head(p, -1))
 }
@@ -1295,10 +1340,11 @@ plot_dynamics <- function(x) {
 }
 ```
 
-Computing the dynamics of starting values of $R_0$ of 40 and 30:
+Computing the dynamics of starting values of $R_0$ of 40 and 30 (takes 3" each on the
+M2):
 
 ```{r eval = FALSE, purl = FALSE}
-out40 <- dynamics()
+out40 <- dynamics(40)
 out30 <- dynamics(30)
 ```
 
@@ -1329,12 +1375,14 @@ plot_dynamics(out30)
 A function that looks for the equilibrium value of $R_0$ using the `nleqslv` package:
 
 ```{r}
-finalR0nl <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250) {
+finalR0nl <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250,
+                      alpha = alpha2, beta = beta2, delta = delta2) {
   nleqslv::nleqslv(c(R0i, incidence(R0i, cv, a, mu, r, m)),
                    function(vars) {
                       R0 <- vars[1]
                       p  <- vars[2]
-                      c(R0 - reduction(n, mu, a, prop * p, m, infinity) * R0i,
+                      c(R0 - reduction(alpha, beta, delta,
+                                       n, mu, a, prop * p, m, infinity) * R0i,
                         p  - incidence(R0, cv, a, mu, r, m)) })$x[1]
 }
 ```
@@ -1342,11 +1390,13 @@ finalR0nl <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250) {
 A function that does the same but using the `rootSolve` package:
 
 ```{r}
-finalR0rs <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250) {
+finalR0rs <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250,
+                      alpha = alpha2, beta = beta2, delta = delta2) {
   rootSolve::multiroot(function(vars) {
                          R0 <- vars[1]
                          p  <- vars[2]
-                         c(R0 - reduction(n, mu, a, prop * p, m, infinity) * R0i,
+                         c(R0 - reduction(alpha, beta, delta,
+                                          n, mu, a, prop * p, m, infinity) * R0i,
                            p  - incidence(R0, cv, a, mu, r, m)) },
                        c(R0i, incidence(R0i, cv, a, mu, r, m)))$root[1]
 }
@@ -1355,7 +1405,7 @@ finalR0rs <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250) {
 The functions from the `nleqslv` and `rootSolve` packages are equivalent but `nleqslv`
 is slightly faster. Explorations:
 
-(takes 8'40" in sequential mode on the Mac Mini and 24" in parallel mode on the M2)
+(takes 24" on the M2)
 
 ```{r eval = FALSE, purl = FALSE}
 m_vals <- c(4:7 * 10, seq(100, 250, 50))
@@ -1413,22 +1463,23 @@ R0red_Hill |>
             ylab = bquote(R[0] ~ reduction ~ at ~ R[0] == 15)))
 ```
 
-Looking for the optimal value of `m`:
+Looking for the optimal value of `m` (takes 6" on the M2):
 
 ```{r eval = FALSE, purl = FALSE}
-m_vals2 <- 66:72
-reduc_val <- map_dbl(m_vals2, ~ finalR0nl(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3,
-                                          prop = 1, m = .x, cv = .3, r = 1 / 200) / 40) 
+m_vals2 <- 64:75
+reduc_val <- future_map_dbl(m_vals2,
+                            ~ finalR0nl(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3,
+                                        prop = 1, m = .x, cv = .3, r = 1 / 200) / 40)
 ```
 
 ```{r include = FALSE}
-m_vals2 <- 66:72
+m_vals2 <- 64:75
 if (file_exists("reduc_val.rds")) {
   reduc_val <- readRDScache("reduc_val.rds")
 } else {
-  reduc_val <- map_dbl(m_vals2,
-                       ~ finalR0nl(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1,
-                                   m = .x, cv = .3, r = 1 / 200) / 40)
+  reduc_val <- future_map_dbl(m_vals2,
+                              ~ finalR0nl(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3,
+                                          prop = 1, m = .x, cv = .3, r = 1 / 200) / 40)
   saveRDScache(reduc_val, "reduc_val.rds")
 }
 ```
@@ -1439,8 +1490,64 @@ plot(m_vals2, reduc_val, type = "o", col = 4, lwd = lwd_val,
      ylab = bquote(R[0] ~ reduction ~ at ~ R[0] == 40))
 ```
 
+A function that does the search from a minimal value of `from`:
+
+```{r}
+search_m <- function(from = 15, R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1,
+                     cv = .3, r = 1 / 200, infinity = 250,
+                     alpha = alpha2, beta = beta2, delta = delta2) {
+  f <- function(x) {
+    finalR0nl(R0i, n, mu, a, prop, m = x, cv, r, infinity, alpha, beta, delta)
+  }
+  
+  out <- from |>
+    seq(by = n_workers, le = n_workers) |> 
+    tibble(x = _) |> 
+    mutate(y = future_map_dbl(x, f))
+  
+  idx <- out |>
+    mutate(row_id = row_number()) |> 
+    filter(y == min(y)) |> 
+    pull(row_id)
+  
+  from <- out |>
+    slice(idx - 1) |> 
+    pull(x)
+
+  out <- from |>
+    seq(by = 2, le = n_workers) |> 
+    tibble(x = _) |> 
+    mutate(y = future_map_dbl(x, f)) |> 
+    filter(y == min(y))
+  
+  x <- out$x
+  
+  c(x - 1, x + 1) |> 
+    tibble(x = _) |> 
+    mutate(y = future_map_dbl(x, f)) |> 
+    bind_rows(out) |> 
+    filter(y == min(y)) |> 
+    pull(x)
+}
+```
+
+Takes 12" on the M2:
+
+```{r eval = FALSE, purl = FALSE}
+search_m(15)
+```
+
+```{r include = FALSE}
+if (file_exists("m_min.rds")) {
+  readRDScache("m_min.rds")
+} else {
+  (m_min <- search_m(15))
+  saveRDScache(m_min, "m_min.rds")
+}
+```
+
 Now we know that we want to use `m = 69`. Let's now explore various values of `prop`
-(takes 29" on the M2):
+(takes 30" on the M2):
 
 ```{r eval = FALSE, purl = FALSE}
 R0red2 <- expand_grid(prop = 1:10 / 10,
@@ -1466,102 +1573,41 @@ if (file_exists("R0red2.rds")) {
 ```
 
 Let's try to perform Hill extrapolation for each value of `prop` and get rid off all
-the `prop` values where extrapolation fails. We e
+the `prop` values where extrapolation fails.
 
 ```{r}
-tmp <- R0red2 |> 
-  summarise(fit = list(safely(nls)(reduction ~ R0^h / (K^h + R0^h),
-                                   data = pick(everything()),
-                                   start = c(K = 5, h = .7))), .by = prop) |> 
-  filter_out(map_lgl(map(fit, "result"), is.null)) |> 
-  mutate(across(fit, ~ map(.x, "result")),
-         coeff = map(fit, coef)) |>
-  unnest_wider(coeff)
-
-modK <- tmp |> 
-  select(prop, K) |> 
-  bind_rows(tibble(prop = 0, K = 0)) |> 
-  lm(K ~ prop + I(prop^2), data = _)
-
-modh <- lm(h ~ prop + I(prop^2), tmp)
-
-out <- R0red2 |> 
-  nest(.by = prop) |>
-  mutate(K0  = predict(modK, list(prop = prop)),
-         h0  = predict(modh, list(prop = prop)),
-         fit = pmap(list(data, K0, h0),
-                    ~ nls(reduction ~ R0^h / (K^h + R0^h),
-                          data = ..1, start = c(K = ..2, h = ..3))),
-         reduction = map(fit,
-                         ~ tibble(R0 = R0_new,
-                                  prediction = predict(.x,
-                                                       newdata = list(R0 = R0_new))))) |> 
-  select(-c(K0, h0, fit))
+#tmp <- R0red2 |> 
+#  summarise(fit = list(safely(nls)(reduction ~ R0^h / (K^h + R0^h),
+#                                   data = pick(everything()),
+#                                   start = c(K = 5, h = .7))), .by = prop) |> 
+#  filter_out(map_lgl(map(fit, "result"), is.null)) |> 
+#  mutate(across(fit, ~ map(.x, "result")),
+#         coeff = map(fit, coef)) |>
+#  unnest_wider(coeff)
+#
+#modK <- tmp |> 
+#  select(prop, K) |> 
+#  bind_rows(tibble(prop = 0, K = 0)) |> 
+#  lm(K ~ prop + I(prop^2), data = _)
+#
+#modh <- lm(h ~ prop + I(prop^2), tmp)
+#
+#out <- R0red2 |> 
+#  nest(.by = prop) |>
+#  mutate(K0  = predict(modK, list(prop = prop)),
+#         h0  = predict(modh, list(prop = prop)),
+#         fit = pmap(list(data, K0, h0),
+#                    ~ nls(reduction ~ R0^h / (K^h + R0^h),
+#                          data = ..1, start = c(K = ..2, h = ..3))),
+#         reduction = map(fit,
+#                         ~ tibble(R0 = R0_new,
+#                                  prediction = predict(.x,
+#                                                       newdata = list(R0 = R0_new))))) |> 
+#  select(-c(K0, h0, fit))
 ```
 
-Verifying the quality of the extrapolations:
-
-```{r}
-plot(NA, xlim = c(0, 150), ylim = 0:1,
-     xlab = bquote(initial ~ value ~ of ~ R[0]), ylab = bquote(R[0] ~ reduction))
-
-out |> 
-  select(prop, reduction) |> 
-  unnest(reduction) |> 
-  group_by(prop) |> 
-  group_walk(~ with(.x, lines(R0, prediction, col = 4)))
-
-out |> 
-  select(prop, data) |> 
-  unnest(data) |> 
-  group_by(prop) |> 
-  group_walk(~ with(.x, points(R0, reduction, col = 4)))
-```
-
-```{r}
-plot_treatment_infected <- function(data) {
-  plot(NA, xlim = c(15, 150), ylim = 0:1, xaxs = "i", yaxs = "i",
-     xlab = bquote(initial ~ value ~ of ~ R[0]), ylab = bquote(R[0] ~ reduction))
-  
-  abline(v = 0:15 * 10, col = "grey")
-  abline(h = 0:10 / 10, col = "grey")
-  
-  data |> 
-    select(prop, reduction) |> 
-    unnest(reduction) |> 
-    group_split(prop) |> 
-    walk2(tail(YlOrRd11, -1),
-          ~ with(.x, lines(R0, prediction, col = .y, lwd = lwd_val)))
-  
-  add_legend("bottomright", title = "proportion of cases treated")
-  
-  box(bty = "o")
-}
-```
-
-```{r}
-plot_treatment_infected(out)
-```
-
-#### Functions
-
-Here we put the above code into functions. A function that searches for the optimal
-value of `m`:
-
-finalR0nl <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250)
-
-```{r}
-search_m <- function(m = 63:74, R0 = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1,
-                     c = .3, r = 1 / 200, inifinity = 250) {
-  m |>
-    tibble() |> 
-    mutate(reduction =
-             future_map_dbl(m, ~ finalR0nl(R0, n, mu, a, prop,
-                                           m = .x, c, r, infinity) / R0)) |> 
-    filter(reduction == min(reduction)) |> 
-    pull(m)
-}
-```
+A function that uses a Hill equation to perform extrapolation for each value of `prop`
+and get rid off all the `prop` values where extrapolation fails:
 
 ```{r}
 extrapolate <- function(x, R0_new = seq(15, 150, le = 512), K0 = 5, h0 = .7) {
@@ -1600,32 +1646,96 @@ extrapolate <- function(x, R0_new = seq(15, 150, le = 512), K0 = 5, h0 = .7) {
 ```
 
 ```{r}
-treatment_infected <- function(R0 = 5:15 * 10, prop = 1:10 / 10, m = 63:74, n = 10,
+out <- extrapolate(R0red2)
+```
+
+Verifying the quality of the extrapolations:
+
+```{r}
+plot(NA, xlim = c(0, 150), ylim = 0:1,
+     xlab = bquote(initial ~ value ~ of ~ R[0]), ylab = bquote(R[0] ~ reduction))
+
+out |> 
+  select(prop, reduction) |> 
+  unnest(reduction) |> 
+  group_by(prop) |> 
+  group_walk(~ with(.x, lines(R0, prediction, col = 4)))
+
+out |> 
+  select(prop, data) |> 
+  unnest(data) |> 
+  group_by(prop) |> 
+  group_walk(~ with(.x, points(R0, reduction, col = 4)))
+```
+
+A function that computes the reduction in the case of the treatment of infected:
+
+```{r}
+treatment_infected <- function(R0 = 5:15 * 10, prop = 1:10 / 10, from = 15, n = 10,
                                mu = 1 / 14, a = 1 / 3, c = .3, r = 1 / 200,
                                R0_new = seq(15, 150, le = 512), K0 = 5, h0 = .7,
-                               inifinity = 250) {
-  m_opt <- search_m(m, first(R0), n, mu, a, prop = 1, c, r, infinity)
+                               inifinity = 250,
+                               alpha = alpha2, beta = beta2, delta = delta2) {
+  m_opt <- search_m(from, first(R0), n, mu, a, prop = 1, c, r, infinity,
+                    alpha, beta, delta)
   expand_grid(prop, R0) |> 
     mutate(reduction = future_map2(R0, prop,
                                    ~ safely(finalR0nl)(R0i = .x, n, mu, a, prop = .y,
-                                                       m = m_opt, c, r, inifinity))) |> 
+                                                       m = m_opt, c, r, inifinity,
+                                                       alpha, beta, delta))) |> 
     filter(map_lgl(reduction, ~ is.null(.x$error))) |> 
     mutate(across(reduction, ~ map_dbl(.x, "result") / R0)) |> 
     extrapolate(R0_new, K0, h0)
 }
 ```
 
-Takes 32":
+A function that plots the output of `treatment_infected()`:
 
-```{r eval=FALSE}
-system.time(out <- treatment_infected())
-saveRDScache(out, "out.rds")
+```{r}
+plot_treatment_infected <- function(data) {
+  plot(NA, xlim = c(15, 150), ylim = 0:1, xaxs = "i", yaxs = "i",
+     xlab = bquote(initial ~ value ~ of ~ R[0]), ylab = bquote(R[0] ~ reduction))
+  
+  abline(v = 0:15 * 10, col = "grey")
+  abline(h = 0:10 / 10, col = "grey")
+  
+  data |> 
+    select(prop, reduction) |> 
+    unnest(reduction) |> 
+    group_split(prop) |> 
+    walk2(tail(YlOrRd11, -1),
+          ~ with(.x, lines(R0, prediction, col = .y, lwd = lwd_val)))
+  
+  add_legend("bottomright", title = "proportion of cases treated")
+  
+  box(bty = "o")
+}
+```
+
+Takes 40" on the M2:
+
+```{r eval = FALSE, purl = FALSE}
+treati1 <- treatment_infected()
+```
+
+```{r include = FALSE}
+if (file_exists("treati1.rds")) {
+  treati1 <- readRDScache("treati1.rds")
+} else {
+  treati1 <- treatment_infected()
+  saveRDScache(treati1, "treati1.rds")
+}
 ```
 
 ```{r}
-out <- readRDScache("out.rds")
-plot_treatment_infected(out)
+plot_treatment_infected(treati1)
 ```
+
+
+
+## Explorations EPI only
+
+
 
 
 ## Nonlinearities
@@ -1644,49 +1754,14 @@ beta2s  <- bootstrap_functions(beta_model_4dpi)
 delta2s <- bootstrap_functions(delta_model_4dpi)
 ```
 
-A rewriting of the `reduction()` function that embeds all necessary function back to
-`alpha`, `beta` and `delta`:
-
-```{r}
-reduction1 <- function(alpha, beta, delta, n, mu, a, p, m, infinity) {
-  l <- function(tau, m) {
-    map_dbl(tau,
-            ~ integrate2(function(x) (1 - alpha(x, .x)) * (1 - beta(x, .x)), 0, m) / m)
-  }
-  
-  qf <- function(tau, m) {
-    map_dbl(tau,
-            ~ integrate2(function(x) size2rate_reduction(1 - delta(x, .x)), 0, m) / m)
-  }
-  
-  lambda <- function(tau, a, p, m) {
-    map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - l(x, m), 0, .x)))
-  }
-  
-  kappaf <- function(tau, a, p, m) {
-    map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - qf(x, m), 0, .x)))
-  }
-  
-  theta <- function(mu, a, p, m, infinity) {
-    integrate2(function(x) dexp(x, mu) * zeta(lambda(x, a, p, m)), 0, infinity)
-  }
-  
-  EIPf <- function(n, a, p, m) {
-    optimise(function(x) abs(x * kappaf(x, a, p, m) - n), c(0, 24 * 100))$min
-  }
-  
-  theta(mu, a, p, m, infinity) * exp((n - EIPf(n, a, p, m)) * mu)  
-}
-```
-
 Computing the value of the reduction for a target of `N_target` replicates (take 8'):
 
 ```{r eval = FALSE, purl = FALSE}
 N_target <- 1e3
 N <- n_workers * ceiling(1.05 * N_target / n_workers)
   conv <- future_pmap(list(sample(alpha2s, N), sample(beta2s, N), sample(delta2s, N)),
-                      ~ safely(reduction1)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
-                                           1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
+                      ~ safely(reduction)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
+                                          1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
     keep(~ is.null(.x$error)) |> 
     map_dbl("result")
 ```
@@ -1698,8 +1773,8 @@ if (file_exists("conv.rds")) {
   conv <- readRDScache("conv.rds")
 } else {
     conv <- future_pmap(list(sample(alpha2s, N), sample(beta2s, N), sample(delta2s, N)),
-                        ~ safely(reduction1)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
-                                             1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
+                        ~ safely(reduction)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
+                                            1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
       keep(~ is.null(.x$error)) |> 
       map_dbl("result")
   saveRDScache(conv, "conv.rds")
@@ -1724,7 +1799,7 @@ defined in the vectors `alpha`, `beta` and `delta`:
 ```{r}
 reduction2 <- function(n, mu, a, p, m, infinity, alpha, beta, delta) {
   list(alpha, beta, delta) |> 
-    pmap(~ safely(reduction1)(..1, ..2, ..3, n, mu, a, p, m, infinity)) |> 
+    pmap(~ safely(reduction)(..1, ..2, ..3, n, mu, a, p, m, infinity)) |> 
     keep(~ is.null(.x$error)) |> 
     map_dbl("result") |> 
     mean()
@@ -1914,10 +1989,10 @@ if (file_exists("treatinf2_50.rds")) {
 #reduction1(alpha, beta, delta, n, mu, a, p, m, infinity)
 
 reduction_dpi <- function(dpi, n, mu, a, p, m, infinity) {
-  reduction1(with(as.list(alpha_fit4dpi), make_effect(A, k, d, d / dpi)),
-             with(as.list(beta_fit4dpi),  make_effect(A, k, d, d / dpi)),
-             with(as.list(delta_fit4dpi), make_effect(A, k, d, d / dpi)),
-             n, mu, a, p, m, infinity)
+  reduction(with(as.list(alpha_fit4dpi), make_effect(A, k, d, d / dpi)),
+            with(as.list(beta_fit4dpi),  make_effect(A, k, d, d / dpi)),
+            with(as.list(delta_fit4dpi), make_effect(A, k, d, d / dpi)),
+            n, mu, a, p, m, infinity)
 }
 
 #reduction_dpi(2, 10 * 24, 1 / (14 * 24), 1 / (3 * 24), .1, 50 * 24, 50 * 24)
