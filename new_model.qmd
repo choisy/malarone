@@ -1112,7 +1112,7 @@ size2rate_reduction <- function(reduction_in_size, ref = m_oo_size_val) {
 Putting everything together to generate the reduction function:
 
 ```{r}
-reduction <- function(alpha, beta, delta, n, mu, a, p, m, infinity) {
+reduction1 <- function(alpha, beta, delta, n, mu, a, p, m, infinity) {
   l <- function(tau, m) {
     map_dbl(tau,
             ~ integrate2(function(x) (1 - alpha(x, .x)) * (1 - beta(x, .x)), 0, m) / m)
@@ -1162,7 +1162,7 @@ mass_treatment <- function(n = 10, mu = 1 / 14, a = 1 / 3, T_min = 3, T_max = 8,
   expand_grid(p_vals, m_vals = (T_min * 7):(T_max * 7) * 24) |> 
     mutate(reduction =
              future_map2_dbl(p_vals, m_vals,
-                             ~ reduction(alpha, beta, delta, n, mu, a, p = .x, m = .y,
+                             ~ reduction1(alpha, beta, delta, n, mu, a, p = .x, m = .y,
                                           infinity)))
 }
 ```
@@ -1319,8 +1319,8 @@ dynamics <- function(R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop = 1, m = 50,
   R0 <- R0_tmp <- R0i
   for (i in 2:(nb + 1)) {
     p[i - 1] <- p_tmp <- incidence(R0_tmp, cv, a, mu, r, m)
-    R0[i] <- R0_tmp <- reduction(alpha, beta, delta,
-                                 n, mu, a, prop * p_tmp, m, infinity) * R0i
+    R0[i] <- R0_tmp <- reduction1(alpha, beta, delta,
+                                  n, mu, a, prop * p_tmp, m, infinity) * R0i
   }
   list(R0 = R0, p = head(p, -1))
 }
@@ -1381,8 +1381,8 @@ finalR0nl <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250,
                    function(vars) {
                       R0 <- vars[1]
                       p  <- vars[2]
-                      c(R0 - reduction(alpha, beta, delta,
-                                       n, mu, a, prop * p, m, infinity) * R0i,
+                      c(R0 - reduction1(alpha, beta, delta,
+                                        n, mu, a, prop * p, m, infinity) * R0i,
                         p  - incidence(R0, cv, a, mu, r, m)) })$x[1]
 }
 ```
@@ -1395,8 +1395,8 @@ finalR0rs <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250,
   rootSolve::multiroot(function(vars) {
                          R0 <- vars[1]
                          p  <- vars[2]
-                         c(R0 - reduction(alpha, beta, delta,
-                                          n, mu, a, prop * p, m, infinity) * R0i,
+                         c(R0 - reduction1(alpha, beta, delta,
+                                           n, mu, a, prop * p, m, infinity) * R0i,
                            p  - incidence(R0, cv, a, mu, r, m)) },
                        c(R0i, incidence(R0i, cv, a, mu, r, m)))$root[1]
 }
@@ -1754,16 +1754,19 @@ beta2s  <- bootstrap_functions(beta_model_4dpi)
 delta2s <- bootstrap_functions(delta_model_4dpi)
 ```
 
-Computing the value of the reduction for a target of `N_target` replicates (take 8'):
+Computing the value of the reduction for a target of `N_target` replicates (take 7'
+in the M2):
 
 ```{r eval = FALSE, purl = FALSE}
 N_target <- 1e3
 N <- n_workers * ceiling(1.05 * N_target / n_workers)
-  conv <- future_pmap(list(sample(alpha2s, N), sample(beta2s, N), sample(delta2s, N)),
-                      ~ safely(reduction)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
-                                          1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
-    keep(~ is.null(.x$error)) |> 
-    map_dbl("result")
+system.time(
+conv <- future_pmap(list(sample(alpha2s, N), sample(beta2s, N), sample(delta2s, N)),
+                    ~ safely(reduction1)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
+                                         1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
+  keep(~ is.null(.x$error)) |> 
+  map_dbl("result")
+)
 ```
 
 ```{r include = FALSE}
@@ -1772,11 +1775,11 @@ N <- n_workers * ceiling(1.05 * N_target / n_workers)
 if (file_exists("conv.rds")) {
   conv <- readRDScache("conv.rds")
 } else {
-    conv <- future_pmap(list(sample(alpha2s, N), sample(beta2s, N), sample(delta2s, N)),
-                        ~ safely(reduction)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
-                                            1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
-      keep(~ is.null(.x$error)) |> 
-      map_dbl("result")
+  conv <- future_pmap(list(sample(alpha2s, N), sample(beta2s, N), sample(delta2s, N)),
+                      ~ safely(reduction1)(..1, ..2, ..3, 10 * 24, 1 / (14 * 24),
+                                           1 / (3 * 24), .1, 50 * 24, 50 * 24)) |> 
+    keep(~ is.null(.x$error)) |> 
+    map_dbl("result")
   saveRDScache(conv, "conv.rds")
 }
 ```
@@ -1794,12 +1797,13 @@ lines(cumconv, col = 4, lwd = lwd_val)
 
 Another version of the `reduction()` function that computes the reduction effect as an
 average across all the combination of the values of $\alpha$, $\beta$ and $\delta$ as
-defined in the vectors `alpha`, `beta` and `delta`:
+defined in the vectors `alpha`, `beta` and `delta` (note that this version is not
+parallelized):
 
 ```{r}
 reduction2 <- function(n, mu, a, p, m, infinity, alpha, beta, delta) {
   list(alpha, beta, delta) |> 
-    pmap(~ safely(reduction)(..1, ..2, ..3, n, mu, a, p, m, infinity)) |> 
+    pmap(~ safely(reduction1)(..1, ..2, ..3, n, mu, a, p, m, infinity)) |> 
     keep(~ is.null(.x$error)) |> 
     map_dbl("result") |> 
     mean()
@@ -1810,7 +1814,6 @@ reduction2 <- function(n, mu, a, p, m, infinity, alpha, beta, delta) {
 #reduction2(10 * 24, 1 / (14 * 24), 1 / (3 * 24), .1, 50 * 24, 50 * 24,
 #           alpha2s[1:2], beta2s[1:2], delta2s[1:2])
 ```
-
 
 ### Mass treatment
 
