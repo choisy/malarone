@@ -106,7 +106,7 @@ n_workers <- 12
 ## Packages
 
 ```{r message = FALSE}
-#library(mclust)
+library(statmod)
 library(stringr)
 library(furrr)
 library(tidyr)
@@ -988,9 +988,18 @@ rate_val <- models |>
 Let's look at the mean oocyst size at 7 dpi on the controls mosquitoes of our study:
 
 ```{r message = FALSE}
+placebo <- c(7:9, 13, 17, 19, 20)
+
 oocyst_size <- "oocyst_size2.txt" |>
   read_table2() |> 
-  mutate(across(Area, ~ .x * 1e6))
+  mutate(across(Area, ~ .x * 1e6)) |> 
+  rename(patient_id = patient,
+         time_point = time_points,
+         mosquito_id = Mosq_no,
+         area = Area) |> 
+  mutate(treatment = case_when(patient_id %in% placebo ~ "AL+Placebo",
+                               .default = "AL+AP")) |> 
+  select(treatment, patient_id, mosquito_id, time_point, area, Total_oocysts)
 ```
 
 ```{r}
@@ -1763,11 +1772,11 @@ point `H00`:
 
 ```{r}
 densities <- oocyst_size |> 
-  filter(time_points == "H00") |> 
-  select(patient, Mosq_no, Area) |> 
-  nest(data = Area) |> 
+  filter(time_point == "H00") |> 
+  select(patient_id, mosquito_id, area) |> 
+  nest(data = area) |> 
   filter(map_int(data, nrow) > 1) |> 
-  mutate(density = map(data, ~ density(.x$Area, from = 0))) |> 
+  mutate(density = map(data, ~ density(.x$area, from = 0))) |> 
   pull(density)
 
 plot(NA, xlim = c(0, max(unlist(map(densities, "x")))), ylim = c(0, .01),
@@ -1775,8 +1784,8 @@ plot(NA, xlim = c(0, max(unlist(map(densities, "x")))), ylim = c(0, .01),
 walk(densities, ~ lines(.x, col = adjustcolor(1, .2)))
 
 oocyst_size |> 
-  filter(time_points == "H00") |> 
-  pull(Area) |> 
+  filter(time_point == "H00") |> 
+  pull(area) |> 
   density() |> 
   lines(col = 2, lwd = lwd_val)
 
@@ -1788,11 +1797,11 @@ within mosquitoes at time point `H00`:
 
 ```{r}
 oo_size_mu_sd <- oocyst_size |> 
-  filter(time_points == "H00") |> 
-  select(patient, Mosq_no, Area) |> 
-  summarise(mean = mean(Area),
-            sd   = sd(Area),
-            n    = n(), .by = c(patient, Mosq_no))
+  filter(time_point == "H00") |> 
+  select(patient_id, mosquito_id, area) |> 
+  summarise(mean = mean(area),
+            sd   = sd(area),
+            n    = n(), .by = c(patient_id, mosquito_id))
 
 with(oo_size_mu_sd, plot(mean, sd, xlim = c(0, max(mean)), cex = sqrt(n), col = 4,
      xlab = "mean oocyst size", ylab = "standard deviation of oocyst size"))
@@ -1807,10 +1816,10 @@ The same across all the time points:
 
 ```{r}
 oo_size_mu_sd <- oocyst_size |> 
-  select(time_points, patient, Mosq_no, Area) |> 
-  summarise(mean = mean(Area),
-            sd   = sd(Area),
-            n    = n(), .by = c(time_points, patient, Mosq_no))
+  select(time_point, patient_id, mosquito_id, area) |> 
+  summarise(mean = mean(area),
+            sd   = sd(area),
+            n    = n(), .by = c(time_point, patient_id, mosquito_id))
 
 with(oo_size_mu_sd, plot(mean, sd, xlim = c(0, max(mean)), cex = sqrt(n),
                          col = adjustcolor(4, .15),
@@ -1823,17 +1832,45 @@ abline(mod)
 (log_sd <- sqrt(log(1 + coef(mod)^2)))
 ```
 
-```{r}
-oocyst_size |> 
-  select(time_points, Mosq_no, Area) |> 
-  rename(arm = time_points, mosquito_ID = Mosq_no, oocyst_size = Area)
+Reading the numbers of oocysts:
+
+## O0_COUNT
+
+```{r message = FALSE}
+oocyst_count <- "ASAAP4b_oocyst2.txt" |>
+  read_table2() |> 
+  rename(time_point = time_points,
+         count      = total_oocysts) |> 
+  mutate(across(time_point, ~ case_when(.x == "H0" ~ "H00",
+                                        .x == "H5" ~ "H05",
+                                        .x == "D5" ~ "D05",
+                                        .x == "D7" ~ "D07", .default = .x)),
+         treatment = case_when(patient_id %in% placebo ~ "AL+Placebo",
+                               .default = "AL+AP")) |> 
+  select(treatment, patient_id, time_point, day_of_dissection, count)
 ```
 
 ```{r}
-number_oocysts |> 
-  select(-day_of_dissection) |> 
-  rename(arm = time_points, number_visible_oocysts = total_oocysts)
+oocyst_count2 <- oocyst_count |> 
+  filter_out(time_point %in% c("Unfed", "Control")) |> 
+  filter(treatment == "AL+AP", day_of_dissection == "7dpi") |> 
+  select(-day_of_dissection, -treatment) |> 
+  na.exclude()
 ```
+
+```{r}
+oocyst_size2 <- oocyst_size |> 
+  filter_out(time_point %in% c("Unfed", "Control")) |> 
+  filter(treatment == "AL+AP") |> 
+  select(-treatment, -Total_oocysts) |> 
+  na.exclude()
+```
+
+```{r}
+
+```
+
+
 
 
 
@@ -2161,11 +2198,6 @@ with(filter(mtreat_dpi, dpi == 3), lines(m_vals, reduction))
 
 ### Number of oocyst
 
-```{r message = FALSE}
-number_oocysts <- "ASAAP4b_oocyst2.txt" |>
-  read_table2() |> 
-  select(time_points, day_of_dissection, total_oocysts)
-```
 
 Prevalence:
 
