@@ -106,7 +106,7 @@ n_workers <- 12
 ## Packages
 
 ```{r message = FALSE}
-library(mclust)
+#library(mclust)
 library(stringr)
 library(furrr)
 library(tidyr)
@@ -502,7 +502,7 @@ boot_calibration_4dpi <- function(data, N = 1e4, eps = 1.1) {
 }
 ```
 
-It takes (12" on the M2):
+It takes 12" on the M2 and 83" on the i7:
 
 ```{r eval = FALSE, purl = FALSE}
 alpha_model_4dpi <- boot_calibration_4dpi(alpha_data)
@@ -584,7 +584,7 @@ beta2 <- with(as.list(beta_fit4dpi), make_effect(A, k, d, d / 3))
 #beta <- beta2
 ```
 
-Takes 12" on the M2:
+Takes 12" on the M2 and 83" on the i7:
 
 ```{r eval = FALSE, purl = FALSE}
 beta_model_4dpi <- boot_calibration_4dpi(beta_data)
@@ -743,36 +743,6 @@ box(bty = "o")
 par(opar)
 ```
 
-### $\lambda(\tau)$
-
-```{r}
-#l <- function(tau, m) {
-#  map_dbl(tau,
-#          ~ integrate2(function(x) (1 - alpha(x, .x)) * (1 - beta(x, .x)), 0, m) / m)
-#}
-
-# l(5:6 * 24, 15 * 24)
-```
-
-```{r}
-#lambda <- function(tau, a, p, m) {
-#  map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - l(x, m), 0, .x)))
-#}
-
-# lambda(5:6 * 24, 1 / (3 * 24), 1, 50 * 24)
-# zeta(lambda(5:6 * 24, 1 / (3 * 24), 1, 50 * 24))
-```
-
-
-### $\theta(\alpha, \beta)$
-
-```{r}
-#theta <- function(mu, a, p, m, infinity) {
-#  integrate2(function(x) dexp(x, mu) * zeta(lambda(x, a, p, m)), 0, infinity)
-#}
-
-# theta(mu = 1 / (14 * 24), a = 1 / (3 * 24), p = 1, m = 50 * 24, infinity = 50 * 24)
-```
 
 ### $\delta(t, \tau)$
 
