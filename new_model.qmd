@@ -1735,6 +1735,207 @@ plot_treatment_infected(treati1)
 
 ## Explorations EPI only
 
+In this section we consider there is no TBA and TRA but only EIP and that what was
+interpreted as TBA and TRA above was simply an artifact due to the fact that oocysts
+that are too small are not detected.
+
+### Oocysts size distribution
+
+Colors
+
+```{r}
+tmp1 <- unique(oocyst_size$time_points)
+tmp2 <- c(tmp1[str_starts(tmp1, "H")], tmp1[str_starts(tmp1, "D")])
+
+color_dpa <- c("black", "grey", rev(tail(YlOrRd11, length(tmp2)))) |> 
+  setNames(c(setdiff(tmp1, tmp2), tmp2))
+```
+
+New version of the data:
+
+```{r}
+oocyst_size2 <- oocyst_size |>
+  mutate(across(Area, ~ .x * 1e6),
+         color = color_dpa[time_points])
+```
+
+```{r}
+densities <- oocyst_size2 |> 
+  mutate(across(Area, log10)) |> 
+  select(time_points, Area, color) |> 
+  nest(data = Area) |> 
+  mutate(density = map(data, ~ density(.x$Area)))
+
+densities_plot <- densities |>
+  mutate(across(density, ~ map(.x, function(x) {x$x <- 10^x$x; x})))
+
+x_max <- densities_plot |> 
+  pull(density) |> 
+  map("x") |> 
+  unlist() |> 
+  max()
+
+x_min <- densities_plot |> 
+  pull(density) |> 
+  map("x") |> 
+  unlist() |> 
+  min()
+
+y_max <- densities_plot |> 
+  pull(density) |> 
+  map("y") |> 
+  unlist() |> 
+  max()
+
+plot(NA, xlim = c(x_min, x_max), ylim = c(0, y_max), log = "x",
+     xlab = "oocsyt size at 7 dpi", ylab = "density")
+with(densities_plot, walk2(density, color, ~ lines(.x, col = .y, lwd = lwd_val)))
+
+legend("topleft", legend = names(color_dpa), col = color_dpa, lty = 1, lwd = lwd_val,
+       bty = "n")
+```
+
+```{r message = FALSE}
+xs <- seq(1, log10(5000), le = 512)
+
+time_poins <- names(color_dpa) 
+
+densities |> 
+  arrange(match(time_points, time_poins)) |> 
+
+  mutate(den_val = map(density, ~ with(.x, tibble(approx(x, y, xs)$y)))) |> 
+  pull(den_val) |> 
+  bind_cols() |> 
+  as.matrix() |> 
+  t() |> 
+  image(1:10, xs, z = _, xaxt = "n", yaxt = "n", xlab = NA, ylab = "oocyst size at 7 dpi")
+
+labels <- 10^(1:3) |> 
+  (\(x) sort(c(x, 5 * x)))()
+
+axis(1, 1:10, time_poins)
+axis(2, log10(labels), labels)
+box(bty = "o")
+```
+
+Log-normal fit:
+
+```{r}
+H00 <- oocyst_size2 |> 
+  filter(time_points == "H00") |> 
+  pull(Area)
+
+dst <- density(H00, from = 0)
+
+xs <- seq(0, max(H00), le = 512)
+fitdstr <- as.list(fitdistrplus::fitdist(H00, "lnorm")$estimate)
+ys <- with(fitdstr, dlnorm(xs, meanlog, sdlog))
+
+plot(dst, lwd = lwd_val, col = 4, main = NA, ylim = c(0, max(dst$y, ys)),
+     xlab = "mean oocyst sizes at 7 dpi and H00", ylab = "density")
+lines(xs, ys, lwd = lwd_val, col = 2)
+
+legend("topright", legend = c("kernel density", "log-normal fit"), lty = 1,
+       lwd = lwd_val, col = c(4, 2), bty = "n")
+
+abline(v = 50)
+```
+
+```{r}
+ys2 <- with(fitdstr, dlnorm(dst$x, meanlog, sdlog))
+plot(dst$y, ys2, xlab = "kernel density", ylab = "log-normal fit", col = 4)
+abline(0, 1)
+```
+
+```{r}
+densities <- oocyst_size2 |> 
+  filter(time_points == "H00") |> 
+  select(patient, Mosq_no, Area) |> 
+  nest(data = Area) |> 
+  filter(map_int(data, nrow) > 1) |> 
+  mutate(density = map(data, ~ density(.x$Area, from = 0))) |> 
+  pull(density)
+
+plot(NA, xlim = c(0, max(unlist(map(densities, "x")))), ylim = c(0, .01),
+     xlab = "oocyst size at 7 dpi and H00", ylab = "density")
+walk(densities, ~ lines(.x, col = adjustcolor(1, .2)))
+
+oocyst_size2 |> 
+  filter(time_points == "H00") |> 
+  pull(Area) |> 
+  density() |> 
+  lines(col = 2, lwd = lwd_val)
+
+abline(v = 50, lwd = lwd_val, col = 4)
+```
+
+```{r}
+oo_size_mu_sd <- oocyst_size2 |> 
+  filter(time_points == "H00") |> 
+  select(patient, Mosq_no, Area) |> 
+  summarise(mean = mean(Area),
+            sd   = sd(Area),
+            n    = n(), .by = c(patient, Mosq_no))
+
+with(oo_size_mu_sd, plot(mean, sd, xlim = c(0, max(mean)), cex = sqrt(n)))
+mod <- lm(sd ~ -1 + mean, oo_size_mu_sd, weights = n)
+abline(mod)
+
+(gamma_shape <- 1 / coef(mod)^2)
+(log_sd <- sqrt(log(1 + coef(mod)^2)))
+```
+
+```{r}
+oo_size_mu_sd <- oocyst_size2 |> 
+  select(time_points, patient, Mosq_no, Area) |> 
+  summarise(mean = mean(Area),
+            sd   = sd(Area),
+            n    = n(), .by = c(time_points, patient, Mosq_no))
+
+with(oo_size_mu_sd, plot(mean, sd, xlim = c(0, max(mean)), cex = sqrt(n),
+                         col = adjustcolor(1, .15)))
+mod <- lm(sd ~ -1 + mean, oo_size_mu_sd, weights = n)
+abline(mod)
+
+(gamma_shape <- 1 / coef(mod)^2)
+(log_sd <- sqrt(log(1 + coef(mod)^2)))
+```
+
+```{r}
+oocyst_size2 |> 
+  select(time_points, Mosq_no, Area) |> 
+  rename(arm = time_points, mosquito_ID = Mosq_no, oocyst_size = Area)
+```
+
+```{r}
+number_oocysts |> 
+  select(-day_of_dissection) |> 
+  rename(arm = time_points, number_visible_oocysts = total_oocysts)
+```
+
+
+
+
+
+
+
+```{r}
+number_oocysts |> 
+  filter(time_points == "H0", day_of_dissection == "7dpi") |> 
+  pull(total_oocysts) |> 
+  na.exclude() |> 
+  hist(0:300, ylim = c(0, 20), main = NA,
+       xlab = "number of oocysts", ylab = "number of mosquitoes")
+
+number_oocysts |> 
+  filter(time_points == "H72", day_of_dissection == "7dpi") |> 
+  pull(total_oocysts) |> 
+  na.exclude() |> 
+  hist(0:300, ylim = c(0, 20), main = NA,
+       xlab = "number of oocysts", ylab = "number of mosquitoes")
+```
+
+
 
 
 
@@ -2036,90 +2237,72 @@ with(filter(mtreat_dpi, dpi == 3), lines(m_vals, reduction))
 
 ## TBA = TRA = 0
 
-### Oocyst size at 7 dpi
-
-Colors
-
-```{r}
-tmp1 <- unique(oocyst_size$time_points)
-tmp2 <- c(tmp1[str_starts(tmp1, "H")], tmp1[str_starts(tmp1, "D")])
-
-color_dpa <- c("black", "grey", rev(tail(YlOrRd11, length(tmp2)))) |> 
-  setNames(c(setdiff(tmp1, tmp2), tmp2))
-```
-
-New version of the data:
-
-```{r}
-oocyst_size2 <- oocyst_size |>
-  mutate(across(Area, ~ .x * 1e6),
-         color = color_dpa[time_points])
-```
-
-```{r}
-densities <- oocyst_size2 |> 
-  mutate(across(Area, log10)) |> 
-  select(time_points, Area, color) |> 
-  nest(data = Area) |> 
-  mutate(density = map(data, ~ density(.x$Area)))
-
-densities_plot <- densities |>
-  mutate(across(density, ~ map(.x, function(x) {x$x <- 10^x$x; x})))
-
-x_max <- densities_plot |> 
-  pull(density) |> 
-  map("x") |> 
-  unlist() |> 
-  max()
-
-x_min <- densities_plot |> 
-  pull(density) |> 
-  map("x") |> 
-  unlist() |> 
-  min()
-
-y_max <- densities_plot |> 
-  pull(density) |> 
-  map("y") |> 
-  unlist() |> 
-  max()
-
-plot(NA, xlim = c(x_min, x_max), ylim = c(0, y_max), log = "x",
-     xlab = "oocsyt size at 7 dpi", ylab = "density")
-with(densities_plot, walk2(density, color, ~ lines(.x, col = .y, lwd = lwd_val)))
-
-legend("topleft", legend = names(color_dpa), col = color_dpa, lty = 1, lwd = lwd_val,
-       bty = "n")
-```
-
-```{r message=FALSE}
-xs <- seq(1, log10(5000), le = 512)
-
-time_poins <- names(color_dpa) 
-
-densities |> 
-  arrange(match(time_points, time_poins)) |> 
-
-  mutate(den_val = map(density, ~ with(.x, tibble(approx(x, y, xs)$y)))) |> 
-  pull(den_val) |> 
-  bind_cols() |> 
-  as.matrix() |> 
-  t() |> 
-  image(1:10, xs, z = _, xaxt = "n", yaxt = "n", xlab = NA, ylab = "oocyst size at 7 dpi")
-
-labels <- 10^(1:3) |> 
-  (\(x) sort(c(x, 5 * x)))()
-
-axis(1, 1:10, time_poins)
-axis(2, log10(labels), labels)
-box(bty = "o")
-```
-
-
 ### Number of oocyst
 
-```{r message=FALSE}
-number_oocysts <- read_table2("ASAAP4b_oocyst2.txt")
+```{r message = FALSE}
+number_oocysts <- "ASAAP4b_oocyst2.txt" |>
+  read_table2() |> 
+  select(time_points, day_of_dissection, total_oocysts)
+```
+
+Prevalence:
+
+```{r}
+prev_int <- number_oocysts |> 
+  filter_out(is.na(total_oocysts)) |> 
+  summarise(prevalence = mean(total_oocysts > 0),
+            intensity = mean(total_oocysts[total_oocysts > 0]),
+            .by = c(time_points, day_of_dissection))
+```
+
+```{r}
+number_oocysts |>
+  filter(time_points == "H0", day_of_dissection == "7dpi") |> 
+  pull(total_oocysts) |> 
+  hist(100)
+```
+
+```{r}
+number_oocysts |>
+  filter(time_points == "H0", day_of_dissection == "7dpi") |> 
+  pull(total_oocysts) |> 
+  na.exclude() |> 
+  mean()
+```
+
+The distribution of oocysts numbers per mosquito:
+
+```{r}
+nb_oocysts <- 0:250
+proba <- dpois(nb_oocysts, 30)
+plot(nb_oocysts, proba, type = "h", ylim = c(0, .2))
+
+proportion <- .8
+
+tibble(nb_oocysts = 0:250) |> 
+  mutate(proba = dpois(nb_oocysts, 30),
+         nb2 = round(proportion * nb_oocysts)) |> 
+  summarise(proba = sum(proba), .by = nb2) |> 
+  with(points(nb2, proba, type = "h", col = 2))
+
+
+initial <- tibble(nb_oocysts = 0:250) |> 
+  mutate(proba = dnbinom(nb_oocysts, mu = 30, size = 1))
+
+with(initial, plot(nb_oocysts, proba, type = "h", ylim = c(0, .1)))
+
+initial |> 
+  mutate(nb2 = round(proportion * nb_oocysts)) |> 
+  summarise(proba = sum(proba), .by = nb2) |> 
+  with(points(nb2, proba, type = "h", col = 2))
+```
+
+The distribution of oocsyts sizes:
+
+```{r}
+sizes <- seq(0, 3500, le = 512)
+dens <- dlnorm(sizes, 6, .5)
+plot(sizes, dens, type = "l")
 ```
 
 ```{r}
@@ -2127,6 +2310,9 @@ number_oocysts2 <- number_oocysts |>
   select(day_of_dissection, total_oocysts) |> 
   na.exclude()
 ```
+
+
+
 
 ```{r}
 with(number_oocysts2, plot(density(total_oocysts, from = 0)))
