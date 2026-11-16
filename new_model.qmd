@@ -1618,6 +1618,8 @@ plot_treatment_infected <- function(data) {
 
 Takes 40" on the M2:
 
+## TIMING
+
 ```{r eval = FALSE, purl = FALSE}
 treati1 <- treatment_infected()
 ```
@@ -1658,13 +1660,14 @@ color_dpa <- c("black", "grey", rev(tail(YlOrRd11, length(tmp2)))) |>
 New version of the data:
 
 ```{r}
-oocyst_size2 <- oocyst_size |>
-  mutate(across(Area, ~ .x * 1e6),
-         color = color_dpa[time_points])
+oocyst_size <- oocyst_size |> 
+  mutate(color = color_dpa[time_points])
 ```
 
+The distribution of the oocyst sizes at 7 dpi:
+
 ```{r}
-densities <- oocyst_size2 |> 
+densities <- oocyst_size |> 
   mutate(across(Area, log10)) |> 
   select(time_points, Area, color) |> 
   nest(data = Area) |> 
@@ -1699,6 +1702,8 @@ legend("topleft", legend = names(color_dpa), col = color_dpa, lty = 1, lwd = lwd
        bty = "n")
 ```
 
+An other vizualization of the distribution of the oocyst sizes at 7 dpi:
+
 ```{r message = FALSE}
 xs <- seq(1, log10(5000), le = 512)
 
@@ -1722,10 +1727,10 @@ axis(2, log10(labels), labels)
 box(bty = "o")
 ```
 
-Log-normal fit:
+The log-normal fit on the `H00` time point:
 
 ```{r}
-H00 <- oocyst_size2 |> 
+H00 <- oocyst_size |> 
   filter(time_points == "H00") |> 
   pull(Area)
 
@@ -1745,14 +1750,19 @@ legend("topright", legend = c("kernel density", "log-normal fit"), lty = 1,
 abline(v = 50)
 ```
 
+The quality of the log-normal fit as compared to the kernel density estimate:
+
 ```{r}
 ys2 <- with(fitdstr, dlnorm(dst$x, meanlog, sdlog))
 plot(dst$y, ys2, xlab = "kernel density", ylab = "log-normal fit", col = 4)
 abline(0, 1)
 ```
 
+The between-mosquito variability of the distribution of oocyst size at 7 dpi and time
+point `H00`:
+
 ```{r}
-densities <- oocyst_size2 |> 
+densities <- oocyst_size |> 
   filter(time_points == "H00") |> 
   select(patient, Mosq_no, Area) |> 
   nest(data = Area) |> 
@@ -1764,7 +1774,7 @@ plot(NA, xlim = c(0, max(unlist(map(densities, "x")))), ylim = c(0, .01),
      xlab = "oocyst size at 7 dpi and H00", ylab = "density")
 walk(densities, ~ lines(.x, col = adjustcolor(1, .2)))
 
-oocyst_size2 |> 
+oocyst_size |> 
   filter(time_points == "H00") |> 
   pull(Area) |> 
   density() |> 
@@ -1773,15 +1783,19 @@ oocyst_size2 |>
 abline(v = 50, lwd = lwd_val, col = 4)
 ```
 
+The relationship between the mean and standard deviation of the oocyst sizes at 7 dpi
+within mosquitoes at time point `H00`:
+
 ```{r}
-oo_size_mu_sd <- oocyst_size2 |> 
+oo_size_mu_sd <- oocyst_size |> 
   filter(time_points == "H00") |> 
   select(patient, Mosq_no, Area) |> 
   summarise(mean = mean(Area),
             sd   = sd(Area),
             n    = n(), .by = c(patient, Mosq_no))
 
-with(oo_size_mu_sd, plot(mean, sd, xlim = c(0, max(mean)), cex = sqrt(n)))
+with(oo_size_mu_sd, plot(mean, sd, xlim = c(0, max(mean)), cex = sqrt(n), col = 4,
+     xlab = "mean oocyst size", ylab = "standard deviation of oocyst size"))
 mod <- lm(sd ~ -1 + mean, oo_size_mu_sd, weights = n)
 abline(mod)
 
@@ -1789,15 +1803,19 @@ abline(mod)
 (log_sd <- sqrt(log(1 + coef(mod)^2)))
 ```
 
+The same across all the time points:
+
 ```{r}
-oo_size_mu_sd <- oocyst_size2 |> 
+oo_size_mu_sd <- oocyst_size |> 
   select(time_points, patient, Mosq_no, Area) |> 
   summarise(mean = mean(Area),
             sd   = sd(Area),
             n    = n(), .by = c(time_points, patient, Mosq_no))
 
 with(oo_size_mu_sd, plot(mean, sd, xlim = c(0, max(mean)), cex = sqrt(n),
-                         col = adjustcolor(1, .15)))
+                         col = adjustcolor(4, .15),
+                         xlab = "mean oocyst size",
+                         ylab = "standard deviation of oocyst size"))
 mod <- lm(sd ~ -1 + mean, oo_size_mu_sd, weights = n)
 abline(mod)
 
@@ -1806,7 +1824,7 @@ abline(mod)
 ```
 
 ```{r}
-oocyst_size2 |> 
+oocyst_size |> 
   select(time_points, Mosq_no, Area) |> 
   rename(arm = time_points, mosquito_ID = Mosq_no, oocyst_size = Area)
 ```
