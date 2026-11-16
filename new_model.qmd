@@ -768,7 +768,7 @@ delta2 <- with(as.list(delta_fit4dpi), make_effect(A, k, d, d / 3))
 #delta <- delta2
 ```
 
-Takes 12" on the M2:
+Takes 12" on the M2 and 83" on the i7:
 
 ```{r eval = FALSE, purl = FALSE}
 delta_model_4dpi <- boot_calibration_4dpi(delta_data)
@@ -838,22 +838,6 @@ with(oo_size, table(Group, `Blood Feeds`))
 ```
 
 The oocyst sizes for the 4 treatments:
-
-```{r}
-#tmp <- oo_size |> 
-#  mutate(xlab = paste(Group, `Blood Feeds`)) |> 
-#  group_split(Group, `Blood Feeds`) |>
-#  bind_rows(.id = "x") |> 
-#  mutate(across(x, as.integer))
-#
-#oosise_lab <- expression(mean ~ oocyst ~ size ~ at ~ 7 ~ dpi ~ (µm^2))
-#
-#with(tmp, plot(jitter(x), `Mean oocyst size`,
-#               col = color, pch = 19, ylim = c(0, 2e3), xaxt = "n",
-#               xlab = NA, ylab = oosise_lab))
-#
-#axis(1, 1:4, unique(tmp$xlab), tick = FALSE, line = -1, lty = 0)
-```
 
 ```{r}
 oosise_lab <- expression(mean ~ oocyst ~ size ~ at ~ 7 ~ dpi ~ (µm^2))
@@ -1004,13 +988,14 @@ rate_val <- models |>
 Let's look at the mean oocyst size at 7 dpi on the controls mosquitoes of our study:
 
 ```{r message = FALSE}
-oocyst_size <- read_table2("oocyst_size2.txt")
+oocyst_size <- "oocyst_size2.txt" |>
+  read_table2() |> 
+  mutate(across(Area, ~ .x * 1e6))
 ```
 
 ```{r}
 oocyst_size_crtl <- oocyst_size |> 
   filter(time_points %in% c("Unfed", "Control")) |> 
-  mutate(across(Area, ~ .x * 1e6)) |> 
   pull(Area)
 
 hist(oocyst_size_crtl, 20, main = NA, col = 4,
@@ -1052,31 +1037,6 @@ size2rate_reduction <- function(reduction_in_size, ref = m_oo_size_val) {
 
 #size2rate_reduction(c(.8, .7))
 #size2rate_reduction(0)
-```
-
-```{r}
-#qf <- function(tau, m) {
-#  map_dbl(tau,
-#          ~ integrate2(function(x) size2rate_reduction(1 - delta(x, .x)), 0, m) / m)
-#}
-
-# qf(5:6 * 24, 15 * 24)
-```
-
-```{r}
-#kappaf <- function(tau, a, p, m) {
-#  map_dbl(tau, ~ exp(-a * p * integrate2(function(x) 1 - qf(x, m), 0, .x)))
-#}
-
-# kappaf(5:6 * 24, 1 / (3 * 24), .1, 50 * 24)
-```
-
-```{r}
-#EIPf <- function(n, a, p, m) {
-#  optimise(function(x) abs(x * kappaf(x, a, p, m) - n), c(0, 24 * 100))$min
-#}
-
-# EIPf(10 * 24, 1 / (3 * 24), .1, 50 * 24)
 ```
 
 Putting everything together to generate the reduction function:
