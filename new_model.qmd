@@ -1135,8 +1135,12 @@ plot_mass_treatment <- function(data) {
 
 Takes 1' on the M2:
 
+## TIMING
+
 ```{r eval = FALSE, purl = FALSE}
+system.time(
 mtreat1 <- mass_treatment()
+)
 ```
 
 ```{r include = FALSE}
@@ -1271,7 +1275,7 @@ plot_dynamics <- function(x) {
 ```
 
 Computing the dynamics of starting values of $R_0$ of 40 and 30 (takes 3" each on the
-M2):
+M2 and 8" on the i7):
 
 ```{r eval = FALSE, purl = FALSE}
 out40 <- dynamics(40)
@@ -1337,6 +1341,8 @@ is slightly faster. Explorations:
 
 (takes 24" on the M2)
 
+## TIMING
+
 ```{r eval = FALSE, purl = FALSE}
 m_vals <- c(4:7 * 10, seq(100, 250, 50))
 R0red <- expand_grid(m  = m_vals,
@@ -1393,7 +1399,7 @@ R0red_Hill |>
             ylab = bquote(R[0] ~ reduction ~ at ~ R[0] == 15)))
 ```
 
-Looking for the optimal value of `m` (takes 6" on the M2):
+Looking for the optimal value of `m` (takes 6" on the M2 and 30" on the i7):
 
 ```{r eval = FALSE, purl = FALSE}
 m_vals2 <- 64:75
@@ -1461,7 +1467,7 @@ search_m <- function(from = 15, R0i = 40, n = 10, mu = 1 / 14, a = 1 / 3, prop =
 }
 ```
 
-Takes 12" on the M2:
+Takes 12" on the M2 and 53" on the i7:
 
 ```{r eval = FALSE, purl = FALSE}
 search_m(15)
@@ -1478,6 +1484,8 @@ if (file_exists("m_min.rds")) {
 
 Now we know that we want to use `m = 69`. Let's now explore various values of `prop`
 (takes 30" on the M2):
+
+## TIMING
 
 ```{r eval = FALSE, purl = FALSE}
 R0red2 <- expand_grid(prop = 1:10 / 10,
@@ -1500,40 +1508,6 @@ if (file_exists("R0red2.rds")) {
                                                    cv = .3, r = 1 / 200) / .x))
   saveRDScache(R0red2, "R0red2.rds")
 }
-```
-
-Let's try to perform Hill extrapolation for each value of `prop` and get rid off all
-the `prop` values where extrapolation fails.
-
-```{r}
-#tmp <- R0red2 |> 
-#  summarise(fit = list(safely(nls)(reduction ~ R0^h / (K^h + R0^h),
-#                                   data = pick(everything()),
-#                                   start = c(K = 5, h = .7))), .by = prop) |> 
-#  filter_out(map_lgl(map(fit, "result"), is.null)) |> 
-#  mutate(across(fit, ~ map(.x, "result")),
-#         coeff = map(fit, coef)) |>
-#  unnest_wider(coeff)
-#
-#modK <- tmp |> 
-#  select(prop, K) |> 
-#  bind_rows(tibble(prop = 0, K = 0)) |> 
-#  lm(K ~ prop + I(prop^2), data = _)
-#
-#modh <- lm(h ~ prop + I(prop^2), tmp)
-#
-#out <- R0red2 |> 
-#  nest(.by = prop) |>
-#  mutate(K0  = predict(modK, list(prop = prop)),
-#         h0  = predict(modh, list(prop = prop)),
-#         fit = pmap(list(data, K0, h0),
-#                    ~ nls(reduction ~ R0^h / (K^h + R0^h),
-#                          data = ..1, start = c(K = ..2, h = ..3))),
-#         reduction = map(fit,
-#                         ~ tibble(R0 = R0_new,
-#                                  prediction = predict(.x,
-#                                                       newdata = list(R0 = R0_new))))) |> 
-#  select(-c(K0, h0, fit))
 ```
 
 A function that uses a Hill equation to perform extrapolation for each value of `prop`
