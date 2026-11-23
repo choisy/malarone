@@ -1140,14 +1140,10 @@ plot_mass_treatment <- function(data) {
 }
 ```
 
-Takes 1' on the M2:
-
-## TIMING
+Takes 1' on the M2 (and 5'50" on the i7):
 
 ```{r eval = FALSE, purl = FALSE}
-system.time(
 mtreat1 <- mass_treatment()
-)
 ```
 
 ```{r include = FALSE}
@@ -1346,9 +1342,7 @@ finalR0rs <- function(R0i, n, mu, a, prop, m, cv, r, infinity = 250,
 The functions from the `nleqslv` and `rootSolve` packages are equivalent but `nleqslv`
 is slightly faster. Explorations:
 
-(takes 24" on the M2)
-
-## TIMING
+(takes 24" on the M2 and 3'13" on the i7)
 
 ```{r eval = FALSE, purl = FALSE}
 m_vals <- c(4:7 * 10, seq(100, 250, 50))
@@ -1490,9 +1484,7 @@ if (file_exists("m_min.rds")) {
 ```
 
 Now we know that we want to use `m = 69`. Let's now explore various values of `prop`
-(takes 30" on the M2):
-
-## TIMING
+(takes 30" on the M2 and 3'8" on the i7):
 
 ```{r eval = FALSE, purl = FALSE}
 R0red2 <- expand_grid(prop = 1:10 / 10,
@@ -1623,9 +1615,7 @@ plot_treatment_infected <- function(data) {
 }
 ```
 
-Takes 40" on the M2:
-
-## TIMING
+Takes 40" on the M2 (and 4'22" on the i7):
 
 ```{r eval = FALSE, purl = FALSE}
 treati1 <- treatment_infected()
