@@ -1636,11 +1636,13 @@ plot_treatment_infected(treati1)
 
 
 
-## Explorations EPI only
+## EIP effect only
 
 In this section we consider there is no TBA and TRA but only EIP and that what was
 interpreted as TBA and TRA above was simply an artifact due to the fact that oocysts
 that are too small are not detected.
+
+
 
 ### Oocysts size distribution
 
@@ -1718,7 +1720,7 @@ densities |>
 labels <- 10^(1:3) |> 
   (\(x) sort(c(x, 5 * x)))()
 
-axis(1, 1:10, time_poins)
+axis(1, 1:10, time_points)
 axis(2, log10(labels), labels)
 box(bty = "o")
 ```
@@ -1819,9 +1821,9 @@ abline(mod)
 (log_sd <- sqrt(log(1 + coef(mod)^2)))
 ```
 
-Reading the numbers of oocysts:
 
-## O0_COUNT
+
+### Oocysts counts
 
 ```{r message = FALSE}
 oocyst_count <- "ASAAP4b_oocyst2.txt" |>
@@ -1835,47 +1837,6 @@ oocyst_count <- "ASAAP4b_oocyst2.txt" |>
          treatment = case_when(patient_id %in% placebo ~ "AL+Placebo",
                                .default = "AL+AP")) |> 
   select(treatment, patient_id, time_point, day_of_dissection, count)
-```
-
-```{r}
-#oocyst_count2 <- oocyst_count |> 
-#  filter_out(time_point %in% c("Unfed", "Control")) |> 
-#  filter(treatment == "AL+AP", day_of_dissection == "7dpi") |> 
-#  select(-day_of_dissection, -treatment) |> 
-#  na.exclude()
-```
-
-```{r}
-#oocyst_size2 <- oocyst_size |> 
-#  filter_out(time_point %in% c("Unfed", "Control")) |> 
-#  filter(treatment == "AL+AP") |> 
-#  select(-treatment, -Total_oocysts) |> 
-#  na.exclude()
-```
-
-```{r}
-#oocyst_count2 <- oocyst_count |> 
-#  filter_out(time_point %in% c("Unfed", "Control")) |> 
-#  filter(day_of_dissection == "7dpi", treatment == "AL+AP") |> 
-#  rename(arm = time_point,
-#         number_visible_oocysts = count) |> 
-#  select(arm, number_visible_oocysts) |> 
-#  na.exclude()
-```
-
-```{r}
-#oocyst_size2 <- oocyst_size |> 
-#  filter_out(time_point %in% c("Unfed", "Control")) |> 
-#  filter(treatment == "AL+AP") |> 
-#  select(patient_id, mosquito_id, time_point, area) |> 
-#  nest(data = c(time_point, area)) |> 
-#  select(-patient_id) |> 
-#  mutate(mosquito_id = row_number()) |> 
-#  unnest(c(data)) |> 
-#  rename(arm = time_point,
-#         oocyst_size = area,
-#         mosquito_ID = mosquito_id) |> 
-#  na.exclude()
 ```
 
 ```{r}
@@ -1896,6 +1857,123 @@ oocyst_count2 <- oocyst_count |>
 
 
 
+### Looking at fit outputs
+
+```{r}
+#fit_no_patient_effect <- readRDScache("fit_no_patient_effect.rds")
+#fit_patient_x_timepoint_random <- readRDScache("fit_patient_x_timepoint_random.rds")
+fit_patient_x_timepoint_fixed <- readRDScache("fit_patient_x_timepoint_fixed.rds")
+```
+
+```{r}
+#length(fit_no_patient_effect$optim$par)
+#length(fit_patient_x_timepoint_random$optim$par)
+#length(fit_patient_x_timepoint_fixed$optim$par)
+```
+
+```{r}
+#- fit_no_patient_effect$logLik
+#- fit_patient_x_timepoint_random$logLik
+#- fit_patient_x_timepoint_fixed$logLik
+```
+
+```{r}
+#lrt <- function(model1, model2) {
+#  logLik1 <- model1$logLik
+#  logLik2 <- model2$logLik
+#  k1 <- length(model1$optim$par)
+#  k2 <- length(model2$optim$par)
+#  LR <- 2 * abs(logLik2 - logLik1)
+#  df <- abs(k2 - k1)
+#  p_value <- pchisq(LR, df = df, lower.tail = FALSE)
+#  data.frame(LR = LR, df = df, p_value = p_value)
+#}
+```
+
+```{r}
+#lrt(fit_no_patient_effect, fit_patient_x_timepoint_random)
+```
+
+```{r}
+#AIC_custom <- function(model) with(model, 2 * (length(optim$par) - logLik))
+```
+
+```{r}
+#AIC_custom(fit_no_patient_effect)
+#AIC_custom(fit_patient_x_timepoint_random)
+#AIC_custom(fit_patient_x_timepoint_fixed)
+```
+
+```{r}
+hours <- c(0, 5, 48, 72)
+days <- c(5, 7, 14, 28)
+hash <- c(setNames(hours, sprintf("H%02d", hours)),
+          setNames(24 * days, sprintf("D%02d", days)))
+```
+
+```{r}
+#oo_size_reduction <- function(fit) {
+#  fit$effects |> 
+#    mutate(t = hash[as.character(time_point)]) |> 
+#    select(t, size_reduction) |> 
+#    arrange(t)
+#}
+```
+
+```{r}
+#fit_no_patient_effect |> 
+#  oo_size_reduction() |> 
+#  with(plot(t, size_reduction, type = "o", ylim = 0:1))
+```
+
+```{r}
+#fit_patient_x_timepoint_random |> 
+#  oo_size_reduction() |> 
+#  with(plot(t, size_reduction, type = "o", ylim = 0:1))
+```
+
+```{r}
+#fit_patient_x_timepoint_fixed$effects |> 
+#  mutate(t = hash[as.character(time_point)]) |> 
+#  select(t, mean_reduction_percent) |> 
+#  arrange(t) |> 
+#  with(plot(t, mean_reduction_percent / 100, type = "o", ylim = 0:1))
+```
+
+```{r}
+#fit_patient_x_timepoint_fixed$patient_effects |> 
+#  mutate(t = hash[as.character(time_point)]) |> 
+#  select(t, size_reduction) |> 
+#  with(plot(jitter(t), size_reduction, ylim = 0:1))
+```
+
+```{r}
+delta_data2 <- fit_patient_x_timepoint_fixed |> 
+  magrittr::use_series(patient_effects) |> 
+  mutate(t = hash[as.character(time_point)]) |> 
+  select(t, size_reduction) |> 
+  filter(t > 0) |> 
+  rename(value = size_reduction) |> 
+  arrange(t)
+```
+
+```{r}
+delta_fit4dpi2 <- with(delta_data2, calibrate4dpi(t, value))
+```
+
+```{r}
+delta3 <- with(as.list(delta_fit4dpi2), make_effect(A, k, d, d / 3))
+```
+
+```{r}
+#mtreat1b <- mass_treatment(alpha = function(t, tau) 0,
+#                           beta = function(t, tau) 0,
+#                           delta = delta3)
+#
+#mtreat1b <- mass_treatment(delta = delta3)
+#
+#mtreat1b <- mass_treatment()
+```
 
 
 ## Nonlinearities
@@ -2194,91 +2272,6 @@ with(filter(mtreat_dpi, dpi == 2), lines(m_vals, reduction))
 with(filter(mtreat_dpi, dpi == 3), lines(m_vals, reduction))
 ```
 
-## TBA = TRA = 0
-
-### Number of oocyst
-
-
-Prevalence:
-
-```{r}
-prev_int <- number_oocysts |> 
-  filter_out(is.na(total_oocysts)) |> 
-  summarise(prevalence = mean(total_oocysts > 0),
-            intensity = mean(total_oocysts[total_oocysts > 0]),
-            .by = c(time_points, day_of_dissection))
-```
-
-```{r}
-number_oocysts |>
-  filter(time_points == "H0", day_of_dissection == "7dpi") |> 
-  pull(total_oocysts) |> 
-  hist(100)
-```
-
-```{r}
-number_oocysts |>
-  filter(time_points == "H0", day_of_dissection == "7dpi") |> 
-  pull(total_oocysts) |> 
-  na.exclude() |> 
-  mean()
-```
-
-The distribution of oocysts numbers per mosquito:
-
-```{r}
-nb_oocysts <- 0:250
-proba <- dpois(nb_oocysts, 30)
-plot(nb_oocysts, proba, type = "h", ylim = c(0, .2))
-
-proportion <- .8
-
-tibble(nb_oocysts = 0:250) |> 
-  mutate(proba = dpois(nb_oocysts, 30),
-         nb2 = round(proportion * nb_oocysts)) |> 
-  summarise(proba = sum(proba), .by = nb2) |> 
-  with(points(nb2, proba, type = "h", col = 2))
-
-
-initial <- tibble(nb_oocysts = 0:250) |> 
-  mutate(proba = dnbinom(nb_oocysts, mu = 30, size = 1))
-
-with(initial, plot(nb_oocysts, proba, type = "h", ylim = c(0, .1)))
-
-initial |> 
-  mutate(nb2 = round(proportion * nb_oocysts)) |> 
-  summarise(proba = sum(proba), .by = nb2) |> 
-  with(points(nb2, proba, type = "h", col = 2))
-```
-
-The distribution of oocsyts sizes:
-
-```{r}
-sizes <- seq(0, 3500, le = 512)
-dens <- dlnorm(sizes, 6, .5)
-plot(sizes, dens, type = "l")
-```
-
-```{r}
-number_oocysts2 <- number_oocysts |> 
-  select(day_of_dissection, total_oocysts) |> 
-  na.exclude()
-```
-
-
-
-
-```{r}
-with(number_oocysts2, plot(density(total_oocysts, from = 0)))
-
-number_oocysts2 |> 
-  filter(day_of_dissection == "7dpi") |> 
-  with(lines(density(total_oocysts, from = 0), col = 2))
-
-number_oocysts2 |> 
-  filter(day_of_dissection == "14dpi") |> 
-  with(lines(density(total_oocysts, from = 0), col = 4))
-```
 
 
 ## The end

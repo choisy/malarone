@@ -364,6 +364,8 @@ system.time(
 
 saveRDScache(fit_no_patient_effect, "fit_no_patient_effect.rds")
 
+fit_no_patient_effect <- readRDScache("fit_no_patient_effect.rds")
+
 #######################################################################################
 
 fit <- fit_no_patient_effect

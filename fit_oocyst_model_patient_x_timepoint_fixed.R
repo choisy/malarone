@@ -425,4 +425,7 @@ system.time(
   fit_patient_x_timepoint_fixed <- fit_oocyst_model(counts = oocyst_count2,
                                                     sizes = oocyst_size2)
 )
+
 saveRDScache(fit_patient_x_timepoint_fixed, "fit_patient_x_timepoint_fixed.rds")
+
+fit_patient_x_timepoint_fixed <- readRDScache("fit_patient_x_timepoint_fixed.rds")

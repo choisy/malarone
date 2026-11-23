@@ -479,3 +479,4 @@ system.time(
 )
 
 saveRDScache(fit_patient_x_timepoint_random, "fit_patient_x_timepoint_random.rds")
+fit_patient_x_timepoint_random <- readRDScache("fit_patient_x_timepoint_random.rds")
