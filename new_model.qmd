@@ -40,6 +40,12 @@ rerun_all <- function() {
 
 ## Parameters
 
+The seee:
+
+```{r}
+set.seed(123)
+```
+
 The path to the data:
 
 ```{r}
@@ -115,6 +121,10 @@ library(dplyr)
 future::plan(future::multisession, workers = n_workers)
 ```
 
+```{r eval = FALSE}
+library(statmod)
+library(ggplot2)
+```
 
 ## Functions
 
@@ -161,7 +171,7 @@ stratified_bootstrap <- function(df, N) {
                                group_by(t) |> 
                                group_split() |> 
                                map(slice_sample, prop = 1, replace = TRUE) |> 
-                               bind_rows())
+                               bind_rows(), .options = furrr_options(seed = TRUE))
 }
 ```
 
@@ -440,10 +450,6 @@ alpha1 <- with(as.list(alpha_fit4dpi), make_effect(A, k, d, d))
 alpha2 <- with(as.list(alpha_fit4dpi), make_effect(A, k, d, d / 3))
 ```
 
-```{r}
-#alpha <- alpha2
-```
-
 ```{r fig.width = 4, fig.height = 4}
 #| layout-ncol: 2
 n_tau <- 10
@@ -578,10 +584,6 @@ beta1 <- with(as.list(beta_fit4dpi), make_effect(A, k, d, d))
 
 ```{r}
 beta2 <- with(as.list(beta_fit4dpi), make_effect(A, k, d, d / 3))
-```
-
-```{r}
-#beta <- beta2
 ```
 
 Takes 12" on the M2 and 83" on the i7:
@@ -762,10 +764,6 @@ delta1 <- with(as.list(delta_fit4dpi), make_effect(A, k, d, d))
 
 ```{r}
 delta2 <- with(as.list(delta_fit4dpi), make_effect(A, k, d, d / 3))
-```
-
-```{r}
-#delta <- delta2
 ```
 
 Takes 12" on the M2 and 83" on the i7:
@@ -1004,8 +1002,8 @@ oocyst_size <- "oocyst_size2.txt" |>
 
 ```{r}
 oocyst_size_crtl <- oocyst_size |> 
-  filter(time_points %in% c("Unfed", "Control")) |> 
-  pull(Area)
+  filter(time_point %in% c("Unfed", "Control")) |> 
+  pull(area)
 
 hist(oocyst_size_crtl, 20, main = NA, col = 4,
      xlab = "oocyst size", ylab = "frequency")
@@ -1587,14 +1585,14 @@ A function that computes the reduction in the case of the treatment of infected:
 treatment_infected <- function(R0 = 5:15 * 10, prop = 1:10 / 10, from = 15, n = 10,
                                mu = 1 / 14, a = 1 / 3, c = .3, r = 1 / 200,
                                R0_new = seq(15, 150, le = 512), K0 = 5, h0 = .7,
-                               inifinity = 250,
+                               infinity = 250,
                                alpha = alpha2, beta = beta2, delta = delta2) {
   m_opt <- search_m(from, first(R0), n, mu, a, prop = 1, c, r, infinity,
                     alpha, beta, delta)
   expand_grid(prop, R0) |> 
     mutate(reduction = future_map2(R0, prop,
                                    ~ safely(finalR0nl)(R0i = .x, n, mu, a, prop = .y,
-                                                       m = m_opt, c, r, inifinity,
+                                                       m = m_opt, c, r, infinity,
                                                        alpha, beta, delta))) |> 
     filter(map_lgl(reduction, ~ is.null(.x$error))) |> 
     mutate(across(reduction, ~ map_dbl(.x, "result") / R0)) |> 
@@ -1659,7 +1657,7 @@ that are too small are not detected.
 Colors
 
 ```{r}
-tmp1 <- unique(oocyst_size$time_points)
+tmp1 <- unique(oocyst_size$time_point)
 tmp2 <- c(tmp1[str_starts(tmp1, "H")], tmp1[str_starts(tmp1, "D")])
 
 color_dpa <- c("black", "grey", rev(tail(YlOrRd11, length(tmp2)))) |> 
@@ -1670,17 +1668,17 @@ New version of the data:
 
 ```{r}
 oocyst_size <- oocyst_size |> 
-  mutate(color = color_dpa[time_points])
+  mutate(color = color_dpa[time_point])
 ```
 
 The distribution of the oocyst sizes at 7 dpi:
 
 ```{r}
 densities <- oocyst_size |> 
-  mutate(across(Area, log10)) |> 
-  select(time_points, Area, color) |> 
-  nest(data = Area) |> 
-  mutate(density = map(data, ~ density(.x$Area)))
+  mutate(across(area, log10)) |> 
+  select(time_point, area, color) |> 
+  nest(data = area) |> 
+  mutate(density = map(data, ~ density(.x$area)))
 
 densities_plot <- densities |>
   mutate(across(density, ~ map(.x, function(x) {x$x <- 10^x$x; x})))
@@ -1716,11 +1714,10 @@ An other vizualization of the distribution of the oocyst sizes at 7 dpi:
 ```{r message = FALSE}
 xs <- seq(1, log10(5000), le = 512)
 
-time_poins <- names(color_dpa) 
+time_points <- names(color_dpa) 
 
 densities |> 
-  arrange(match(time_points, time_poins)) |> 
-
+  arrange(match(time_point, time_points)) |> 
   mutate(den_val = map(density, ~ with(.x, tibble(approx(x, y, xs)$y)))) |> 
   pull(den_val) |> 
   bind_cols() |> 
@@ -1740,8 +1737,8 @@ The log-normal fit on the `H00` time point:
 
 ```{r}
 H00 <- oocyst_size |> 
-  filter(time_points == "H00") |> 
-  pull(Area)
+  filter(time_point == "H00") |> 
+  pull(area)
 
 dst <- density(H00, from = 0)
 
@@ -1851,47 +1848,60 @@ oocyst_count <- "ASAAP4b_oocyst2.txt" |>
 ```
 
 ```{r}
-oocyst_count2 <- oocyst_count |> 
-  filter_out(time_point %in% c("Unfed", "Control")) |> 
-  filter(treatment == "AL+AP", day_of_dissection == "7dpi") |> 
-  select(-day_of_dissection, -treatment) |> 
-  na.exclude()
+#oocyst_count2 <- oocyst_count |> 
+#  filter_out(time_point %in% c("Unfed", "Control")) |> 
+#  filter(treatment == "AL+AP", day_of_dissection == "7dpi") |> 
+#  select(-day_of_dissection, -treatment) |> 
+#  na.exclude()
+```
+
+```{r}
+#oocyst_size2 <- oocyst_size |> 
+#  filter_out(time_point %in% c("Unfed", "Control")) |> 
+#  filter(treatment == "AL+AP") |> 
+#  select(-treatment, -Total_oocysts) |> 
+#  na.exclude()
+```
+
+```{r}
+#oocyst_count2 <- oocyst_count |> 
+#  filter_out(time_point %in% c("Unfed", "Control")) |> 
+#  filter(day_of_dissection == "7dpi", treatment == "AL+AP") |> 
+#  rename(arm = time_point,
+#         number_visible_oocysts = count) |> 
+#  select(arm, number_visible_oocysts) |> 
+#  na.exclude()
+```
+
+```{r}
+#oocyst_size2 <- oocyst_size |> 
+#  filter_out(time_point %in% c("Unfed", "Control")) |> 
+#  filter(treatment == "AL+AP") |> 
+#  select(patient_id, mosquito_id, time_point, area) |> 
+#  nest(data = c(time_point, area)) |> 
+#  select(-patient_id) |> 
+#  mutate(mosquito_id = row_number()) |> 
+#  unnest(c(data)) |> 
+#  rename(arm = time_point,
+#         oocyst_size = area,
+#         mosquito_ID = mosquito_id) |> 
+#  na.exclude()
 ```
 
 ```{r}
 oocyst_size2 <- oocyst_size |> 
   filter_out(time_point %in% c("Unfed", "Control")) |> 
   filter(treatment == "AL+AP") |> 
-  select(-treatment, -Total_oocysts) |> 
+  select(patient_id, mosquito_id, time_point, area) |> 
   na.exclude()
 ```
 
 ```{r}
-
-```
-
-
-
-
-
-
-
-
-
-```{r}
-number_oocysts |> 
-  filter(time_points == "H0", day_of_dissection == "7dpi") |> 
-  pull(total_oocysts) |> 
-  na.exclude() |> 
-  hist(0:300, ylim = c(0, 20), main = NA,
-       xlab = "number of oocysts", ylab = "number of mosquitoes")
-
-number_oocysts |> 
-  filter(time_points == "H72", day_of_dissection == "7dpi") |> 
-  pull(total_oocysts) |> 
-  na.exclude() |> 
-  hist(0:300, ylim = c(0, 20), main = NA,
-       xlab = "number of oocysts", ylab = "number of mosquitoes")
+oocyst_count2 <- oocyst_count |> 
+  filter_out(time_point %in% c("Unfed", "Control")) |> 
+  filter(day_of_dissection == "7dpi", treatment == "AL+AP") |> 
+  select(patient_id, time_point, count) |> 
+  na.exclude()
 ```
 
 
