@@ -1016,8 +1016,8 @@ A function that converts the oocyst size at 7 dpi into a rate of oocyst maturity
 
 ```{r}
 mos <- mean_oosize$oosize_M
-mod <- lm(rate_val ~ mos)
-compute_rate <- function(mean_oo_size) predict(mod, list(mos = mean_oo_size))
+mod_size2rate <- lm(rate_val ~ mos)
+compute_rate <- function(mean_oo_size) predict(mod_size2rate, list(mos = mean_oo_size))
 ```
 
 Let's look at the relationship between the mean oocyst size at 7 dpi and the oocyst
@@ -1028,7 +1028,7 @@ plot(mean_oosize$oosize_M, rate_val, col = colors$color, pch = 19, cex = 1.5,
      xlim = c(0, 1100), ylim = c(0, 1.1),     
      xlab = oosise_lab, ylab = "oocyst maturity rate")
 
-abline(mod, col = 4)
+abline(mod_size2rate, col = 4)
 abline(v = mean_oosize_crtl)
 abline(h = compute_rate(mean_oosize_crtl))
 ```
@@ -1788,13 +1788,13 @@ within mosquitoes at time point `H00`:
 oo_size_mu_sd <- oocyst_size |> 
   filter(time_point == "H00") |> 
   select(patient_id, mosquito_id, area) |> 
-  summarise(mean = mean(area),
+  summarise(mu   = mean(area),
             sd   = sd(area),
             n    = n(), .by = c(patient_id, mosquito_id))
 
-with(oo_size_mu_sd, plot(mean, sd, xlim = c(0, max(mean)), cex = sqrt(n), col = 4,
+with(oo_size_mu_sd, plot(mu, sd, xlim = c(0, max(mu)), cex = sqrt(n), col = 4,
      xlab = "mean oocyst size", ylab = "standard deviation of oocyst size"))
-mod <- lm(sd ~ -1 + mean, oo_size_mu_sd, weights = n)
+mod <- lm(sd ~ -1 + mu, oo_size_mu_sd, weights = n)
 abline(mod)
 
 (gamma_shape <- 1 / coef(mod)^2)
@@ -1806,15 +1806,15 @@ The same across all the time points:
 ```{r}
 oo_size_mu_sd <- oocyst_size |> 
   select(time_point, patient_id, mosquito_id, area) |> 
-  summarise(mean = mean(area),
+  summarise(mu = mean(area),
             sd   = sd(area),
             n    = n(), .by = c(time_point, patient_id, mosquito_id))
 
-with(oo_size_mu_sd, plot(mean, sd, xlim = c(0, max(mean)), cex = sqrt(n),
+with(oo_size_mu_sd, plot(mu, sd, xlim = c(0, max(mu)), cex = sqrt(n),
                          col = adjustcolor(4, .15),
                          xlab = "mean oocyst size",
                          ylab = "standard deviation of oocyst size"))
-mod <- lm(sd ~ -1 + mean, oo_size_mu_sd, weights = n)
+mod <- lm(sd ~ -1 + mu, oo_size_mu_sd, weights = n)
 abline(mod)
 
 (gamma_shape <- 1 / coef(mod)^2)
@@ -1966,13 +1966,9 @@ delta3 <- with(as.list(delta_fit4dpi2), make_effect(A, k, d, d / 3))
 ```
 
 ```{r}
-#mtreat1b <- mass_treatment(alpha = function(t, tau) 0,
-#                           beta = function(t, tau) 0,
-#                           delta = delta3)
-#
-#mtreat1b <- mass_treatment(delta = delta3)
-#
-#mtreat1b <- mass_treatment()
+mtreat1b <- mass_treatment(alpha = function(t, tau) rep(0, length(t)),
+                           beta = function(t, tau) rep(0, length(t)),
+                           delta = delta3)
 ```
 
 
