@@ -1958,6 +1958,13 @@ delta_data2 <- fit_patient_x_timepoint_fixed |>
 ```
 
 ```{r}
+fit_patient_x_timepoint_fixed |> 
+  magrittr::use_series(patient_effects) |> 
+  filter(size_reduction > .99)
+```
+
+
+```{r}
 delta_fit4dpi2 <- with(delta_data2, calibrate4dpi(t, value))
 ```
 
@@ -1965,10 +1972,42 @@ delta_fit4dpi2 <- with(delta_data2, calibrate4dpi(t, value))
 delta3 <- with(as.list(delta_fit4dpi2), make_effect(A, k, d, d / 3))
 ```
 
+Takes 12” on the M2 and 83” on the i7:
+
 ```{r}
+delta_model_4dpi2 <- boot_calibration_4dpi(delta_data2)
+```
+
+```{r}
+delta_trajectories2 <- trajectories(delta_model_4dpi2)
+```
+
+```{r}
+plot_data_model(delta_data2, delta_trajectories2,
+                bquote("reduction" ~ delta ~ "of the size of oocysts"))
+```
+
+Takes 42" on the M2:
+
+```{r eval = FALSE, purl = FALSE}
 mtreat1b <- mass_treatment(alpha = function(t, tau) rep(0, length(t)),
                            beta = function(t, tau) rep(0, length(t)),
                            delta = delta3)
+```
+
+```{r include = FALSE}
+if (file_exists("mtreat1b.rds")) {
+  mtreat1b <- readRDScache("mtreat1b.rds")
+} else {
+  mtreat1b <- mass_treatment(alpha = function(t, tau) rep(0, length(t)),
+                             beta = function(t, tau) rep(0, length(t)),
+                             delta = delta3)
+  saveRDScache(mtreat1b, "mtreat1b.rds")
+}
+```
+
+```{r}
+plot_mass_treatment(mtreat1b)
 ```
 
 
