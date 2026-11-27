@@ -1987,6 +1987,19 @@ plot_data_model(delta_data2, delta_trajectories2,
                 bquote("reduction" ~ delta ~ "of the size of oocysts"))
 ```
 
+Detection curve:
+
+```{r}
+detection <- function(x, d50, b) 1 / (1 + exp(-b * (log(x) - log(d50))))
+```
+
+```{r}
+xs <- seq(0, 1000, le = 512)
+plot(xs, with(fit_patient_x_timepoint_fixed, detection(xs, d50, b)),
+     type = "l", ylim = 0:1, lwd = lwd_val, col = 4,
+     xlab = "oocyst size", ylab = "probability of detection")
+```
+
 Takes 42" on the M2:
 
 ```{r eval = FALSE, purl = FALSE}
